@@ -1,0 +1,40 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "creador-webs",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-06-09",
+	"compatibility_flags": [
+		"nodejs_compat",
+		"global_fetch_strictly_public"
+	],
+	"assets": {
+		"directory": "./public"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"d1_databases": [
+		{
+			"binding": "creador_db",
+			"database_name": "creador-db",
+			"database_id": "ef962a0f-b802-4f31-b713-4b3b66ac2798"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "CREADOR_KV",
+			"id": "dd7543ae139e48b6870cc5fb42e9eb54"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "CREADOR_BUCKET",
+			"bucket_name": "creador-bucket"
+		}
+	]
+}
