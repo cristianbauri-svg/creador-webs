@@ -1,32 +1,336 @@
 <!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Hello, World!</title>
-	</head>
-	<body>
-		<h1 id="heading"></h1>
-		<p>This page comes from a static asset stored at `public/index.html` as configured in `wrangler.jsonc`.</p>
-		<button id="button" type="button">Fetch a random UUID</button>
-		<output id="random" for="button"></output>
-		<script>
-			fetch('/message')
-				.then((resp) => resp.text())
-				.then((text) => {
-					const h1 = document.getElementById('heading');
-					h1.textContent = text;
-				});
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Nails Mastery — Curso Profesional de Nail Art</title>
 
-			const button = document.getElementById("button");
-			button.addEventListener("click", () => {
-				fetch('/random')
-					.then((resp) => resp.text())
-					.then((text) => {
-						const random = document.getElementById('random');
-						random.textContent = text;
-					});
-			});
-		</script>
-	</body>
+  <!-- SEO / Social -->
+  <meta name="description" content="Descubre cómo dominar las técnicas de Nail Art más rentables y cobrar hasta $60 USD por servicio." />
+  <meta property="og:title" content="Nails Mastery — Curso Profesional de Nail Art" />
+  <meta property="og:description" content="Descubre cómo dominar las técnicas de Nail Art más rentables y cobrar hasta $60 USD por servicio." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Nails Mastery — Curso Profesional de Nail Art" />
+  <meta name="twitter:description" content="Descubre cómo dominar las técnicas de Nail Art más rentables y cobrar hasta $60 USD por servicio." />
+
+  <!-- Meta Pixel -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '295882166540986');
+  fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=295882166540986&ev=PageView&noscript=1"
+  /></noscript>
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>💅</text></svg>" />
+
+  <!-- Fonts: preload + swap para zero-FOUT -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" /></noscript>
+
+  <!-- VTurb Preload / DNS Prefetch -->
+  <link rel="preload" href="https://scripts.converteai.net/ffc503a9-47bb-4962-9385-542b65270083/players/69eab085eae9df9d91a7861e/v4/player.js" as="script">
+  <link rel="preload" href="https://scripts.converteai.net/lib/js/smartplayer-wc/v4/smartplayer.js" as="script">
+  <link rel="preload" href="https://cdn.converteai.net/ffc503a9-47bb-4962-9385-542b65270083/69eaafe29473e88e64196165/main.m3u8" as="fetch">
+  <link rel="dns-prefetch" href="https://cdn.converteai.net">
+  <link rel="dns-prefetch" href="https://scripts.converteai.net">
+  <link rel="dns-prefetch" href="https://images.converteai.net">
+  <link rel="dns-prefetch" href="https://license.vturb.com">
+
+  <!-- Performance -->
+  <script>!function(i,n){i._plt=i._plt||(n&&n.timeOrigin?n.timeOrigin+n.now():Date.now())}(window,performance);</script>
+
+  <!-- Structured Data — Course -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": "Nails Mastery — Curso Profesional de Nail Art",
+    "description": "Domina las técnicas de Nail Art más rentables y aprende a cobrar hasta $60 USD por servicio.",
+    "provider": {
+      "@type": "Organization",
+      "name": "Nails Mastery"
+    },
+    "inLanguage": "es",
+    "educationalLevel": "Beginner",
+    "teaches": "Nail Art profesional, técnicas de mano alzada, difuminados, efectos 3D"
+  }
+  </script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <!-- Premium noise texture overlay -->
+  <div class="noise-overlay" aria-hidden="true"></div>
+
+  <!-- Navigation -->
+  <nav class="nav js-nav" aria-label="Navegación principal">
+    <div class="container nav-inner">
+      <span class="nav-brand">Nails Mastery - <em>Curso Profesional de Nail Art</em></span>
+    </div>
+  </nav>
+
+  <main>
+    <!-- =====================================================================
+         Hero Section
+         ===================================================================== -->
+    <section class="hero section" aria-labelledby="hero-title">
+      <div class="container">
+        <div class="hero-text">
+        <h1 id="hero-title" class="hero-title">
+          ¿Trabajas <span class="hl">todo el día</span> haciendo uñas y el dinero <span class="hl">no te rinde</span>?
+        </h1>
+        <p class="hero-subtitle">
+          Descubre cómo dominar las técnicas de Nail Art más rentables y cobrar hasta
+          $60 USD por servicio incluso si eres principiante y sientes que no tienes buen pulso.
+        </p>
+        </div>
+      </div>
+
+      <!-- Video Embed Container -->
+      <!-- VTurb SmartPlayer -->
+      <div class="container">
+        <div class="video-wrapper" id="video-wrapper">
+          <vturb-smartplayer id="vid-69eab085eae9df9d91a7861e" style="display: block; margin: 0 auto; width: 100%; max-width: 400px;"></vturb-smartplayer>
+          <script type="text/javascript">
+            var s=document.createElement("script");
+            s.src="https://scripts.converteai.net/ffc503a9-47bb-4962-9385-542b65270083/players/69eab085eae9df9d91a7861e/v4/player.js";
+            s.async=!0;
+            document.head.appendChild(s);
+          </script>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         Testimonials Section
+         ===================================================================== -->
+    <section class="testimonials section" aria-labelledby="testimonials-title">
+      <div class="container">
+        <header class="testimonials-header">
+          <h2 id="testimonials-title">Lo que dicen nuestras alumnas</h2>
+          <p>Historias reales de profesionales que transformaron su técnica.</p>
+        </header>
+
+        <div class="testimonials-grid">
+
+          <!-- Testimonio 1: Alejandra Sansom -->
+          <article class="testimonial-card">
+            <div class="testimonial-card-inner">
+              <div class="testimonial-avatar" aria-hidden="true">A</div>
+              <div class="testimonial-body">
+                <div class="testimonial-name-row">
+                  <span class="testimonial-name">Alumna - Alejandra Sansom</span>
+                  <span class="testimonial-date js-testimonial-date"></span>
+                </div>
+              </div>
+            </div>
+            <img
+              src="/images/testimonios/nail-art-picapiedra.webp"
+              alt="Trabajo de Nail Art de Alejandra — diseño picapiedra"
+              class="testimonial-photo"
+              loading="lazy"
+            />
+            <p class="testimonial-text">Increíble el nivel de detalle que logré. Antes me temblaba el pulso, y ahora mira esta obra de arte. El módulo de mano alzada cambió mi vida y la de mi negocio. ¡Cobra lo que vales, chicas! 💖💅</p>
+            <div class="testimonial-actions">
+              <button class="testimonial-action js-like-btn" aria-label="Me gusta">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                Me gusta
+              </button>
+              <span class="testimonial-action">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Responder
+              </span>
+            </div>
+          </article>
+
+          <!-- Testimonio 2: Natalia -->
+          <article class="testimonial-card">
+            <div class="testimonial-card-inner">
+              <div class="testimonial-avatar" aria-hidden="true">N</div>
+              <div class="testimonial-body">
+                <div class="testimonial-name-row">
+                  <span class="testimonial-name">Alumna - Natalia</span>
+                  <span class="testimonial-date js-testimonial-date"></span>
+                </div>
+              </div>
+            </div>
+            <img
+              src="/images/testimonios/nail-art-pop-final.webp"
+              alt="Trabajo de Nail Art de Natalia — diseño pop"
+              class="testimonial-photo"
+              loading="lazy"
+            />
+            <p class="testimonial-text">Es mi primer curso de mano alzada. Me encanta mucho dibujar y más en un espacio tan pequeño como lo es una uña. Muchas Gracias Profe, más que decir es un agradecimiento por estar al pendiente de nosotras y nuestro proceso y ser tan buena explicando. 🚀</p>
+            <div class="testimonial-actions">
+              <button class="testimonial-action js-like-btn" aria-label="Me gusta">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                Me gusta
+              </button>
+              <span class="testimonial-action">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Responder
+              </span>
+            </div>
+          </article>
+
+          <!-- Testimonio 3: Jany Gil -->
+          <article class="testimonial-card">
+            <div class="testimonial-card-inner">
+              <div class="testimonial-avatar" aria-hidden="true">J</div>
+              <div class="testimonial-body">
+                <div class="testimonial-name-row">
+                  <span class="testimonial-name">Alumna - Jany Gil</span>
+                  <span class="testimonial-date js-testimonial-date"></span>
+                </div>
+              </div>
+            </div>
+            <img
+              src="/images/testimonios/nail-art-difuminados.webp"
+              alt="Trabajo de Nail Art de Jany — diseño con difuminados"
+              class="testimonial-photo"
+              loading="lazy"
+            />
+            <p class="testimonial-text">Gracias por la dedicación y el plan de evaluación. Este curso ha sido un reto para mí, pero la meta es mejor. Les exhorto a todas a no darse por vencidas. ❤️🎨</p>
+            <div class="testimonial-actions">
+              <button class="testimonial-action js-like-btn" aria-label="Me gusta">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                Me gusta
+              </button>
+              <span class="testimonial-action">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Responder
+              </span>
+            </div>
+          </article>
+
+          <!-- Testimonio 4: Sofia Arangurem -->
+          <article class="testimonial-card">
+            <div class="testimonial-card-inner">
+              <div class="testimonial-avatar" aria-hidden="true">S</div>
+              <div class="testimonial-body">
+                <div class="testimonial-name-row">
+                  <span class="testimonial-name">Alumna - Sofia Arangurem</span>
+                  <span class="testimonial-date js-testimonial-date"></span>
+                </div>
+              </div>
+            </div>
+            <img
+              src="/images/testimonios/nail-art-3d-flores.webp"
+              alt="Trabajo de Nail Art de Sofia — diseño 3D con flores"
+              class="testimonial-photo"
+              loading="lazy"
+            />
+            <p class="testimonial-text">Estas clases era todo lo que necesitaba, el programa es muy completo y las enseñanzas son muy claras. 🩷🤗</p>
+            <div class="testimonial-actions">
+              <button class="testimonial-action js-like-btn" aria-label="Me gusta">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                Me gusta
+              </button>
+              <span class="testimonial-action">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Responder
+              </span>
+            </div>
+          </article>
+
+          <!-- Testimonio 5: Yamile Martinez -->
+          <article class="testimonial-card">
+            <div class="testimonial-card-inner">
+              <div class="testimonial-avatar" aria-hidden="true">Y</div>
+              <div class="testimonial-body">
+                <div class="testimonial-name-row">
+                  <span class="testimonial-name">Alumna - Yamile Martinez</span>
+                  <span class="testimonial-date js-testimonial-date"></span>
+                </div>
+              </div>
+            </div>
+            <img
+              src="/images/testimonios/nail-art-burbujas.webp"
+              alt="Trabajo de Nail Art de Yamile — diseño de burbujas"
+              class="testimonial-photo"
+              loading="lazy"
+            />
+            <p class="testimonial-text">Gracias Profe porque descubrí técnicas fáciles de hacer y sin miedo a cobrar por mi trabajo. ❤️🫶💅</p>
+            <div class="testimonial-actions">
+              <button class="testimonial-action js-like-btn" aria-label="Me gusta">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                Me gusta
+              </button>
+              <span class="testimonial-action">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Responder
+              </span>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Logo reveal -->
+    <div class="logo-reveal" aria-hidden="true">
+      <div class="container">
+        <img
+          src="/images/testimonios/LOGO - NAILS MASTERY 600-193- Webp.webp"
+          alt="Nails Mastery"
+          class="logo-reveal-img"
+          loading="lazy"
+          width="600"
+          height="193"
+        />
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         CTA Section — VTurb handles its own button
+         ===================================================================== -->
+    <section class="cta-section" id="cta-section" aria-labelledby="cta-title">
+      <div class="container cta-inner">
+        <h2 id="cta-title">¿Lista para transformar tu técnica?</h2>
+        <p>
+          Accede ahora al programa completo de Nail Art profesional y descubre
+          todo lo que puedes lograr con las técnicas adecuadas.
+        </p>
+        <div class="cta-vturb-embed">
+          <!-- VTurb coloca aquí su botón automáticamente -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <a href="#">Políticas de Privacidad</a> — &copy;2026 Programa Nails Mastery
+    </div>
+  </footer>
+
+  <!-- WhatsApp -->
+  <a href="https://wa.me/573182333675" class="whatsapp-btn" id="whatsapp-btn" target="_blank" rel="noopener" aria-label="Chatea por WhatsApp">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/>
+    </svg>
+    <span class="whatsapp-text">Chatea con nosotros</span>
+  </a>
+
+  <!-- JavaScript -->
+  <script src="/js/main.js"></script>
+
+</body>
 </html>

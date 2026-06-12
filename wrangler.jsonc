@@ -5,6 +5,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "creador-webs",
+        "account_id": "4cc942c0f801ed940cf67b70c04acebf",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-06-09",
 	"compatibility_flags": [
