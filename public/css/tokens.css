@@ -1,0 +1,139 @@
+/* ============================================
+   Nails Mastery — Design Tokens
+   Fuente de verdad única para todas las
+   variables de diseño del proyecto.
+   ============================================ */
+
+:root {
+  /* ==========================================================================
+     Palette — Acento dorado suave + neutros cálidos
+     ========================================================================== */
+
+  /* -- Accent -----------------------------------------------------------------
+     Dorado suave #C09537. Usado en ≤10% de cualquier superficie.
+     Su rareza es el punto.
+     -------------------------------------------------------------------------- */
+  --color-accent: #C09537;
+  --color-accent-deep: oklch(48% 0.09 0);
+  --color-accent-soft: oklch(78% 0.04 10 / 0.25);
+  --color-accent-blush: oklch(82% 0.035 10 / 0.3);
+
+  /* -- Neutral ----------------------------------------------------------------
+     Blancos rotos tintados hacia el acento, grises con calidez.
+     -------------------------------------------------------------------------- */
+  --color-bg: oklch(97% 0.006 0);
+  --color-bg-alt: oklch(94% 0.008 0);
+  --color-surface: oklch(99% 0.003 0);
+
+  /* -- Text -------------------------------------------------------------------
+     Casi-negro con personalidad → gris medio → muted.
+     Contraste AA: --color-ink-secondary ≥ 4.5:1 sobre --color-bg.
+     -------------------------------------------------------------------------- */
+  --color-ink: oklch(18% 0.004 0);
+  --color-ink-secondary: oklch(42% 0.006 0);
+  --color-ink-muted: oklch(60% 0.005 0);
+
+  /* -- Border -----------------------------------------------------------------
+     Sutiles, presentes solo cuando son necesarias.
+     -------------------------------------------------------------------------- */
+  --color-border: oklch(88% 0.006 0);
+  --color-border-light: oklch(93% 0.007 0);
+
+  /* -- Action Bar (dark testimonials context) ---------------------------------
+     Solo usados en las cards oscuras de testimonios.
+     -------------------------------------------------------------------------- */
+  --color-action-bar: oklch(96% 0.015 0 / 0.7);
+  --color-action-icon: oklch(55% 0.14 0 / 0.78);
+
+  /* ==========================================================================
+     Typography — Cormorant Garamond (display) + System UI (body)
+     ========================================================================== */
+
+  --font-display: 'Cormorant Garamond', 'Kepler Std', Georgia, 'Times New Roman', serif;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* -- Scale ------------------------------------------------------------------ */
+  --text-display: clamp(2.2rem, 4.5vw, 3.25rem);
+  --text-headline: clamp(1.25rem, 3vw, 1.75rem);
+  --text-body: 0.9375rem;
+  --text-sm: 0.8125rem;
+  --text-xs: 0.75rem;
+
+  /* -- Leading ---------------------------------------------------------------- */
+  --leading-tight: 1.15;
+  --leading-body: 1.5;
+
+  /* ==========================================================================
+     Spatial System — Ritmo editorial, espacio generoso
+     ========================================================================== */
+
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.25rem;
+  --space-xl: 1.5rem;
+  --space-2xl: 2rem;
+  --space-3xl: 2.5rem;
+  --space-4xl: 3.5rem;
+
+  --section-gap: clamp(2rem, 5vw, 3.5rem);
+  --content-max: 42rem;
+
+  /* ==========================================================================
+     Radius
+     ========================================================================== */
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* ==========================================================================
+     Shadows — Plano por defecto, sombras mínimas en cards
+     ========================================================================== */
+
+  /*
+     Excepción aprobada a Flat-By-Default:
+     --shadow-card se aplica a cards en reposo.
+     Es una sombra de solo 2px blur al 6% de opacidad — definición sutil.
+     Sombras más pronunciadas son solo para hover / interacción.
+  */
+  --shadow-card: 0 1px 2px oklch(0% 0 0 / 0.06);
+
+  /* ==========================================================================
+     Motion — Transiciones suaves, revelaciones al scroll
+     ========================================================================== */
+
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-entrance: 500ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   Mobile Override (≤ 768px)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  :root {
+    --text-display: clamp(1.6rem, 7vw, 2.5rem);
+  }
+}
+
+/* ==========================================================================
+   Reduced Motion — Respeta preferencias del sistema operativo
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}

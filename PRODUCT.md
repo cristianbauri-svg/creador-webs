@@ -32,6 +32,7 @@ Referencia aspiracional: Glossier / Ouai — moderno, fresco, femenino sin ser c
 ## Design Principles
 
 1. **Elegancia silenciosa**: El diseño respira. Espacio generoso, tipografía refinada, paleta contenida. El lujo no grita.
+   > **Nota de alineación (aprobado por el propietario):** el acento de marca es dorado suave `#C09537`, usado en ≤10 % de cualquier superficie. No contradice "el lujo no grita" — es un acento contenido y refinado. La tipografía incorpora pairing Cormorant Garamond (serif) + system-ui (sans-serif), coherente con "tipografía refinada". Ver DESIGN.md para las derogaciones documentadas de reglas previas.
 2. **La experta cercana**: Cada elemento comunica autoridad profesional sin distancia. Como un estudio boutique donde te reciben por tu nombre.
 3. **Mostrar, no decorar**: La belleza del nail design habla por sí misma. El diseño enmarca el contenido, no compite con él.
 4. **Calidez medida**: Lo acogedor viene de la luz, la textura y el tono de voz — no de colores "alegres" ni elementos decorativos.
