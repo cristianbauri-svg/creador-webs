@@ -1,32 +1,990 @@
 <!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Hello, World!</title>
-	</head>
-	<body>
-		<h1 id="heading"></h1>
-		<p>This page comes from a static asset stored at `public/index.html` as configured in `wrangler.jsonc`.</p>
-		<button id="button" type="button">Fetch a random UUID</button>
-		<output id="random" for="button"></output>
-		<script>
-			fetch('/message')
-				.then((resp) => resp.text())
-				.then((text) => {
-					const h1 = document.getElementById('heading');
-					h1.textContent = text;
-				});
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Cuadernillo Profesional de Práctica de Uñas | +800 Ejercicios</title>
+  <meta name="description" content="Descubre como miles de Manicuristas han transformado la frustración en éxito con nuestro cuadernillo de práctica. +800 ejercicios para lograr diseños únicos e impresionantes."/>
 
-			const button = document.getElementById("button");
-			button.addEventListener("click", () => {
-				fetch('/random')
-					.then((resp) => resp.text())
-					.then((text) => {
-						const random = document.getElementById('random');
-						random.textContent = text;
-					});
-			});
-		</script>
-	</body>
+  <!-- Preload critical fonts (above-the-fold only) -->
+  <link rel="preload" href="/fonts/nuFiD-vYSZviVYUb_rj3ij__anPXDTzYgA.woff2" as="font" type="font/woff2" crossorigin/>
+  <link rel="preload" href="/fonts/pxiEyp8kv8JHgFVrJJfecg.woff2" as="font" type="font/woff2" crossorigin/>
+  <link rel="preload" href="/fonts/pxiByp8kv8JHgFVrLEj6Z1xlFQ.woff2" as="font" type="font/woff2" crossorigin/>
+  <link rel="preload" href="/fonts/pxiByp8kv8JHgFVrLCz7Z1xlFQ.woff2" as="font" type="font/woff2" crossorigin/>
+
+  <!-- Preload above-the-fold Hero images only -->
+  <link rel="preload" as="image" href="/images/Plantilla_1.webp"/>
+  <link rel="preload" as="image" href="/images/Plantilla_2.webp"/>
+  <link rel="preload" as="image" href="/images/Plantilla_3.webp"/>
+  <link rel="preload" as="image" href="/images/Plantilla_4.webp"/>
+
+  <!-- Fonts CSS -->
+  <link rel="stylesheet" href="/fonts/fonts.css"/>
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="/css/style.css"/>
+
+  <!-- Favicons -->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+  <link rel="apple-touch-icon" href="/apple-icon.png"/>
+
+  <!-- JSON-LD Product Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "Cuadernillo Profesional de Práctica de Uñas",
+    "description": "Cuadernillo descargable e imprimible con más de 800 ejercicios prácticos para manicuristas. Incluye plantillas de práctica, diseños paso a paso y bonos exclusivos.",
+    "category": "Arte y Manualidades > Uñas",
+    "offers": {
+      "@type": "Offer",
+      "price": "7.99",
+      "priceCurrency": "USD",
+      "priceValidUntil": "2027-06-12",
+      "availability": "https://schema.org/InStock",
+      "url": "https://go.hotmart.com/S93199231Y"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "5",
+      "reviewCount": "3"
+    }
+  }
+  </script>
+
+  <!-- Meta Pixel Code — v2 con parámetros enriquecidos + fallback -->
+  <script>
+    (function() {
+      var PIXEL_ID = '490125487312746';
+
+      // Core pixel loader (estándar de Meta)
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window,document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+
+      fbq('init', PIXEL_ID);
+      fbq('track', 'PageView', {
+        content_name: 'LP Cuadernillo Practica Unas',
+        content_category: 'landing_page',
+        page_title: document.title || 'Cuadernillo Profesional de Practica de Unas'
+      });
+
+      // Fallback: si fbevents.js no cargó en 4s, reintentar una vez
+      setTimeout(function() {
+        if (typeof fbq === 'undefined' || !fbq.loaded) {
+          var s = document.createElement('script');
+          s.src = 'https://connect.facebook.net/en_US/fbevents.js';
+          s.async = true;
+          s.onload = function() {
+            if (typeof fbq !== 'undefined') {
+              fbq('init', PIXEL_ID);
+              fbq('track', 'PageView', {
+                content_name: 'LP Cuadernillo Practica Unas',
+                content_category: 'landing_page'
+              });
+            }
+          };
+          document.head.appendChild(s);
+        }
+      }, 4000);
+    })();
+  </script>
+  <noscript>
+    <img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=490125487312746&ev=PageView&noscript=1"
+    alt=""/>
+  </noscript>
+
+  <!-- JS deferred -->
+  <script src="/js/main.js" defer></script>
+</head>
+<body>
+
+<!-- ==================================================================
+     Sticky Header
+     ================================================================== -->
+<header class="site-header" id="siteHeader">
+  <div class="header-inner">
+    <span class="logo">Cuadernillo de Práctica</span>
+    <a href="#precio" class="header-cta">Descargar Ahora</a>
+  </div>
+</header>
+
+<main>
+<!-- ==================================================================
+     1. Hero Section
+     ================================================================== -->
+<section class="hero">
+  <div class="hero-content">
+    <h1>
+      <span class="text-accent">Nuevo cuadernillo profesional</span><br/>
+      descargable e imprimible con<br/>
+      <span class="highlight">+ De 800 ejercicios prácticos</span>,<br/>
+      para lograr <span class="hero-deco">Diseños únicos e increibles</span>
+    </h1>
+
+    <p class="hero-subtitle">
+      Descubre como miles de Manicuristas, han transformado la frustración en éxito,
+      desbloqueando su potencial, y creando diseños en uñas que nunca imaginaron hacer,
+      con nuestro cuadernillo de práctica en
+      <span class="text-accent font-semibold">menos de 20 días.</span>
+    </p>
+
+    <div class="hero-stat">
+      <p>
+        <span class="stat-number">8 de cada 10</span> emprendedoras se les dificulta
+        realizar diseños, por no saber dibujar, o sienten que su pulso les falla;
+        <span class="stat-badge">HOY TÚ TAMBIÉN PUEDES DEJAR DE SER PARTE DE ESA TRISTE ESTADÍSTICA.</span>
+      </p>
+    </div>
+
+    <!-- Hero Video -->
+    <div class="video-wrapper" data-video="hero">
+      <video
+        preload="none"
+        poster="/images/posters/hero.webp"
+        playsinline
+        controls
+      >
+        <source src="/videos/hero.webm" type="video/webm"/>
+        <source src="/videos/hero.mp4" type="video/mp4"/>
+      </video>
+      <div class="video-overlay" data-play-overlay>
+        <div class="play-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+            <polygon points="8,5 19,12 8,19"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-accent font-semibold mb-4" style="font-size:1.25rem">
+      ¿Tus diseños no salen definidos?
+    </p>
+
+    <div class="delivery-notice">
+      <p>
+        Cuando tengas tu cuadernillo en <span class="text-cta font-bold">formato PDF</span>,
+        simplemente dale vida con una rápida impresión.
+      </p>
+      <p class="text-muted mt-2">
+        El acceso te llegará vía <span class="email-highlight">E-mail 📧</span> para que puedas
+        generar una contraseña y activar tu cuenta para descargar el contenido.
+      </p>
+    </div>
+
+    <!-- Hero Image Gallery -->
+    <div class="hero-gallery">
+      <h3>Descárgalas tú también y conoce todas nuestras temáticas</h3>
+      <div class="gallery-grid">
+        <div class="gallery-item">
+          <img src="/images/Plantilla_1.webp" alt="Plantilla 1 — Aprende a dibujar a Sonic" width="300" height="400"/>
+        </div>
+        <div class="gallery-item">
+          <img src="/images/Plantilla_2.webp" alt="Plantilla 2 — Aprende a dibujar a Jigglypuff" width="300" height="400"/>
+        </div>
+        <div class="gallery-item">
+          <img src="/images/Plantilla_3.webp" alt="Plantilla 3 — Domina tu pulso con patrones" width="300" height="400"/>
+        </div>
+        <div class="gallery-item">
+          <img src="/images/Plantilla_4.webp" alt="Plantilla 4 — Practica con acrílico sin salirte de los bordes" width="300" height="400"/>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================
+     2. Benefits Section — ¿QUÉ VAS A LOGRAR?
+     ================================================================== -->
+<section class="section section-alt">
+  <div class="container text-center">
+    <h2 class="section-title text-accent">¿QUÉ VAS A LOGRAR?</h2>
+    <div class="section-divider"></div>
+  </div>
+
+  <div class="container">
+    <div class="benefit-list">
+      <div class="benefit-item">
+        <div class="benefit-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/>
+          </svg>
+        </div>
+        <p><span class="benefit-label">Hacer trazos definidos</span>, y alineados.</p>
+      </div>
+
+      <div class="benefit-item">
+        <div class="benefit-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/>
+          </svg>
+        </div>
+        <p><span class="benefit-label">Lograrás volverte una experta en diseños</span>, nuestro cuadernillo está diseñado para que practiques las veces que desees.</p>
+      </div>
+
+      <div class="benefit-item">
+        <div class="benefit-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/>
+          </svg>
+        </div>
+        <p><span class="benefit-label">Obtendrás mayor precisión y Control</span>, sobre tus diseños y detalles.</p>
+      </div>
+
+      <div class="benefit-item">
+        <div class="benefit-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/>
+          </svg>
+        </div>
+        <p><span class="benefit-label">Aumentarás tu creatividad</span>, para brindarles a tus clientes variedad y exclusividad.</p>
+      </div>
+
+      <div class="benefit-item">
+        <div class="benefit-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/>
+          </svg>
+        </div>
+        <p><span class="benefit-label">No volverás a sentir frustración</span>, al realizar algún diseño, nuestro cuadernillo te guiará en cada pincelada.</p>
+      </div>
+    </div>
+
+    <div class="text-center mt-8">
+      <p class="mb-4" style="font-size:1.25rem">
+        Adquiere tu cuadernillo hoy y <span class="text-accent font-bold">transforma tus habilidades</span> en un arte excepcional
+      </p>
+      <p class="text-cta font-bold mb-6" style="font-size:1.125rem">
+        No pierdas esta oportunidad ¡están por tiempo LIMITADO!
+      </p>
+      <a href="#precio" class="btn btn-primary">
+        Sí, deseo llevar mis habilidades a otro nivel
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================
+     3. Target Audience — ¿PARA QUIÉN SÍ ES?
+     ================================================================== -->
+<section class="section">
+  <div class="container text-center">
+    <h2 class="section-title text-accent">¿PARA QUIÉN SÍ ES, ESTE CUADERNILLO?</h2>
+    <div class="section-divider"></div>
+  </div>
+
+  <div class="container">
+    <div class="audience-list">
+      <div class="audience-item">
+        <div class="audience-bullet">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <p>Para quienes desean Potenciar sus habilidades y perfeccionar diferentes técnicas en el diseño y control de acrílico.</p>
+      </div>
+
+      <div class="audience-item">
+        <div class="audience-bullet">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <p>Es para ti que has pensado que la decoración no es lo tuyo, pero no quieres tirar la toalla.</p>
+      </div>
+
+      <div class="audience-item">
+        <div class="audience-bullet">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <p>Deseas practicar antes, para no correr el riesgo de maltratar tus uñas o la de tus clientas.</p>
+      </div>
+
+      <div class="audience-item">
+        <div class="audience-bullet">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <p>Despertar la creatividad y el talento al realizar diferentes diseños a mano alzada, y estar actualizada.</p>
+      </div>
+
+      <div class="audience-item">
+        <div class="audience-bullet">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <p>Quieres Recuperar tu confianza y seguridad a la hora de hacer cualquier tipo de diseños en tus clientas.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================
+     4. Practice Section — QUÉ VAS A PRACTICAR
+     ================================================================== -->
+<section class="section section-alt">
+  <div class="container text-center">
+    <h2 class="section-title text-accent">QUÉ VAS A PRACTICAR</h2>
+    <div class="section-divider"></div>
+  </div>
+
+  <div class="container">
+    <div class="practice-grid">
+      <div class="practice-item">
+        <div class="practice-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/>
+          </svg>
+        </div>
+        <p class="font-semibold">Equilibrio y control del acrílico</p>
+      </div>
+
+      <div class="practice-item">
+        <div class="practice-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/>
+          </svg>
+        </div>
+        <p class="font-semibold">Manejo de perlas de acrílico</p>
+      </div>
+
+      <div class="practice-item">
+        <div class="practice-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/>
+          </svg>
+        </div>
+        <p class="font-semibold">Diseños simples 3D</p>
+      </div>
+
+      <div class="practice-item">
+        <div class="practice-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15.707 21.293a1 1 0 0 1-1.414 0l-1.586-1.586a1 1 0 0 1 0-1.414l5.586-5.586a1 1 0 0 1 1.414 0l1.586 1.586a1 1 0 0 1 0 1.414z"/><path d="m18 13-1.375-6.874a1 1 0 0 0-.746-.776L3.235 2.028a1 1 0 0 0-1.207 1.207L5.35 15.879a1 1 0 0 0 .776.746L13 18"/><path d="m2.3 2.3 7.286 7.286"/><circle cx="11" cy="11" r="2"/>
+          </svg>
+        </div>
+        <p class="font-semibold">Líneas, curvas, caricaturas</p>
+      </div>
+
+      <div class="practice-item">
+        <div class="practice-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+          </svg>
+        </div>
+        <p class="font-semibold">Técnica reversa</p>
+      </div>
+
+      <div class="practice-item">
+        <div class="practice-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 21h8"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>
+          </svg>
+        </div>
+        <p class="font-semibold">Práctica de delineado</p>
+      </div>
+
+      <div class="practice-item">
+        <div class="practice-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+          </svg>
+        </div>
+        <p class="font-semibold">Diseños a mano alzada</p>
+      </div>
+    </div>
+
+    <div class="practice-banner">
+      <p style="font-size:1.25rem;line-height:1.625;margin-bottom:1rem;">
+        <span class="banner-number">Más de 600</span> ejercicios en formato
+        <span class="text-accent font-bold">PDF</span> con una amplia variedad de diseños
+        personalizados, organizados en pasos muy simples, que te ayudarán a
+        <span class="text-accent font-semibold">perfeccionar completamente</span> tus
+        habilidades con el pincel...
+        <span class="text-cta font-semibold">No importa si estás empezando o si ya tienes experiencia.</span>
+      </p>
+      <div style="background:rgba(16,17,26,0.8);border-radius:var(--radius-md);padding:1.5rem;border:1px solid rgba(201,169,110,0.3);">
+        <h3 class="text-accent uppercase">Despierta el potencial que hay en ti</h3>
+        <p style="font-size:1.125rem;">y obtén <span class="text-cta font-bold">hermosos resultados</span> con cada ejercicio.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================
+     5. Features Section
+     ================================================================== -->
+<section class="section">
+  <div class="container">
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon-wrap">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>
+          </svg>
+        </div>
+        <div class="feature-check">
+          <span class="text-cta">☑</span>
+          <h3>FÁCIL ACCESIBILIDAD</h3>
+        </div>
+        <p>Plataforma sencilla, todo está expuesto para encontrarlo con facilidad.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrap">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 4.1 12 6"/><path d="m5.1 8-2.9-.8"/><path d="m6 12-1.9 2"/><path d="M7.2 2.2 8 5.1"/><path d="M9.037 9.69a.498.498 0 0 1 .653-.653l11 4.5a.5.5 0 0 1-.074.949l-4.349 1.041a1 1 0 0 0-.74.739l-1.04 4.35a.5.5 0 0 1-.95.074z"/>
+          </svg>
+        </div>
+        <div class="feature-check">
+          <span class="text-cta">☑</span>
+          <h3>INTUITIVA</h3>
+        </div>
+        <p>Diseñado para que lo puedan utilizar a cualquier edad. Desde los más jóvenes hasta los más ancianos.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrap">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 16c5 0 7-8 12-8a4 4 0 0 1 0 8c-5 0-7-8-12-8a4 4 0 1 0 0 8"/>
+          </svg>
+        </div>
+        <div class="feature-check">
+          <span class="text-cta">☑</span>
+          <h3>ACCESO ILIMITADO</h3>
+        </div>
+        <p>Sin restricciones de acceso para tener el cuadernillo y las actualizaciones de por vida.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================
+     6. Bonuses Section
+     ================================================================== -->
+<section class="section bg-gradient-section">
+  <div class="container">
+    <div class="bonus-header">
+      <div class="bonus-tag">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>
+        </svg>
+        BONOS GRATIS
+      </div>
+      <h2>DESCARGA HOY NUESTRO CUADERNILLO Y OBTÉN <span class="text-accent">GRATIS</span> ESTOS BONOS</h2>
+    </div>
+
+    <div class="bonus-intro">
+      <p><span class="text-cta font-bold">NOS IMPORTA TU APRENDIZAJE!!</span><br/>
+      ESTOS BONOS FUERON DISEÑADOS EXCLUSIVAMENTE PARA <span class="text-accent font-semibold">POTENCIAR TUS HABILIDADES</span> Y ESTÉS EN LA CAPACIDAD DE REALIZAR CUALQUIER DISEÑO.</p>
+      <p class="text-muted mt-2">Y además tendrás la oportunidad de ingresar a Canva Pro para que edites tus tarjetas de negocio.</p>
+    </div>
+
+    <div class="bonus-grid">
+      <!-- Bono 1 -->
+      <div class="bonus-card">
+        <div class="bonus-img-wrap">
+          <img src="/images/Bono_1_Nails_art.webp" alt="Plantillas para diseños Nails art" width="200" height="267" loading="lazy" decoding="async"/>
+        </div>
+        <div class="bonus-body">
+          <span class="bonus-num">BONO #1</span>
+          <h3 class="bonus-title">Plantillas para diseños Nails art</h3>
+          <p class="bonus-desc">Con estas plantillas podrás despertar la creatividad que llevas dentro. Diseños temáticos de Disney y más para practicar paso a paso.</p>
+          <div class="bonus-price">
+            <span class="price-old">Valorado en $18.99 USD</span>
+            <span class="price-free">GRATIS</span>
+          </div>
+        </div>
+      </div>
+      <!-- Bono 2 -->
+      <div class="bonus-card">
+        <div class="bonus-img-wrap">
+          <img src="/images/Bono_2_Sticker_unas.webp" alt="Sticker para uñas" width="200" height="267" loading="lazy" decoding="async"/>
+        </div>
+        <div class="bonus-body">
+          <span class="bonus-num">BONO #2</span>
+          <h3 class="bonus-title">Sticker para uñas</h3>
+          <p class="bonus-desc">Más de 140 stickers para uñas listos para usar. Te enseñamos cómo crearlos en nuestra comunidad privada.</p>
+          <div class="bonus-price">
+            <span class="price-old">Valorado en $16.99 USD</span>
+            <span class="price-free">GRATIS</span>
+          </div>
+        </div>
+      </div>
+      <!-- Bono 3 -->
+      <div class="bonus-card">
+        <div class="bonus-img-wrap">
+          <img src="/images/Bono_3_Halloween.webp" alt="Plantillas para diseños de Halloween" width="200" height="267" loading="lazy" decoding="async"/>
+        </div>
+        <div class="bonus-body">
+          <span class="bonus-num">BONO #3</span>
+          <h3 class="bonus-title">Plantillas para diseños de Halloween</h3>
+          <p class="bonus-desc">Edición especial con plantillas extras de Halloween para sorprender a tus clientes con diseños únicos y temáticos.</p>
+          <div class="bonus-price">
+            <span class="price-old">Valorado en $11.99 USD</span>
+            <span class="price-free">GRATIS</span>
+          </div>
+        </div>
+      </div>
+      <!-- Bono 4 -->
+      <div class="bonus-card">
+        <div class="bonus-img-wrap">
+          <img src="/images/Bono_4_Animal_print.webp" alt="Plantillas de diseños animal Print y pedrería" width="200" height="267" loading="lazy" decoding="async"/>
+        </div>
+        <div class="bonus-body">
+          <span class="bonus-num">BONO #4</span>
+          <h3 class="bonus-title">Plantillas de diseños animal Print y pedrería</h3>
+          <p class="bonus-desc">Domina las técnicas más solicitadas: animal print y pedrería. Plantillas paso a paso para lograr acabados profesionales.</p>
+          <div class="bonus-price">
+            <span class="price-old">Valorado en $15.00 USD</span>
+            <span class="price-free">GRATIS</span>
+          </div>
+        </div>
+      </div>
+      <!-- Bono 5 -->
+      <div class="bonus-card">
+        <div class="bonus-img-wrap">
+          <img src="/images/Bono_5_Navidad.webp" alt="Plantillas para diseños de Navidad" width="200" height="267" loading="lazy" decoding="async"/>
+        </div>
+        <div class="bonus-body">
+          <span class="bonus-num">BONO #5</span>
+          <h3 class="bonus-title">Plantillas para diseños de Navidad</h3>
+          <p class="bonus-desc">Colección completa de diseños navideños para que tu agenda se llene en la temporada más importante del año.</p>
+          <div class="bonus-price">
+            <span class="price-old">Valorado en $11.99 USD</span>
+            <span class="price-free">GRATIS</span>
+          </div>
+        </div>
+      </div>
+      <!-- Bono 6 -->
+      <div class="bonus-card">
+        <div class="bonus-img-wrap">
+          <img src="/images/Bono_6_Diario.webp" alt="Diario de una manicurista" width="200" height="267" loading="lazy" decoding="async"/>
+        </div>
+        <div class="bonus-body">
+          <span class="bonus-num">BONO #6</span>
+          <h3 class="bonus-title">Diario de una manicurista</h3>
+          <p class="bonus-desc">Tu acompañante diario para registrar tu progreso, ideas y crecimiento como profesional del nail art.</p>
+          <div class="bonus-price">
+            <span class="price-old">Valorado en $18.99 USD</span>
+            <span class="price-free">GRATIS</span>
+          </div>
+        </div>
+      </div>
+      <!-- Bono 7 -->
+      <div class="bonus-card">
+        <div class="bonus-img-wrap">
+          <img src="/images/Bono_7_Salon.webp" alt="Plantilla editable para la presentación de tu salón" width="200" height="267" loading="lazy" decoding="async"/>
+        </div>
+        <div class="bonus-body">
+          <span class="bonus-num">BONO #7</span>
+          <h3 class="bonus-title">Plantilla editable para la presentación de tu salón</h3>
+          <p class="bonus-desc">Tarjeta de negocio editable con tu perfil de redes y datos de contacto. Porque diseñar nunca había sido tan fácil.</p>
+          <div class="bonus-price">
+            <span class="price-old">Valorado en $9.00 USD</span>
+            <span class="price-free">GRATIS</span>
+          </div>
+        </div>
+      </div>
+      <!-- Bono 8 -->
+      <div class="bonus-card">
+        <div class="bonus-img-wrap">
+          <img src="/images/Bono_8_Redes.webp" alt="Plantillas editables para historias en redes sociales" width="200" height="267" loading="lazy" decoding="async"/>
+        </div>
+        <div class="bonus-body">
+          <span class="bonus-num">BONO #8</span>
+          <h3 class="bonus-title">Plantillas editables para historias en redes sociales</h3>
+          <p class="bonus-desc">+70 plantillas editables para Instagram y redes. Te ayudará a crecer en redes y atraer más clientas a tu salón.</p>
+          <div class="bonus-price">
+            <span class="price-old">Valorado en $12.99 USD</span>
+            <span class="price-free">GRATIS</span>
+          </div>
+        </div>
+      </div>
+      <!-- Bono 9 -->
+      <div class="bonus-card">
+        <div class="bonus-img-wrap">
+          <img src="/images/Bono_9_Ebook.webp" alt="Ebook Monetiza tu talento" width="200" height="267" loading="lazy" decoding="async"/>
+        </div>
+        <div class="bonus-body">
+          <span class="bonus-num">BONO #9</span>
+          <h3 class="bonus-title">Ebook Monetiza tu talento</h3>
+          <p class="bonus-desc">Guía para generar ingresos con tu página de Facebook como manicurista. Convierte tu pasión en un negocio rentable.</p>
+          <div class="bonus-price">
+            <span class="price-old">Valorado en $13.99 USD</span>
+            <span class="price-free">GRATIS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bonus-more">
+      <h3 style="font-size:1.5rem;margin-bottom:0.5rem;">¡Pero espera aún hay más para ti!</h3>
+      <p class="text-muted" style="font-size:1.125rem;">Tendrás más bonos gratis si descargas el cuadernillo <span class="text-cta font-bold">AHORA!</span></p>
+    </div>
+
+    <div class="text-center mt-8">
+      <h3 class="text-accent mb-4">¡Conviértete en una experta en el arte de las uñas y da rienda suelta a tu creatividad!</h3>
+      <p class="uppercase tracking-wide font-semibold" style="font-size:1.25rem;">COMIENZA HOY MISMO A CREAR DISEÑOS INOLVIDABLES.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================
+     7. Pricing Section
+     ================================================================== -->
+<section id="precio" class="section">
+  <div class="container text-center">
+    <div class="discount-badge">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
+      </svg>
+      40% de Descuento
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
+      </svg>
+    </div>
+
+    <div class="pricing-card">
+      <div class="pricing-header">
+        <h2>UN ÚNICO PAGO PARA TODA LA VIDA</h2>
+        <p>+ acceso a futuras actualizaciones sin costo adicional</p>
+      </div>
+
+      <div class="pricing-body">
+        <p class="text-cta font-bold mb-4" style="font-size:1.125rem;">
+          ⚠ APROVECHA ESTA OFERTA HOY CON EL "40%" de Descuento
+        </p>
+        <p class="text-danger mb-4" style="font-size:0.875rem;">
+          ⚠️ Pronto se actualizará el precio
+        </p>
+
+        <div style="background:rgba(16,17,26,0.5);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:1.5rem;margin-bottom:2rem;">
+          <p class="mb-2" style="font-size:1.125rem;">
+            ¡Transforma tu pasión en perfección obtén <span class="text-accent font-bold">150 plantillas</span>:
+          </p>
+          <p class="text-muted">
+            <span class="text-cta font-semibold">80 plantillas imprimibles</span> de práctica y
+            <span class="text-cta font-semibold">70 plantillas editables</span> para destacar en redes sociales!
+          </p>
+        </div>
+
+        <p class="text-accent uppercase font-bold mb-6">No postergues más tu aprendizaje</p>
+
+        <p class="text-muted mb-2" style="font-size:1.125rem;">OBTÉN TODO ESTO POR SOLO:</p>
+        <div class="price-row">
+          <span class="price-old">USD $25.00</span>
+          <span class="price-current">USD $7.99</span>
+        </div>
+        <p class="text-accent font-semibold mt-2" style="font-size:1.125rem;">🔥 ¡OFERTA ESPECIAL POR TIEMPO LIMITADO!</p>
+
+        <!-- Countdown -->
+        <p class="font-semibold uppercase mt-6 mb-4">Oferta válida hasta que el contador termine</p>
+        <div class="countdown" id="countdown">
+          <div class="countdown-block">
+            <div class="countdown-num" id="countdown-days">00</div>
+            <div class="countdown-label">Días</div>
+          </div>
+          <div class="countdown-block">
+            <div class="countdown-num" id="countdown-hours">23</div>
+            <div class="countdown-label">Horas</div>
+          </div>
+          <div class="countdown-block">
+            <div class="countdown-num" id="countdown-mins">59</div>
+            <div class="countdown-label">Minutos</div>
+          </div>
+          <div class="countdown-block">
+            <div class="countdown-num" id="countdown-secs">59</div>
+            <div class="countdown-label">Segundos</div>
+          </div>
+        </div>
+        <noscript>
+          <p class="text-cta font-bold">¡Oferta por tiempo limitado!</p>
+        </noscript>
+
+        <!-- Extra bonuses -->
+        <div class="extra-bonuses">
+          <h3>Si accedes antes de que el reloj llegue a cero te llevas <span class="text-cta">2 bonos adicionales</span> 🎁</h3>
+          <div class="extra-bonus-item">
+            <p><span class="text-accent font-bold">👉 Marketing Digital para Negocios de Uñas:</span> Lleva tu negocio de uñas al siguiente nivel con marketing digital! Descubre cómo atraer más clientes, llenar tu agenda y destacar en redes sociales con estrategias efectivas y fáciles de implementar.</p>
+            <p class="text-muted mt-2" style="font-size:0.875rem;">VALORADO EN $29.99 DÓLARES. <span class="text-cta font-bold">(GRATIS POR TU COMPRA HOY)</span></p>
+          </div>
+          <div class="extra-bonus-item">
+            <p><span class="text-accent font-bold">👉 Acceso a Canva PRO:</span> Te daremos acceso a Canva PRO para que saques el máximo provecho a todas las plantillas editables para tus redes sociales.</p>
+            <p class="text-muted mt-2" style="font-size:0.875rem;">VALORADO EN $55 anuales. <span class="text-cta font-bold">(GRATIS POR TU COMPRA HOY)</span></p>
+          </div>
+        </div>
+
+        <!-- Stock -->
+        <div class="stock-alert">
+          <p style="font-size:1.125rem;">
+            <span class="stock-number">12</span> Cuadernillos disponibles en este momento
+          </p>
+          <p class="stock-discount mt-2">40% de Descuento</p>
+        </div>
+
+        <!-- CTA Button -->
+        <a href="https://go.hotmart.com/S93199231Y?ap=86a7&amp;hideBillet=1" target="_blank" rel="noopener noreferrer" class="btn btn-cta btn-lg animate-pulse">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>
+          </svg>
+          DESCARGAR AHORA
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>
+          </svg>
+        </a>
+
+        <!-- CTA hint -->
+        <p class="text-center mt-4" style="font-size:0.9375rem;color:var(--color-text-muted);animation:pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;">
+          👆 Click al botón <span style="color:var(--color-cta);font-weight:700;">¡Descarga Ahora!</span> para conocer el precio en tu moneda local 👆
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================
+     8. Testimonials Section
+     ================================================================== -->
+<section class="section section-alt">
+  <div class="container text-center">
+    <h2 class="section-title">Ellas ya imprimieron su cuadernillo de práctica, <span class="text-accent">Solo faltas tú</span></h2>
+  </div>
+
+  <div class="container">
+    <!-- Testimonial Video -->
+    <div class="video-wrapper video-portrait" style="margin:0 auto 3rem;" data-video="testimonio">
+      <video
+        preload="none"
+        poster="/images/posters/testimonio.webp"
+        playsinline
+        controls
+      >
+        <source src="/videos/testimonio.webm" type="video/webm"/>
+        <source src="/videos/testimonio.mp4" type="video/mp4"/>
+      </video>
+      <div class="video-overlay" data-play-overlay>
+        <div class="play-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+            <polygon points="8,5 19,12 8,19"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="testimonial-avatar">M</div>
+        <p class="testimonial-author">María García</p>
+        <p class="testimonial-location">México</p>
+        <div class="testimonial-stars">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+        </div>
+        <p class="text-muted">Increíble cuadernillo, mis diseños han mejorado muchísimo en solo 2 semanas!</p>
+      </div>
+
+      <div class="testimonial-card">
+        <div class="testimonial-avatar">A</div>
+        <p class="testimonial-author">Ana López</p>
+        <p class="testimonial-location">Colombia</p>
+        <div class="testimonial-stars">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+        </div>
+        <p class="text-muted">Nunca pensé que podría hacer diseños tan bonitos. El cuadernillo me ha ayudado a ganar confianza y mis clientas están felices con los resultados.</p>
+      </div>
+
+      <div class="testimonial-card">
+        <div class="testimonial-avatar">C</div>
+        <p class="testimonial-author">Carmen Rodríguez</p>
+        <p class="testimonial-location">España</p>
+        <div class="testimonial-stars">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>
+        </div>
+        <p class="text-muted">La mejor inversión que he hecho para mi negocio de uñas. Los bonos son increíbles, especialmente las plantillas para redes sociales.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================
+     9. Final CTA + Video Tutorial + Guarantees
+     ================================================================== -->
+<section class="section">
+  <div class="container text-center">
+    <div style="background:linear-gradient(to right,rgba(199,139,165,0.1),rgba(16,17,26,0.8),rgba(199,139,165,0.1));border:1px solid rgba(199,139,165,0.3);border-radius:var(--radius-xl);padding:2rem;margin-bottom:2rem;">
+      <p style="font-size:1.25rem;line-height:1.625;margin-bottom:1rem;">
+        Sabemos lo importante que es para ti aprender esta habilidad, por eso decidimos dar un <span class="text-cta font-bold" style="font-size:1.5rem;">40% de Descuento</span> solo para las primeras 15 personas.
+      </p>
+      <p class="text-accent font-semibold" style="font-size:1.125rem;">Date la oportunidad de ser la mejor en cada servicio y la más solicitada.</p>
+    </div>
+
+    <!-- Tutorial Video -->
+    <div class="video-wrapper video-portrait" style="margin:0 auto 2rem;" data-video="tutorial">
+      <video
+        preload="none"
+        poster="/images/posters/tutorial.webp"
+        playsinline
+        controls
+      >
+        <source src="/videos/tutorial.webm" type="video/webm"/>
+        <source src="/videos/tutorial.mp4" type="video/mp4"/>
+      </video>
+      <div class="video-overlay" data-play-overlay>
+        <div class="play-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+            <polygon points="8,5 19,12 8,19"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-muted mt-2" style="font-size:0.875rem;">
+      Click en el video para que sepas <span class="text-accent font-semibold">cómo descargar tus plantillas</span> desde tu celular.<br/>
+      También podrás descargar desde el computador
+    </p>
+
+    <!-- Guarantees -->
+    <div class="guarantees-grid">
+      <div class="guarantee-item">
+        <div class="guarantee-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+          </svg>
+        </div>
+        <span class="guarantee-label">Pago Seguro</span>
+      </div>
+      <div class="guarantee-item">
+        <div class="guarantee-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/>
+          </svg>
+        </div>
+        <span class="guarantee-label">Acceso Inmediato</span>
+      </div>
+      <div class="guarantee-item">
+        <div class="guarantee-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>
+          </svg>
+        </div>
+        <span class="guarantee-label">Bonos Gratis</span>
+      </div>
+      <div class="guarantee-item">
+        <div class="guarantee-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>
+          </svg>
+        </div>
+        <span class="guarantee-label">Descarga Digital</span>
+      </div>
+    </div>
+
+    <p class="text-accent font-bold mt-8 mb-6" style="font-size:1.5rem;">¡Descarga Ahora!</p>
+    <a href="https://go.hotmart.com/S93199231Y?ap=86a7&amp;hideBillet=1" target="_blank" rel="noopener noreferrer" class="btn btn-cta btn-lg">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>
+      </svg>
+      DESCARGAR AHORA
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>
+      </svg>
+    </a>
+
+    <!-- Métodos de pago -->
+    <div style="display:flex;justify-content:center;margin-top:1.5rem;">
+      <img
+        src="/images/iconos_de_pago.webp"
+        alt="Métodos de pago aceptados"
+        width="220"
+        height="36"
+        loading="lazy"
+        decoding="async"
+        style="max-width:220px;height:auto;opacity:0.8;"
+      />
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================
+     10. FAQ Section (NUEVA)
+     ================================================================== -->
+<section class="section section-alt">
+  <div class="container text-center">
+    <h2 class="section-title">Preguntas Frecuentes</h2>
+    <div class="section-divider"></div>
+  </div>
+
+  <div class="container">
+    <div class="faq-list">
+      <details class="faq-item">
+        <summary>¿Cómo recibiré el cuadernillo después de la compra?</summary>
+        <div class="faq-answer">
+          <p>Inmediatamente después de realizar el pago a través de Hotmart, recibirás un correo electrónico con las instrucciones para crear tu cuenta y acceder al área de miembros donde podrás descargar el cuadernillo en formato PDF junto con todos los bonos.</p>
+        </div>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿Puedo imprimir el cuadernillo?</summary>
+        <div class="faq-answer">
+          <p>¡Sí! El cuadernillo está diseñado para ser imprimible. Está en formato PDF de alta calidad para que puedas imprimirlo en casa o en cualquier papelería. Te recomendamos usar papel de buena calidad para practicar con acrílico.</p>
+        </div>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿Necesito experiencia previa para usar el cuadernillo?</summary>
+        <div class="faq-answer">
+          <p>No. El cuadernillo está diseñado para todos los niveles. Incluye ejercicios desde nivel principiante hasta avanzado, organizados en pasos simples. Tanto si estás empezando como si ya tienes experiencia, encontrarás ejercicios adecuados para tu nivel.</p>
+        </div>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿Recibiré actualizaciones en el futuro?</summary>
+        <div class="faq-answer">
+          <p>Sí. Al realizar un único pago obtienes acceso de por vida, lo que incluye todas las actualizaciones futuras y nuevos ejercicios que agreguemos al cuadernillo sin costo adicional.</p>
+        </div>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿Qué métodos de pago aceptan?</summary>
+        <div class="faq-answer">
+          <p>El pago se procesa a través de Hotmart, una plataforma segura que acepta tarjetas de crédito, débito, PayPal y otros métodos de pago locales según tu país.</p>
+        </div>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿Los bonos vienen incluidos con el cuadernillo?</summary>
+        <div class="faq-answer">
+          <p>Sí, los 9 bonos son completamente gratis con tu compra. Además, si compras durante la oferta actual, recibirás 2 bonos adicionales: Marketing Digital para Negocios de Uñas y Acceso a Canva PRO.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ==================================================================
+     Footer
+     ================================================================== -->
+<footer class="site-footer">
+  <div class="footer-links">
+    <a href="#">Términos y Condiciones</a>
+    <a href="#">Política de Privacidad</a>
+    <a href="#">Contacto</a>
+  </div>
+  <p class="copyright">&copy; 2026 Cuadernillo de Práctica para Manicuristas. Todos los derechos reservados.</p>
+</footer>
+
+</body>
 </html>
