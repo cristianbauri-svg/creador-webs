@@ -1,0 +1,8 @@
+{
+  "url": "https://21st.dev/community/components/efferd/gradient-dots/default",
+  "prompt": "Extrae el código HTML y CSS completo del componente Gradient Dots. Dame el CSS puro y el HTML del componente.",
+  "etag": "\"q3p3bqzpli4yna\"",
+  "last_modified": "",
+  "content": "El contenido de la página que me proporcionaste **no incluye el código fuente completo** del componente Gradient Dots. Solo muestra:\r\n\r\n1. **Documentación** de uso y dependencias.\r\n2. Un **fragmento de ejemplo** de cómo se importa y usa el componente:\r\n\r\n```tsx\r\nimport { GradientDots } from \"@/components/ui/gradient-dots\";\r\n\r\nexport default function DefaultDemo() {\r\n    return (\r\n        <main className=\"relative flex size-full min-h-screen w-full items-center justify-center\">\r\n            <GradientDots duration={20} />\r\n            <h1 className=\"text-6xl text-center font-extrabold z-10\">Gradient Dots</h1>\r\n        </main>\r\n    );\r\n}\r\n```\r\n\r\n3. La dependencia es **framer-motion**.\r\n4. El comando de instalación: `npx shadcn@latest add https://21st.dev/r/sshahaider/gradient-dots`\r\n\r\nLa página tiene enlaces \"View code\" y \"Copy code\", pero **el contenido de esos enlaces no fue extraído** en el texto que compartiste. Para obtener el HTML y CSS completos del componente, necesitarías:\r\n\r\n- Hacer clic en **\"View code\"** en la página real de 21st.dev.\r\n- O ejecutar el comando de instalación para descargar el componente localmente y leer el archivo `gradient-dots.tsx` resultante.\r\n\r\nCon la información disponible, no puedo proporcionar el código completo del componente.",
+  "fetched_at": 1782171647
+}

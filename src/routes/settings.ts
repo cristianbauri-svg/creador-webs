@@ -1,0 +1,71 @@
+// API de configuraciones del sitio
+// Almacena pares key-value en KV (STRATON_KV)
+import { json, error } from "../utils/response";
+import type { Env } from "../index";
+
+/**
+ * GET /api/settings — devuelve todas las configuraciones como JSON
+ * PUT /api/settings — actualiza configuraciones (body: { key: value, ... })
+ */
+export async function handleSettings(request: Request, env: Env, _pathname: string): Promise<Response> {
+  const method = request.method;
+
+  if (method === "GET") return getSettings(env);
+  if (method === "PUT") return updateSettings(request, env);
+
+  return error("Method not allowed", 405);
+}
+
+async function getSettings(env: Env): Promise<Response> {
+  try {
+    // Lista de claves de configuración conocidas
+    const knownKeys = [
+      "site_name",
+      "site_description",
+      "contact_email",
+      "contact_phone",
+      "contact_address",
+      "social_instagram",
+      "social_facebook",
+      "social_tiktok",
+      "whatsapp_number",
+      "business_hours",
+      "hero_title",
+      "hero_subtitle",
+    ];
+
+    const settings: Record<string, string> = {};
+    for (const key of knownKeys) {
+      const value = await env.STRATON_KV.get(key);
+      if (value !== null) {
+        settings[key] = value;
+      }
+    }
+
+    return json(settings);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "KV error";
+    return error(message, 500);
+  }
+}
+
+async function updateSettings(request: Request, env: Env): Promise<Response> {
+  try {
+    const body = await request.json() as Record<string, unknown>;
+
+    const ops: Promise<void>[] = [];
+    for (const [key, value] of Object.entries(body)) {
+      if (typeof value === "string") {
+        ops.push(env.STRATON_KV.put(key, value));
+      } else if (value !== null && value !== undefined) {
+        ops.push(env.STRATON_KV.put(key, JSON.stringify(value)));
+      }
+    }
+
+    await Promise.all(ops);
+    return json({ success: true, updated: Object.keys(body).length });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "KV error";
+    return error(message, 500);
+  }
+}

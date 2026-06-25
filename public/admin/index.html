@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <title>Straton Audio — Administración</title>
+  <link rel="stylesheet" href="/admin/css/admin.css" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔊</text></svg>" />
+</head>
+<body>
+
+  <!-- ============================================= -->
+  <!-- Login Screen (placeholder — Cloudflare Access) -->
+  <!-- ============================================= -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-logo">
+        <span class="login-logo-icon">SA</span>
+      </div>
+      <h1 class="login-title">Straton Audio</h1>
+      <p class="login-subtitle">Panel de administración</p>
+      <p class="login-info">
+        La autenticación está protegida por Cloudflare Access.
+        <br />Accede con tu cuenta corporativa.
+      </p>
+      <a href="#" class="login-btn" id="loginBtn">Iniciar sesión con Cloudflare Access</a>
+      <p class="login-footer">
+        Si no puedes acceder, contacta al administrador del sistema.
+      </p>
+    </div>
+  </div>
+
+  <!-- ============================================= -->
+  <!-- Dashboard Layout -->
+  <!-- ============================================= -->
+  <div class="dashboard" id="dashboard" style="display:none;">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-logo">SA</span>
+        <div class="sidebar-brand-text">
+          <strong>Straton Audio</strong>
+          <small>Admin</small>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Navegación del panel">
+        <span class="sidebar-label">Módulos</span>
+
+        <a href="#" class="sidebar-link active" data-module="dashboard">
+          <span class="sidebar-icon">📊</span>
+          <span>Inicio</span>
+        </a>
+
+        <a href="#" class="sidebar-link" data-module="products">
+          <span class="sidebar-icon">📦</span>
+          <span>Productos</span>
+        </a>
+
+        <a href="#" class="sidebar-link" data-module="services">
+          <span class="sidebar-icon">🔧</span>
+          <span>Servicios</span>
+        </a>
+
+        <a href="#" class="sidebar-link" data-module="packages">
+          <span class="sidebar-icon">📋</span>
+          <span>Paquetes</span>
+        </a>
+
+        <a href="#" class="sidebar-link" data-module="events">
+          <span class="sidebar-icon">📸</span>
+          <span>Eventos</span>
+        </a>
+
+        <a href="#" class="sidebar-link" data-module="testimonials">
+          <span class="sidebar-icon">💬</span>
+          <span>Testimonios</span>
+        </a>
+
+        <a href="#" class="sidebar-link" data-module="pages">
+          <span class="sidebar-icon">📄</span>
+          <span>Páginas</span>
+        </a>
+
+        <a href="#" class="sidebar-link" data-module="quotations">
+          <span class="sidebar-icon">📨</span>
+          <span>Cotizaciones</span>
+        </a>
+
+        <a href="#" class="sidebar-link" data-module="settings">
+          <span class="sidebar-icon">⚙️</span>
+          <span>Configuración</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="#" class="sidebar-link sidebar-logout" id="logoutBtn">
+          <span class="sidebar-icon">🚪</span>
+          <span>Cerrar sesión</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir/cerrar menú lateral">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <h2 class="topbar-title" id="moduleTitle">Inicio</h2>
+        </div>
+        <div class="topbar-right">
+          <a href="/" class="btn-admin btn-ghost-admin" target="_blank" rel="noopener">Ver sitio</a>
+        </div>
+      </header>
+
+      <div class="module-content" id="moduleContent">
+        <!-- El contenido se carga dinámicamente aquí -->
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/js/admin.js"></script>
+</body>
+</html>

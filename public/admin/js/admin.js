@@ -1,0 +1,339 @@
+/**
+ * Straton Audio — Dashboard Admin
+ * Maneja navegación entre módulos, sidebar, login placeholder.
+ */
+
+(function () {
+  'use strict';
+
+  const $$ = (sel, ctx) => [...(ctx || document).querySelectorAll(sel)];
+  const $ = (sel, ctx) => (ctx || document).querySelector(sel);
+
+  // =========================================================
+  // Estado
+  // =========================================================
+  const modules = {
+    dashboard: { title: 'Inicio', icon: '📊' },
+    products: { title: 'Productos', icon: '📦' },
+    services: { title: 'Servicios', icon: '🔧' },
+    packages: { title: 'Paquetes', icon: '📋' },
+    events: { title: 'Eventos', icon: '📸' },
+    testimonials: { title: 'Testimonios', icon: '💬' },
+    pages: { title: 'Páginas', icon: '📄' },
+    quotations: { title: 'Cotizaciones', icon: '📨' },
+    settings: { title: 'Configuración', icon: '⚙️' },
+  };
+
+  let currentModule = 'dashboard';
+
+  // =========================================================
+  // Login (placeholder — Cloudflare Access)
+  // =========================================================
+  function initLogin() {
+    // En producción, Cloudflare Access intercepta /admin*
+    // y redirige al login corporativo. Este placeholder
+    // simula el flujo para desarrollo local.
+    const loginBtn = $('#loginBtn');
+
+    // Verificar si ya hay sesión simulada
+    const token = sessionStorage.getItem('sa_admin_token');
+    if (token === 'authenticated') {
+      showDashboard();
+      return;
+    }
+
+    loginBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      // Simular autenticación — en producción Cloudflare Access
+      // redirige a su propio login y establece JWTs en los headers.
+      sessionStorage.setItem('sa_admin_token', 'authenticated');
+      showDashboard();
+    });
+  }
+
+  function showDashboard() {
+    $('#loginScreen').style.display = 'none';
+    const dashboard = $('#dashboard');
+    dashboard.style.display = 'flex';
+
+    // Cargar módulo inicial
+    loadModule('dashboard');
+  }
+
+  // =========================================================
+  // Navegación Sidebar
+  // =========================================================
+  function initSidebar() {
+    const links = $$('.sidebar-link[data-module]');
+    const toggle = $('#sidebarToggle');
+    const sidebar = $('#sidebar');
+
+    // Toggle móvil
+    toggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+    });
+
+    // Navegación
+    links.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const module = link.dataset.module;
+        if (!module) return;
+
+        // Cerrar sidebar en móvil
+        sidebar.classList.remove('open');
+
+        // Actualizar active
+        $$('.sidebar-link').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+
+        // Cargar módulo
+        loadModule(module);
+      });
+    });
+  }
+
+  // =========================================================
+  // Cargar módulos
+  // =========================================================
+  function loadModule(name) {
+    const content = $('#moduleContent');
+    const title = $('#moduleTitle');
+    const mod = modules[name];
+
+    if (!mod) return;
+
+    currentModule = name;
+    title.textContent = mod.title;
+
+    // Renderizar según módulo
+    switch (name) {
+      case 'dashboard': renderDashboard(content); break;
+      case 'products': renderStub(content, name, 'Productos', 'Equipos de audio, iluminación, pantallas LED y más.'); break;
+      case 'services': renderStub(content, name, 'Servicios', 'Gestiona los servicios que ofrece Straton Audio.'); break;
+      case 'packages': renderStub(content, name, 'Paquetes', 'Administra los paquetes comerciales y precios.'); break;
+      case 'events': renderStub(content, name, 'Eventos', 'Portafolio de eventos realizados.'); break;
+      case 'testimonials': renderStub(content, name, 'Testimonios', 'Testimonios de clientes.'); break;
+      case 'pages': renderStub(content, name, 'Páginas', 'Contenido editable del sitio web.'); break;
+      case 'quotations': renderStub(content, name, 'Cotizaciones', 'Solicitudes de cotización recibidas.'); break;
+      case 'settings': renderStub(content, name, 'Configuración', 'Ajustes del sitio y datos de contacto.'); break;
+      default: renderDashboard(content);
+    }
+  }
+
+  // =========================================================
+  // Dashboard Inicio
+  // =========================================================
+  async function renderDashboard(content) {
+    content.innerHTML = `
+      <div class="dashboard-grid">
+        <div class="dashboard-card">
+          <div class="dashboard-card-icon">📨</div>
+          <div class="dashboard-card-value" id="statQuotations">0</div>
+          <div class="dashboard-card-label">Cotizaciones pendientes</div>
+        </div>
+        <div class="dashboard-card">
+          <div class="dashboard-card-icon">📸</div>
+          <div class="dashboard-card-value" id="statEvents">0</div>
+          <div class="dashboard-card-label">Eventos publicados</div>
+        </div>
+        <div class="dashboard-card">
+          <div class="dashboard-card-icon">💬</div>
+          <div class="dashboard-card-value" id="statTestimonials">0</div>
+          <div class="dashboard-card-label">Testimonios</div>
+        </div>
+        <div class="dashboard-card">
+          <div class="dashboard-card-icon">🔧</div>
+          <div class="dashboard-card-value" id="statServices">0</div>
+          <div class="dashboard-card-label">Servicios activos</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Cotizaciones recientes</h3>
+        </div>
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="recentQuotations">
+              <tr><td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:2rem;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Acceso rápido</h3>
+        </div>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+          <a href="#" class="btn-admin btn-primary-admin" data-quick="quotations">Ver cotizaciones</a>
+          <a href="#" class="btn-admin btn-ghost-admin" data-quick="events">Gestionar eventos</a>
+          <a href="#" class="btn-admin btn-ghost-admin" data-quick="settings">Configuración del sitio</a>
+        </div>
+      </div>
+    `;
+
+    // Cargar stats
+    loadDashboardStats();
+
+    // Quick links
+    content.querySelectorAll('[data-quick]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const mod = link.dataset.quick;
+        const sidebarLink = $(`.sidebar-link[data-module="${mod}"]`);
+        if (sidebarLink) sidebarLink.click();
+      });
+    });
+  }
+
+  async function loadDashboardStats() {
+    try {
+      // Quotations pendientes
+      fetch('/api/quotations')
+        .then(r => r.json())
+        .then(data => {
+          const pending = Array.isArray(data) ? data.filter(q => q.status === 'pending').length : 0;
+          const statEl = $('#statQuotations');
+          if (statEl) statEl.textContent = pending;
+
+          // Mostrar recientes
+          const tbody = $('#recentQuotations');
+          if (tbody && Array.isArray(data)) {
+            const recent = data.slice(0, 5);
+            if (recent.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:2rem;">No hay cotizaciones aún</td></tr>`;
+            } else {
+              tbody.innerHTML = recent.map(q => `
+                <tr>
+                  <td><strong>${escapeHtml(q.customer_name || '—')}</strong></td>
+                  <td>${escapeHtml(q.email || '—')}</td>
+                  <td>${escapeHtml(q.phone || '—')}</td>
+                  <td><span class="status-badge ${q.status || 'pending'}">${q.status || 'pending'}</span></td>
+                  <td style="color:var(--color-text-muted);">${q.created_at ? new Date(q.created_at).toLocaleDateString() : '—'}</td>
+                </tr>
+              `).join('');
+            }
+          }
+        })
+        .catch(() => {});
+
+      // Events published
+      fetch('/api/events?status=published')
+        .then(r => r.json())
+        .then(data => {
+          const el = $('#statEvents');
+          if (el) el.textContent = Array.isArray(data) ? data.length : '0';
+        })
+        .catch(() => {});
+
+      // Testimonials
+      fetch('/api/testimonials')
+        .then(r => r.json())
+        .then(data => {
+          const el = $('#statTestimonials');
+          if (el) el.textContent = Array.isArray(data) ? data.length : '0';
+        })
+        .catch(() => {});
+
+      // Services
+      fetch('/api/services?status=published')
+        .then(r => r.json())
+        .then(data => {
+          const el = $('#statServices');
+          if (el) el.textContent = Array.isArray(data) ? data.length : '0';
+        })
+        .catch(() => {});
+    } catch (err) {
+      console.warn('Error cargando stats:', err);
+    }
+  }
+
+  // =========================================================
+  // Stub de módulo (placeholder para futura implementación)
+  // =========================================================
+  function renderStub(content, moduleName, title, description) {
+    content.innerHTML = `
+      <div class="module-stub">
+        <div class="module-stub-icon">${modules[moduleName]?.icon || '📄'}</div>
+        <h2>${escapeHtml(title)}</h2>
+        <p>${escapeHtml(description)}</p>
+        <div class="card" style="max-width: 600px; width: 100%; text-align: left; margin-top: 1rem;">
+          <div style="padding: 1rem; color: var(--color-text-secondary); font-size: 0.875rem;">
+            <p>Este módulo está en preparación. Las siguientes funcionalidades estarán disponibles:</p>
+            <ul style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+              <li style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: var(--color-accent);">✓</span> Listar todos los registros
+              </li>
+              <li style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: var(--color-accent);">✓</span> Crear, editar y eliminar
+              </li>
+              <li style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: var(--color-accent);">✓</span> Cambiar estado (published/draft)
+              </li>
+              <li style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="color: var(--color-accent);">✓</span> Subir imágenes y archivos
+              </li>
+            </ul>
+          </div>
+          <div style="padding: 1rem; border-top: 1px solid var(--color-border); display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn-admin btn-primary-admin" disabled>+ Nuevo</button>
+            <button class="btn-admin btn-ghost-admin" disabled>Importar</button>
+            <button class="btn-admin btn-ghost-admin" disabled>Exportar</button>
+          </div>
+        </div>
+        <p style="margin-top: 1.5rem; color: var(--color-text-muted); font-size: 0.75rem;">
+          Próximamente: implementación completa CRUD con Cloudflare D1.
+        </p>
+      </div>
+    `;
+  }
+
+  // =========================================================
+  // Logout
+  // =========================================================
+  function initLogout() {
+    const logoutBtn = $('#logoutBtn');
+    logoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      sessionStorage.removeItem('sa_admin_token');
+      $('#dashboard').style.display = 'none';
+      $('#loginScreen').style.display = 'flex';
+    });
+  }
+
+  // =========================================================
+  // Utilidades
+  // =========================================================
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // =========================================================
+  // Init
+  // =========================================================
+  function init() {
+    initLogin();
+    initSidebar();
+    initLogout();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();

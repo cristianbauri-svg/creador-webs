@@ -1,56 +1,40 @@
-\# CLAUDE.md â€” creador-webs
+# CLAUDE.md — straton-audio-web
 
+## Rol del agente
 
+Desarrollador fullstack del sitio web **Straton Audio** (https://stratonaudio.com.co).
+Stack: Cloudflare Workers + D1 + R2 + KV + Pages. HTML/CSS/JS vanilla. Sin dependencias externas.
 
-\## Rol del agente
+## Infraestructura
 
-DiseÃ±ador y desarrollador fullstack de sitios web con Cloudflare Workers, D1, KV y R2.
+- **Worker:** `straton-audio` (nombre en `wrangler.jsonc`).
+- **`wrangler dev`:** Worker en `http://127.0.0.1:8787`. D1, KV y R2 se emulan en local (SQLite + archivos).
+- **Bindings:** `STRATON_DB` (D1), `STRATON_KV` (KV), `STRATON_BUCKET` (R2).
+- **Cuenta Cloudflare:** nueva cuenta independiente de `creador-webs`. Token específico para este proyecto.
 
+## MCPs activos
 
+- `open-design` (18 tools): plantillas y tokens de diseño
+- `mcp-memory` (4 tools): memoria semántica del proyecto
+- `mcp-docker`, `mcp-metrics`, `postgres`, `github`, `sequential-thinking`
 
-\## Infraestructura local
+## Skills
 
-\- \*\*`wrangler dev`\*\*: Worker en `http://127.0.0.1:8787`. D1, KV y R2 se emulan en local con SQLite y archivos.
+- `ui-ux-pro-max-skill`, `impeccable`, `open-design`, `frontend-design`
+- Skills Cloudflare: `cloudflare`, `wrangler`, `workers-best-practices`, `web-perf`
 
-\- \*\*Bindings disponibles\*\*: `creador\_db` (D1), `CREADOR\_KV` (KV), `CREADOR\_BUCKET` (R2).
+## Separación de agentes
 
-\- \*\*Despliegue\*\*: `wrangler deploy` desde el worktree correcto. Cada worktree puede apuntar a una cuenta Cloudflare distinta.
+- **Backend (DeepSeek V4 Pro / cc-deep):** worker (`src/`), migraciones D1, API routes, R2, KV.
+- **Frontend (DeepSeek V4 Flash / cc-light o Claude Sonnet 4.6):** HTML/CSS/JS en `public/` y `admin/`.
 
+## Reglas
 
-
-\## MCPs activos (proyecto + globales)
-
-\- `21st-dev` (4 tools): generaciÃ³n de componentes UI con lenguaje natural. Describir el componente deseado.
-
-\- `mcp-memory`, `mcp-docker`, `mcp-metrics`, `postgres`, `github`, `sequential-thinking`.
-
-
-
-\## Skills de diseÃ±o (plugins)
-
-\- `ui-ux-pro-max-skill`, `impeccable`, `open-design`
-
-\- `frontend-design` (preinstalada)
-
-\- `awesome-design-md`: colecciÃ³n externa. Descargar sistemas de diseÃ±o con `npx typeui.sh pull <slug>`.
-
-
-
-\## Skills Cloudflare (auto-carga)
-
-Consultar `\~/.claude/skills/` para guÃ­as detalladas. Principales: `cloudflare`, `wrangler`, `workers-best-practices`, `durable-objects`, `web-perf`, `agents-sdk`.
-
-
-
-\## Reglas
-
-1\. Antes de modificar infraestructura, consultar `mcp-memory` y `C:\\Users\\USUARIO\\dev\\sessions\\active.json`.
-
-2\. Usar `wrangler dev` para probar todo localmente antes de desplegar.
-
-3\. Secretos (tokens, API keys) en Vault (`secret/dev/`). Nunca en texto plano.
-
-4\. Commits atÃ³micos y probados. El hook `block-secrets.sh` bloquea credenciales en commits.
-
-5\. ComunicaciÃ³n en espaÃ±ol neutro, sin jerga regional.
-
+1. Antes de modificar infraestructura, leer `DESIGN.md`, `PRODUCT.md` y consultar `mcp-memory` en la colección `straton-audio`.
+2. Usar `wrangler dev` para probar todo localmente. No desplegar sin pruebas locales.
+3. Secretos en Vault (`secret/dev/`). Nunca en texto plano.
+4. Commits atómicos. El hook `block-secrets.sh` bloquea credenciales.
+5. Comunicación en español neutro, sin jerga regional. Términos técnicos en inglés.
+6. `env.ASSETS.fetch()` NO es confiable en producción. Usar `fetch(request, { cf: { rocket_loader: false, minify: false } })` para assets.
+7. Rocket Loader y Auto Minify deben estar OFF en el dashboard de Cloudflare.
+8. Antes de cualquier `wrangler deploy`, verificar el nombre del worker en `wrangler.jsonc` (`"straton-audio"`).
