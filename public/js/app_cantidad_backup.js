@@ -432,14 +432,7 @@
                 </li>`;
               }).join('')}
             </ul>` : ''}
-            <div style="display:flex;align-items:center;gap:0.5rem;margin-top:var(--space-4);">
-              <div style="display:flex;align-items:center;gap:0.35rem;flex-shrink:0;">
-                <button class="qty-btn qty-minus" data-qty-target="qty-${p.id}" style="width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.5);color:#fff;border:none;cursor:pointer;font-size:0.7rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">−</button>
-                <span id="qty-${p.id}" style="min-width:20px;text-align:center;font-size:0.85rem;font-weight:600;">1</span>
-                <button class="qty-btn qty-plus" data-qty-target="qty-${p.id}" style="width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.5);color:#fff;border:none;cursor:pointer;font-size:0.7rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">+</button>
-              </div>
-              <button data-add-to-cart="${JSON.stringify({type:'product',id:p.id,name:p.title,image:p.image_url||''}).replace(/"/g,'&quot;')}" data-product-qty="1" class="btn btn-primary" style="flex:1;text-align:center;">Añadir a cotización</button>
-            </div>
+            <button data-add-to-cart="${JSON.stringify({type:'product',id:p.id,name:p.title,image:p.image_url||''}).replace(/"/g,'&quot;')}" class="btn btn-primary" style="margin-top:var(--space-4);align-self:flex-start;">Añadir a cotización</button>
             ${galleryHtml}
           </div>
         </article>`;
@@ -777,8 +770,6 @@
       e.preventDefault();
       try {
         var item = JSON.parse(btn.getAttribute('data-add-to-cart').replace(/&quot;/g, '"'));
-        var qty = parseInt(btn.getAttribute('data-product-qty')) || 1;
-        item.quantity = qty;
         addToCart(item);
         // Abrir el panel para feedback visual
         var panel = $('#cartPanel');
@@ -787,32 +778,6 @@
         }
       } catch(err) {
         console.error('Error al añadir al carrito:', err);
-      }
-    });
-
-    // Listener delegado para botones de cantidad (+/-)
-    document.addEventListener('click', function(e) {
-      var btn = e.target.closest('.qty-btn');
-      if (!btn) return;
-      e.preventDefault();
-      var targetId = btn.getAttribute('data-qty-target');
-      var span = document.getElementById(targetId);
-      if (!span) return;
-      var current = parseInt(span.textContent) || 1;
-      var newQty;
-      if (btn.classList.contains('qty-plus')) {
-        newQty = current + 1;
-      } else {
-        newQty = Math.max(1, current - 1);
-      }
-      span.textContent = newQty;
-      // Actualizar el data-product-qty del botón "Añadir a cotización" en la misma card
-      var cardBody = btn.closest('.service-card-body');
-      if (cardBody) {
-        var addBtn = cardBody.querySelector('[data-add-to-cart]');
-        if (addBtn) {
-          addBtn.setAttribute('data-product-qty', newQty);
-        }
       }
     });
 

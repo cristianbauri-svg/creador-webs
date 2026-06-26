@@ -20,8 +20,6 @@ export interface Env {
   STRATON_DB: D1Database;
   STRATON_KV: KVNamespace;
   STRATON_BUCKET: R2Bucket;
-  TELEGRAM_BOT_TOKEN: string;
-  TELEGRAM_CHAT_ID: string;
 }
 
 export default {

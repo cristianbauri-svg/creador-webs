@@ -62,75 +62,9 @@ async function createQuotation(request: Request, env: Env): Promise<Response> {
     );
 
     const inserted = await queryOne(env.STRATON_DB, "SELECT * FROM quotations WHERE id = ?", [result.meta.last_row_id]);
-
-    // Notificar por Telegram (no bloquea la respuesta si falla)
-    await sendTelegramNotification(inserted, env);
-
     return json(inserted, 201);
   } catch (e) {
     return handleDbError(e);
-  }
-}
-
-async function sendTelegramNotification(quotation: Record<string, unknown>, env: Env): Promise<void> {
-  try {
-    const token = env.TELEGRAM_BOT_TOKEN;
-    const chatId = env.TELEGRAM_CHAT_ID;
-    if (!token || !chatId) return;
-
-    // Escapar caracteres reservados de Markdown
-    const esc = (str: string) => str.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
-
-    const name = esc(String(quotation.customer_name || '—'));
-    const email = esc(String(quotation.email || '—'));
-    const phone = esc(String(quotation.phone || '—'));
-    const eventDate = esc(String(quotation.event_date || '—'));
-    const company = esc(String(quotation.company || '—'));
-    const city = esc(String(quotation.city || '—'));
-    const notes = esc(String(quotation.notes || '—'));
-
-    // Productos solicitados
-    let productsText = '_No se especificaron productos._';
-    try {
-      const productsJson = typeof quotation.products_json === 'string'
-        ? JSON.parse(quotation.products_json)
-        : quotation.products_json;
-      if (Array.isArray(productsJson) && productsJson.length > 0) {
-        productsText = productsJson.map((p: Record<string, unknown>) => {
-          const pName = esc(String(p.name || p.product_name || '—'));
-          const qty = p.quantity || p.qty || 1;
-          return `• ${pName} ×${qty}`;
-        }).join('\n');
-      }
-    } catch { /* ignorar errores de parseo */ }
-
-    const message =
-      '📩 *Nueva cotización recibida*\n' +
-      `👤 *Cliente:* ${name}\n` +
-      `📧 *Email:* ${email}\n` +
-      `📱 *Teléfono:* ${phone}\n` +
-      `📅 *Fecha del evento:* ${eventDate}\n` +
-      `🏢 *Empresa:* ${company}\n` +
-      `📍 *Ciudad:* ${city}\n` +
-      `📦 *Productos solicitados:*\n${productsText}\n` +
-      `💬 *Comentarios:* ${notes}`;
-
-    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
-        parse_mode: 'Markdown',
-      }),
-    });
-
-    if (!response.ok) {
-      const respText = await response.text();
-      console.error('Telegram notification failed:', response.status, respText);
-    }
-  } catch (err) {
-    console.error('Telegram notification error:', err);
   }
 }
 
