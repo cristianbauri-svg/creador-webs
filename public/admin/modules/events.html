@@ -1,6 +1,260 @@
-<!-- Events Module Stub -->
-<div class="module-stub">
-  <div class="module-stub-icon">📸</div>
-  <h2>Eventos</h2>
-  <p>Portafolio de eventos realizados.</p>
+<!-- Events Module — CRUD completo -->
+<div class="card" id="eventsToolbar">
+  <div class="card-header">
+    <h3 class="card-title">📸 Eventos</h3>
+    <button class="btn-admin btn-primary-admin" id="btnAddEvent">+ Agregar Evento</button>
+  </div>
 </div>
+
+<div class="card" id="eventsTableCard">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Título</th>
+          <th>Tipo</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="eventsTbody">
+        <tr><td colspan="4"><div class="loading-admin">Cargando eventos...</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" id="eventsFormCard" style="display:none;">
+  <div class="card-header">
+    <h3 class="card-title" id="eventsFormTitle">Nuevo Evento</h3>
+  </div>
+  <form id="eventsForm" autocomplete="off">
+    <input type="hidden" id="evtId" />
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="evtTitle">Título *</label>
+        <input class="form-input-admin" id="evtTitle" required maxlength="200" placeholder="Ej: Lanzamiento Producto X" />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="evtType">Tipo</label>
+        <select class="form-select-admin" id="evtType">
+          <option value="corporativo">Corporativo</option>
+          <option value="social">Social</option>
+          <option value="concierto">Concierto</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="evtStatus">Estado</label>
+        <select class="form-select-admin" id="evtStatus">
+          <option value="draft">Borrador</option>
+          <option value="published">Publicado</option>
+        </select>
+      </div>
+      <div class="form-group-admin"></div>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin" for="evtSolution">Solución implementada</label>
+      <textarea class="form-textarea-admin" id="evtSolution" rows="3" placeholder="Qué se hizo técnicamente en este evento..."></textarea>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin" for="evtResult">Resultado</label>
+      <textarea class="form-textarea-admin" id="evtResult" rows="3" placeholder="Resultado o testimonio del cliente..."></textarea>
+    </div>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="evtBeforeUrl">URL media Antes</label>
+        <input class="form-input-admin" id="evtBeforeUrl" placeholder="https://..." />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="evtAfterUrl">URL media Después</label>
+        <input class="form-input-admin" id="evtAfterUrl" placeholder="https://..." />
+      </div>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin" for="evtGallery">Galería (URLs separadas por coma)</label>
+      <textarea class="form-textarea-admin" id="evtGallery" rows="2" placeholder="https://..., https://..."></textarea>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn-admin btn-ghost-admin" id="btnCancelEvent">Cancelar</button>
+      <button type="submit" class="btn-admin btn-primary-admin">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var currentId = null;
+
+  var typeLabels = {
+    corporativo: '🏢 Corporativo',
+    social: '🎉 Social',
+    concierto: '🎵 Concierto',
+  };
+
+  var els = {
+    tbody: document.getElementById('eventsTbody'),
+    formCard: document.getElementById('eventsFormCard'),
+    formTitle: document.getElementById('eventsFormTitle'),
+    form: document.getElementById('eventsForm'),
+    evtId: document.getElementById('evtId'),
+    evtTitle: document.getElementById('evtTitle'),
+    evtType: document.getElementById('evtType'),
+    evtStatus: document.getElementById('evtStatus'),
+    evtSolution: document.getElementById('evtSolution'),
+    evtResult: document.getElementById('evtResult'),
+    evtBeforeUrl: document.getElementById('evtBeforeUrl'),
+    evtAfterUrl: document.getElementById('evtAfterUrl'),
+    evtGallery: document.getElementById('evtGallery'),
+    btnAdd: document.getElementById('btnAddEvent'),
+    btnCancel: document.getElementById('btnCancelEvent'),
+  };
+
+  loadEvents();
+
+  els.btnAdd.addEventListener('click', function () { showForm(); });
+  els.btnCancel.addEventListener('click', function () { hideForm(); });
+  els.form.addEventListener('submit', function (e) { e.preventDefault(); saveEvent(); });
+
+  function loadEvents() {
+    fetch('/api/events')
+      .then(function (r) { return r.json(); })
+      .then(renderTable)
+      .catch(function (err) {
+        console.error('Error cargando eventos:', err);
+        els.tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state-admin"><p>Error al cargar eventos</p></div></td></tr>';
+      });
+  }
+
+  function renderTable(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      els.tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state-admin"><div class="empty-state-admin-icon">📸</div><p>No hay eventos registrados</p></div></td></tr>';
+      return;
+    }
+
+    els.tbody.innerHTML = rows.map(function (ev) {
+      var badgeClass = ev.status === 'published' ? 'published' : 'draft';
+      var badgeText = ev.status === 'published' ? 'Publicado' : 'Borrador';
+      var typeLabel = typeLabels[ev.event_type] || (ev.event_type || '—');
+
+      return '<tr>' +
+        '<td><strong>' + esc(ev.title) + '</strong></td>' +
+        '<td>' + esc(typeLabel) + '</td>' +
+        '<td><span class="status-badge ' + badgeClass + '">' + badgeText + '</span></td>' +
+        '<td>' +
+          '<button class="btn-admin btn-ghost-admin btnEditEvt" data-id="' + ev.id + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">✏️</button> ' +
+          '<button class="btn-admin btn-danger-admin btnDelEvt" data-id="' + ev.id + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">🗑️</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+
+    bindClicks('.btnEditEvt', editEvent);
+    bindClicks('.btnDelEvt', deleteEvent);
+  }
+
+  function showForm(evt) {
+    currentId = evt ? evt.id : null;
+    els.formTitle.textContent = evt ? 'Editar Evento' : 'Nuevo Evento';
+    els.evtId.value = evt ? evt.id : '';
+    els.evtTitle.value = evt ? (evt.title || '') : '';
+    els.evtType.value = evt ? (evt.event_type || 'corporativo') : 'corporativo';
+    els.evtStatus.value = evt ? (evt.status || 'draft') : 'draft';
+    els.evtSolution.value = evt ? (evt.solution || '') : '';
+    els.evtResult.value = evt ? (evt.result || '') : '';
+    els.evtBeforeUrl.value = evt ? (evt.before_media_url || '') : '';
+    els.evtAfterUrl.value = evt ? (evt.after_media_url || '') : '';
+    els.evtGallery.value = evt ? parseGalleryToInput(evt.gallery_json) : '';
+    els.formCard.style.display = '';
+  }
+
+  function hideForm() {
+    els.formCard.style.display = 'none';
+    els.form.reset();
+    currentId = null;
+  }
+
+  function saveEvent() {
+    var body = {
+      title: els.evtTitle.value.trim(),
+      event_type: els.evtType.value,
+      solution: els.evtSolution.value.trim() || null,
+      result: els.evtResult.value.trim() || null,
+      before_media_url: els.evtBeforeUrl.value.trim() || null,
+      after_media_url: els.evtAfterUrl.value.trim() || null,
+      gallery_json: parseGalleryFromInput(els.evtGallery.value),
+      status: els.evtStatus.value,
+    };
+
+    if (!body.title) {
+      alert('El título del evento es obligatorio.');
+      return;
+    }
+
+    var url = currentId ? '/api/events/' + currentId : '/api/events';
+    var method = currentId ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Error del servidor'); });
+        return r.json();
+      })
+      .then(function () { hideForm(); loadEvents(); })
+      .catch(function (err) { alert('Error: ' + err.message); });
+  }
+
+  function editEvent(id) {
+    fetch('/api/events/' + id)
+      .then(function (r) { return r.json(); })
+      .then(function (evt) { showForm(evt); })
+      .catch(function (err) { alert('Error al cargar evento: ' + err.message); });
+  }
+
+  function deleteEvent(id) {
+    if (!confirm('¿Eliminar este evento? Esta acción no se puede deshacer.')) return;
+    fetch('/api/events/' + id, { method: 'DELETE' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Error del servidor');
+        return r.json();
+      })
+      .then(function () { loadEvents(); })
+      .catch(function (err) { alert('Error: ' + err.message); });
+  }
+
+  function bindClicks(selector, handler) {
+    var btns = document.querySelectorAll(selector);
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener('click', function () { handler(parseInt(this.dataset.id, 10)); });
+    }
+  }
+
+  function parseGalleryToInput(galleryJson) {
+    if (!galleryJson) return '';
+    try {
+      var arr = JSON.parse(galleryJson);
+      return Array.isArray(arr) ? arr.join(', ') : '';
+    } catch (e) {
+      return galleryJson || '';
+    }
+  }
+
+  function parseGalleryFromInput(input) {
+    if (!input || !input.trim()) return null;
+    var urls = input.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    return urls.length > 0 ? JSON.stringify(urls) : null;
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+})();
+</script>

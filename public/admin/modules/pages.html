@@ -1,6 +1,259 @@
-<!-- Pages Module Stub -->
-<div class="module-stub">
-  <div class="module-stub-icon">📄</div>
-  <h2>Páginas</h2>
-  <p>Contenido editable del sitio web.</p>
+<!-- Pages Module — CRUD completo -->
+<div class="card" id="pagesToolbar">
+  <div class="card-header">
+    <h3 class="card-title">📄 Páginas</h3>
+    <button class="btn-admin btn-primary-admin" id="btnAddPage">+ Agregar Página</button>
+  </div>
 </div>
+
+<div class="card" id="pagesTableCard">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Slug</th>
+          <th>Título</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="pagesTbody">
+        <tr><td colspan="4"><div class="loading-admin">Cargando páginas...</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" id="pagesFormCard" style="display:none;">
+  <div class="card-header">
+    <h3 class="card-title" id="pagesFormTitle">Nueva Página</h3>
+  </div>
+  <form id="pagesForm" autocomplete="off">
+    <input type="hidden" id="pageId" />
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="pageSlug">Slug *</label>
+        <input class="form-input-admin" id="pageSlug" required maxlength="100" placeholder="Ej: acerca-de" />
+        <small style="color:var(--color-text-muted);font-size:0.7rem;">Identificador único de la página. Solo editable al crear.</small>
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="pageTitle">Título</label>
+        <input class="form-input-admin" id="pageTitle" maxlength="200" placeholder="Ej: Acerca de Nosotros" />
+      </div>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin" for="pageContent">Contenido (JSON)</label>
+      <textarea class="form-textarea-admin" id="pageContent" rows="8" placeholder='{"hero_title": "Acerca de", "body": "Texto de la página..."}'></textarea>
+      <small style="color:var(--color-text-muted);font-size:0.7rem;">Objeto JSON con los bloques de contenido de la página.</small>
+    </div>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="pageMetaTitle">Meta título (SEO)</label>
+        <input class="form-input-admin" id="pageMetaTitle" maxlength="200" placeholder="Título para buscadores" />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="pageStatus">Estado</label>
+        <select class="form-select-admin" id="pageStatus">
+          <option value="draft">Borrador</option>
+          <option value="published">Publicado</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin" for="pageMetaDescription">Meta descripción (SEO)</label>
+      <textarea class="form-textarea-admin" id="pageMetaDescription" rows="2" placeholder="Descripción para buscadores (máx. 160 caracteres)"></textarea>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn-admin btn-ghost-admin" id="btnCancelPage">Cancelar</button>
+      <button type="submit" class="btn-admin btn-primary-admin">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var currentId = null;
+
+  var els = {
+    tbody: document.getElementById('pagesTbody'),
+    formCard: document.getElementById('pagesFormCard'),
+    formTitle: document.getElementById('pagesFormTitle'),
+    form: document.getElementById('pagesForm'),
+    pageId: document.getElementById('pageId'),
+    pageSlug: document.getElementById('pageSlug'),
+    pageTitle: document.getElementById('pageTitle'),
+    pageContent: document.getElementById('pageContent'),
+    pageMetaTitle: document.getElementById('pageMetaTitle'),
+    pageMetaDescription: document.getElementById('pageMetaDescription'),
+    pageStatus: document.getElementById('pageStatus'),
+    btnAdd: document.getElementById('btnAddPage'),
+    btnCancel: document.getElementById('btnCancelPage'),
+  };
+
+  loadPages();
+
+  els.btnAdd.addEventListener('click', function () { showForm(); });
+  els.btnCancel.addEventListener('click', function () { hideForm(); });
+  els.form.addEventListener('submit', function (e) { e.preventDefault(); savePage(); });
+
+  function loadPages() {
+    fetch('/api/pages')
+      .then(function (r) { return r.json(); })
+      .then(renderTable)
+      .catch(function (err) {
+        console.error('Error cargando páginas:', err);
+        els.tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state-admin"><p>Error al cargar páginas</p></div></td></tr>';
+      });
+  }
+
+  function renderTable(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      els.tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state-admin"><div class="empty-state-admin-icon">📄</div><p>No hay páginas registradas</p></div></td></tr>';
+      return;
+    }
+
+    els.tbody.innerHTML = rows.map(function (p) {
+      var badgeClass = p.status === 'published' ? 'published' : 'draft';
+      var badgeText = p.status === 'published' ? 'Publicado' : 'Borrador';
+
+      return '<tr>' +
+        '<td><code style="background:var(--color-surface);padding:0.15rem 0.4rem;border-radius:3px;font-size:0.75rem;">/' + esc(p.slug) + '</code></td>' +
+        '<td><strong>' + esc(p.title || '—') + '</strong></td>' +
+        '<td><span class="status-badge ' + badgeClass + '">' + badgeText + '</span></td>' +
+        '<td>' +
+          '<button class="btn-admin btn-ghost-admin btnEditPage" data-id="' + p.id + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">✏️</button> ' +
+          '<button class="btn-admin btn-danger-admin btnDelPage" data-id="' + p.id + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">🗑️</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+
+    bindClicks('.btnEditPage', editPage);
+    bindClicks('.btnDelPage', deletePage);
+  }
+
+  function showForm(page) {
+    currentId = page ? page.id : null;
+    var isEditing = !!page;
+
+    els.formTitle.textContent = isEditing ? 'Editar Página' : 'Nueva Página';
+    els.pageId.value = page ? page.id : '';
+    els.pageSlug.value = page ? (page.slug || '') : '';
+    els.pageTitle.value = page ? (page.title || '') : '';
+    els.pageContent.value = page ? fmtContentToInput(page.content_json) : '';
+    els.pageMetaTitle.value = page ? (page.meta_title || '') : '';
+    els.pageMetaDescription.value = page ? (page.meta_description || '') : '';
+    els.pageStatus.value = page ? (page.status || 'draft') : 'draft';
+
+    // Slug es solo lectura en edición
+    els.pageSlug.readOnly = isEditing;
+    if (isEditing) {
+      els.pageSlug.style.opacity = '0.6';
+    } else {
+      els.pageSlug.style.opacity = '';
+    }
+
+    els.formCard.style.display = '';
+  }
+
+  function hideForm() {
+    els.formCard.style.display = 'none';
+    els.form.reset();
+    els.pageSlug.readOnly = false;
+    els.pageSlug.style.opacity = '';
+    currentId = null;
+  }
+
+  function savePage() {
+    var contentJson = parseContentJson(els.pageContent.value);
+
+    var body = {
+      slug: els.pageSlug.value.trim(),
+      title: els.pageTitle.value.trim() || null,
+      content_json: contentJson,
+      meta_title: els.pageMetaTitle.value.trim() || null,
+      meta_description: els.pageMetaDescription.value.trim() || null,
+      status: els.pageStatus.value,
+    };
+
+    if (!body.slug) {
+      alert('El slug es obligatorio.');
+      return;
+    }
+
+    if (contentJson === null && els.pageContent.value.trim()) {
+      alert('El campo "Contenido" debe ser un objeto JSON válido. Ejemplo: {"hero_title": "Título"}');
+      return;
+    }
+
+    var url = currentId ? '/api/pages/' + currentId : '/api/pages';
+    var method = currentId ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Error del servidor'); });
+        return r.json();
+      })
+      .then(function () { hideForm(); loadPages(); })
+      .catch(function (err) { alert('Error: ' + err.message); });
+  }
+
+  function editPage(id) {
+    fetch('/api/pages/' + id)
+      .then(function (r) { return r.json(); })
+      .then(function (page) { showForm(page); })
+      .catch(function (err) { alert('Error al cargar página: ' + err.message); });
+  }
+
+  function deletePage(id) {
+    if (!confirm('¿Eliminar esta página? Esta acción no se puede deshacer.')) return;
+    fetch('/api/pages/' + id, { method: 'DELETE' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Error del servidor');
+        return r.json();
+      })
+      .then(function () { loadPages(); })
+      .catch(function (err) { alert('Error: ' + err.message); });
+  }
+
+  function bindClicks(selector, handler) {
+    var btns = document.querySelectorAll(selector);
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener('click', function () { handler(parseInt(this.dataset.id, 10)); });
+    }
+  }
+
+  function fmtContentToInput(contentJson) {
+    if (!contentJson) return '';
+    try {
+      var obj = JSON.parse(contentJson);
+      return JSON.stringify(obj, null, 2);
+    } catch (e) {
+      return contentJson || '';
+    }
+  }
+
+  function parseContentJson(input) {
+    if (!input || !input.trim()) return null;
+    try {
+      var parsed = JSON.parse(input.trim());
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null;
+      return JSON.stringify(parsed);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+})();
+</script>

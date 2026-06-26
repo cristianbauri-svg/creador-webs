@@ -1,6 +1,225 @@
-<!-- Services Module Stub -->
-<div class="module-stub">
-  <div class="module-stub-icon">🔧</div>
-  <h2>Servicios</h2>
-  <p>Gestiona los servicios que ofrece Straton Audio.</p>
+<!-- Services Module — CRUD completo -->
+<div class="card" id="servicesToolbar">
+  <div class="card-header">
+    <h3 class="card-title">🔧 Servicios</h3>
+    <button class="btn-admin btn-primary-admin" id="btnAddService">+ Agregar Servicio</button>
+  </div>
 </div>
+
+<div class="card" id="servicesTableCard">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Título</th>
+          <th>Estado</th>
+          <th>Orden</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="servicesTbody">
+        <tr><td colspan="4"><div class="loading-admin">Cargando servicios...</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" id="servicesFormCard" style="display:none;">
+  <div class="card-header">
+    <h3 class="card-title" id="servicesFormTitle">Nuevo Servicio</h3>
+  </div>
+  <form id="servicesForm" autocomplete="off">
+    <input type="hidden" id="svcId" />
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="svcTitle">Título *</label>
+        <input class="form-input-admin" id="svcTitle" required maxlength="200" placeholder="Ej: Sonido en Vivo" />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="svcIcon">Ícono (emoji o texto corto)</label>
+        <input class="form-input-admin" id="svcIcon" maxlength="10" placeholder="Ej: 🔊" />
+      </div>
+    </div>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="svcImageUrl">URL de imagen</label>
+        <input class="form-input-admin" id="svcImageUrl" placeholder="https://..." />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="svcSortOrder">Orden</label>
+        <input class="form-input-admin" id="svcSortOrder" type="number" value="0" min="0" />
+      </div>
+    </div>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="svcStatus">Estado</label>
+        <select class="form-select-admin" id="svcStatus">
+          <option value="draft">Borrador</option>
+          <option value="published">Publicado</option>
+        </select>
+      </div>
+      <div class="form-group-admin"></div>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin" for="svcDescription">Descripción</label>
+      <textarea class="form-textarea-admin" id="svcDescription" rows="3" placeholder="Descripción del servicio..."></textarea>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn-admin btn-ghost-admin" id="btnCancelService">Cancelar</button>
+      <button type="submit" class="btn-admin btn-primary-admin">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var currentId = null;
+
+  var els = {
+    tbody: document.getElementById('servicesTbody'),
+    formCard: document.getElementById('servicesFormCard'),
+    formTitle: document.getElementById('servicesFormTitle'),
+    form: document.getElementById('servicesForm'),
+    svcId: document.getElementById('svcId'),
+    svcTitle: document.getElementById('svcTitle'),
+    svcIcon: document.getElementById('svcIcon'),
+    svcImageUrl: document.getElementById('svcImageUrl'),
+    svcSortOrder: document.getElementById('svcSortOrder'),
+    svcStatus: document.getElementById('svcStatus'),
+    svcDescription: document.getElementById('svcDescription'),
+    btnAdd: document.getElementById('btnAddService'),
+    btnCancel: document.getElementById('btnCancelService'),
+  };
+
+  loadServices();
+
+  els.btnAdd.addEventListener('click', function () { showForm(); });
+  els.btnCancel.addEventListener('click', function () { hideForm(); });
+  els.form.addEventListener('submit', function (e) { e.preventDefault(); saveService(); });
+
+  function loadServices() {
+    fetch('/api/services')
+      .then(function (r) { return r.json(); })
+      .then(renderTable)
+      .catch(function (err) {
+        console.error('Error cargando servicios:', err);
+        els.tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state-admin"><p>Error al cargar servicios</p></div></td></tr>';
+      });
+  }
+
+  function renderTable(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      els.tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state-admin"><div class="empty-state-admin-icon">🔧</div><p>No hay servicios registrados</p></div></td></tr>';
+      return;
+    }
+
+    els.tbody.innerHTML = rows.map(function (s) {
+      var badgeClass = s.status === 'published' ? 'published' : 'draft';
+      var badgeText = s.status === 'published' ? 'Publicado' : 'Borrador';
+      var icon = s.icon ? '<span style="margin-right:0.4rem;">' + esc(s.icon) + '</span>' : '';
+
+      return '<tr>' +
+        '<td>' + icon + '<strong>' + esc(s.title) + '</strong></td>' +
+        '<td><span class="status-badge ' + badgeClass + '">' + badgeText + '</span></td>' +
+        '<td>' + (s.sort_order || 0) + '</td>' +
+        '<td>' +
+          '<button class="btn-admin btn-ghost-admin btnEditService" data-id="' + s.id + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">✏️</button> ' +
+          '<button class="btn-admin btn-danger-admin btnDelService" data-id="' + s.id + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">🗑️</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+
+    bindEditButtons(els.tbody.querySelectorAll('.btnEditService'), editService);
+    bindDeleteButtons(els.tbody.querySelectorAll('.btnDelService'), deleteService);
+  }
+
+  function showForm(service) {
+    currentId = service ? service.id : null;
+    els.formTitle.textContent = service ? 'Editar Servicio' : 'Nuevo Servicio';
+    els.svcId.value = service ? service.id : '';
+    els.svcTitle.value = service ? (service.title || '') : '';
+    els.svcIcon.value = service ? (service.icon || '') : '';
+    els.svcImageUrl.value = service ? (service.image_url || '') : '';
+    els.svcSortOrder.value = service ? (service.sort_order || 0) : 0;
+    els.svcStatus.value = service ? (service.status || 'draft') : 'draft';
+    els.svcDescription.value = service ? (service.description || '') : '';
+    els.formCard.style.display = '';
+  }
+
+  function hideForm() {
+    els.formCard.style.display = 'none';
+    els.form.reset();
+    currentId = null;
+  }
+
+  function saveService() {
+    var body = {
+      title: els.svcTitle.value.trim(),
+      icon: els.svcIcon.value.trim() || null,
+      image_url: els.svcImageUrl.value.trim() || null,
+      sort_order: parseInt(els.svcSortOrder.value, 10) || 0,
+      status: els.svcStatus.value,
+      description: els.svcDescription.value.trim() || null,
+    };
+
+    if (!body.title) {
+      alert('El título del servicio es obligatorio.');
+      return;
+    }
+
+    var url = currentId ? '/api/services/' + currentId : '/api/services';
+    var method = currentId ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Error del servidor'); });
+        return r.json();
+      })
+      .then(function () { hideForm(); loadServices(); })
+      .catch(function (err) { alert('Error: ' + err.message); });
+  }
+
+  function editService(id) {
+    fetch('/api/services/' + id)
+      .then(function (r) { return r.json(); })
+      .then(function (service) { showForm(service); })
+      .catch(function (err) { alert('Error al cargar servicio: ' + err.message); });
+  }
+
+  function deleteService(id) {
+    if (!confirm('¿Eliminar este servicio? Esta acción no se puede deshacer.')) return;
+    fetch('/api/services/' + id, { method: 'DELETE' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Error del servidor');
+        return r.json();
+      })
+      .then(function () { loadServices(); })
+      .catch(function (err) { alert('Error: ' + err.message); });
+  }
+
+  function bindEditButtons(btns, handler) {
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener('click', function () { handler(parseInt(this.dataset.id, 10)); });
+    }
+  }
+
+  function bindDeleteButtons(btns, handler) {
+    for (var j = 0; j < btns.length; j++) {
+      btns[j].addEventListener('click', function () { handler(parseInt(this.dataset.id, 10)); });
+    }
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+})();
+</script>

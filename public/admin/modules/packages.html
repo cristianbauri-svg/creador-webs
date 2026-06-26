@@ -1,6 +1,314 @@
-<!-- Packages Module Stub -->
-<div class="module-stub">
-  <div class="module-stub-icon">📋</div>
-  <h2>Paquetes</h2>
-  <p>Administra los paquetes comerciales y precios.</p>
+<!-- Packages Module — CRUD completo -->
+<div class="card" id="packagesToolbar">
+  <div class="card-header">
+    <h3 class="card-title">📋 Paquetes</h3>
+    <button class="btn-admin btn-primary-admin" id="btnAddPackage">+ Agregar Paquete</button>
+  </div>
 </div>
+
+<div class="card" id="packagesTableCard">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Rango de precio</th>
+          <th>Evento recomendado</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="packagesTbody">
+        <tr><td colspan="5"><div class="loading-admin">Cargando paquetes...</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" id="packagesFormCard" style="display:none;">
+  <div class="card-header">
+    <h3 class="card-title" id="packagesFormTitle">Nuevo Paquete</h3>
+  </div>
+  <form id="packagesForm" autocomplete="off">
+    <input type="hidden" id="pkgId" />
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="pkgName">Nombre *</label>
+        <input class="form-input-admin" id="pkgName" required maxlength="200" placeholder="Ej: Paquete Básico" />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="pkgPriceRange">Rango de precio</label>
+        <input class="form-input-admin" id="pkgPriceRange" maxlength="100" placeholder="Ej: $500.000 — $1.200.000" />
+      </div>
+    </div>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="pkgEventType">Tipo de evento</label>
+        <input class="form-input-admin" id="pkgEventType" maxlength="100" placeholder="Ej: Boda, Conferencia, Concierto..." />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="pkgStatus">Estado</label>
+        <select class="form-select-admin" id="pkgStatus">
+          <option value="draft">Borrador</option>
+          <option value="published">Publicado</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin" for="pkgDescription">Descripción</label>
+      <textarea class="form-textarea-admin" id="pkgDescription" rows="3" placeholder="Descripción del paquete..."></textarea>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin">Items incluidos</label>
+      <div id="includesList"></div>
+      <button type="button" class="btn-admin btn-ghost-admin" id="btnAddInclude" style="margin-top:0.5rem;font-size:0.75rem;">+ Agregar otro</button>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin" for="pkgSortOrder">Orden</label>
+      <input class="form-input-admin" id="pkgSortOrder" type="number" value="0" min="0" style="max-width:120px;" />
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn-admin btn-ghost-admin" id="btnCancelPackage">Cancelar</button>
+      <button type="submit" class="btn-admin btn-primary-admin">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var currentId = null;
+
+  var els = {
+    tbody: document.getElementById('packagesTbody'),
+    formCard: document.getElementById('packagesFormCard'),
+    formTitle: document.getElementById('packagesFormTitle'),
+    form: document.getElementById('packagesForm'),
+    pkgId: document.getElementById('pkgId'),
+    pkgName: document.getElementById('pkgName'),
+    pkgPriceRange: document.getElementById('pkgPriceRange'),
+    pkgEventType: document.getElementById('pkgEventType'),
+    pkgStatus: document.getElementById('pkgStatus'),
+    pkgDescription: document.getElementById('pkgDescription'),
+    includesList: document.getElementById('includesList'),
+    btnAddInclude: document.getElementById('btnAddInclude'),
+    pkgSortOrder: document.getElementById('pkgSortOrder'),
+    btnAdd: document.getElementById('btnAddPackage'),
+    btnCancel: document.getElementById('btnCancelPackage'),
+  };
+
+  loadPackages();
+
+  els.btnAdd.addEventListener('click', function () { showForm(); });
+  els.btnCancel.addEventListener('click', function () { hideForm(); });
+  els.btnAddInclude.addEventListener('click', function () { addIncludeInput(''); });
+  els.form.addEventListener('submit', function (e) { e.preventDefault(); savePackage(); });
+
+  function loadPackages() {
+    fetch('/api/packages')
+      .then(function (r) { return r.json(); })
+      .then(renderTable)
+      .catch(function (err) {
+        console.error('Error cargando paquetes:', err);
+        els.tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state-admin"><p>Error al cargar paquetes</p></div></td></tr>';
+      });
+  }
+
+  function renderTable(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      els.tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state-admin"><div class="empty-state-admin-icon">📋</div><p>No hay paquetes registrados</p></div></td></tr>';
+      return;
+    }
+
+    els.tbody.innerHTML = rows.map(function (p) {
+      var badgeClass = p.status === 'published' ? 'published' : 'draft';
+      var badgeText = p.status === 'published' ? 'Publicado' : 'Borrador';
+
+      return '<tr>' +
+        '<td><strong>' + esc(p.name) + '</strong></td>' +
+        '<td>' + esc(p.price_range || '—') + '</td>' +
+        '<td>' + esc(p.recommended_event_type || '—') + '</td>' +
+        '<td><span class="status-badge ' + badgeClass + '">' + badgeText + '</span></td>' +
+        '<td>' +
+          '<button class="btn-admin btn-ghost-admin btnEditPkg" data-id="' + p.id + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">✏️</button> ' +
+          '<button class="btn-admin btn-danger-admin btnDelPkg" data-id="' + p.id + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">🗑️</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+
+    bindClicks('.btnEditPkg', editPackage);
+    bindClicks('.btnDelPkg', deletePackage);
+  }
+
+  function showForm(pkg) {
+    currentId = pkg ? pkg.id : null;
+    els.formTitle.textContent = pkg ? 'Editar Paquete' : 'Nuevo Paquete';
+    els.pkgId.value = pkg ? pkg.id : '';
+    els.pkgName.value = pkg ? (pkg.name || '') : '';
+    els.pkgPriceRange.value = pkg ? (pkg.price_range || '') : '';
+    els.pkgEventType.value = pkg ? (pkg.recommended_event_type || '') : '';
+    els.pkgStatus.value = pkg ? (pkg.status || 'draft') : 'draft';
+    els.pkgDescription.value = pkg ? (pkg.description || '') : '';
+    els.pkgSortOrder.value = pkg ? (pkg.sort_order || 0) : 0;
+
+    // Construir lista de items dinámica
+    var items = [];
+    if (pkg && pkg.includes_json) {
+      try { var parsed = JSON.parse(pkg.includes_json); if (Array.isArray(parsed)) items = parsed; } catch (e) {}
+    }
+    buildIncludesList(items);
+    els.formCard.style.display = '';
+  }
+
+  function hideForm() {
+    els.formCard.style.display = 'none';
+    els.form.reset();
+    els.includesList.innerHTML = '';
+    currentId = null;
+  }
+
+  function savePackage() {
+    var includesJson = collectIncludes();
+
+    var body = {
+      name: els.pkgName.value.trim(),
+      price_range: els.pkgPriceRange.value.trim() || null,
+      recommended_event_type: els.pkgEventType.value.trim() || null,
+      description: els.pkgDescription.value.trim() || null,
+      includes_json: includesJson,
+      status: els.pkgStatus.value,
+      sort_order: parseInt(els.pkgSortOrder.value, 10) || 0,
+    };
+
+    if (!body.name) {
+      alert('El nombre del paquete es obligatorio.');
+      return;
+    }
+
+    var url = currentId ? '/api/packages/' + currentId : '/api/packages';
+    var method = currentId ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Error del servidor'); });
+        return r.json();
+      })
+      .then(function () { hideForm(); loadPackages(); })
+      .catch(function (err) { alert('Error: ' + err.message); });
+  }
+
+  function editPackage(id) {
+    fetch('/api/packages/' + id)
+      .then(function (r) { return r.json(); })
+      .then(function (pkg) { showForm(pkg); })
+      .catch(function (err) { alert('Error al cargar paquete: ' + err.message); });
+  }
+
+  function deletePackage(id) {
+    if (!confirm('¿Eliminar este paquete? Esta acción no se puede deshacer.')) return;
+    fetch('/api/packages/' + id, { method: 'DELETE' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Error del servidor');
+        return r.json();
+      })
+      .then(function () { loadPackages(); })
+      .catch(function (err) { alert('Error: ' + err.message); });
+  }
+
+  function bindClicks(selector, handler) {
+    var btns = document.querySelectorAll(selector);
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener('click', function () { handler(parseInt(this.dataset.id, 10)); });
+    }
+  }
+
+  // --- Lista dinámica de items incluidos ---
+
+  function buildIncludesList(items) {
+    els.includesList.innerHTML = '';
+    if (!items || items.length === 0) {
+      addIncludeInput('');
+    } else {
+      for (var i = 0; i < items.length; i++) {
+        addIncludeInput(items[i]);
+      }
+    }
+  }
+
+  function addIncludeInput(value) {
+    var row = document.createElement('div');
+    row.className = 'include-row';
+    row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;';
+
+    var check = document.createElement('span');
+    check.textContent = '✓';
+    check.style.cssText = 'color:var(--color-accent);font-weight:700;font-size:1rem;flex-shrink:0;';
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-input-admin';
+    input.placeholder = 'Ej: 2 altavoces activos';
+    input.value = value || '';
+    input.style.cssText = 'flex:1;';
+
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '✕';
+    delBtn.style.cssText = 'flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:none;background:transparent;color:var(--color-text-muted);cursor:pointer;font-size:0.875rem;transition:all 200ms ease;';
+    delBtn.addEventListener('mouseenter', function () { delBtn.style.color = 'var(--color-danger)'; delBtn.style.background = 'rgba(229,62,62,0.1)'; });
+    delBtn.addEventListener('mouseleave', function () { delBtn.style.color = 'var(--color-text-muted)'; delBtn.style.background = 'transparent'; });
+    delBtn.addEventListener('click', function () { removeIncludeInput(row); });
+
+    row.appendChild(check);
+    row.appendChild(input);
+    row.appendChild(delBtn);
+    els.includesList.appendChild(row);
+
+    updateRemoveButtons();
+  }
+
+  function removeIncludeInput(row) {
+    var rows = els.includesList.querySelectorAll('.include-row');
+    if (rows.length <= 1) {
+      alert('Al menos un ítem es obligatorio.');
+      return;
+    }
+    row.remove();
+    updateRemoveButtons();
+  }
+
+  function updateRemoveButtons() {
+    var rows = els.includesList.querySelectorAll('.include-row');
+    for (var i = 0; i < rows.length; i++) {
+      var btn = rows[i].querySelector('button');
+      if (rows.length === 1) {
+        btn.style.display = 'none';
+      } else {
+        btn.style.display = '';
+      }
+    }
+  }
+
+  function collectIncludes() {
+    var inputs = els.includesList.querySelectorAll('.include-row input');
+    var items = [];
+    for (var i = 0; i < inputs.length; i++) {
+      var val = inputs[i].value.trim();
+      if (val) items.push(val);
+    }
+    return items.length > 0 ? JSON.stringify(items) : null;
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+})();
+</script>

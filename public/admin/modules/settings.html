@@ -1,6 +1,174 @@
-<!-- Settings Module Stub -->
-<div class="module-stub">
-  <div class="module-stub-icon">⚙️</div>
-  <h2>Configuración</h2>
-  <p>Ajustes del sitio y datos de contacto.</p>
+<!-- Settings Module — Formulario de configuración del sitio -->
+<div class="card" id="settingsFormCard">
+  <div class="card-header">
+    <h3 class="card-title">⚙️ Configuración del sitio</h3>
+  </div>
+  <form id="settingsForm" autocomplete="off">
+    <!-- Identidad del sitio -->
+    <h4 style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-text-muted);margin:1rem 0 0.75rem;font-weight:600;">Identidad del sitio</h4>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="cfgSiteName">Nombre del sitio</label>
+        <input class="form-input-admin" id="cfgSiteName" maxlength="200" placeholder="Straton Audio" />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="cfgSiteDescription">Descripción del sitio</label>
+        <input class="form-input-admin" id="cfgSiteDescription" maxlength="300" placeholder="Soluciones profesionales de audio e iluminación" />
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <h4 style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-text-muted);margin:1.25rem 0 0.75rem;font-weight:600;">Sección Hero (Inicio)</h4>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="cfgHeroTitle">Título del Hero</label>
+        <input class="form-input-admin" id="cfgHeroTitle" maxlength="200" placeholder="Straton Audio" />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="cfgHeroSubtitle">Subtítulo del Hero</label>
+        <input class="form-input-admin" id="cfgHeroSubtitle" maxlength="300" placeholder="Soluciones profesionales de audio e iluminación" />
+      </div>
+    </div>
+
+    <!-- Contacto -->
+    <h4 style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-text-muted);margin:1.25rem 0 0.75rem;font-weight:600;">Contacto</h4>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="cfgContactEmail">Email de contacto</label>
+        <input class="form-input-admin" id="cfgContactEmail" type="email" maxlength="200" placeholder="info@stratonaudio.com.co" />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="cfgContactPhone">Teléfono de contacto</label>
+        <input class="form-input-admin" id="cfgContactPhone" maxlength="50" placeholder="+57 300 123 4567" />
+      </div>
+    </div>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="cfgWhatsapp">WhatsApp</label>
+        <input class="form-input-admin" id="cfgWhatsapp" maxlength="50" placeholder="573001234567" />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="cfgContactAddress">Dirección</label>
+        <input class="form-input-admin" id="cfgContactAddress" maxlength="300" placeholder="Calle 123 #45-67, Bogotá" />
+      </div>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin" for="cfgBusinessHours">Horario de atención</label>
+      <input class="form-input-admin" id="cfgBusinessHours" maxlength="200" placeholder="Lun—Vie 8:00 AM — 6:00 PM" />
+    </div>
+
+    <!-- Redes sociales -->
+    <h4 style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-text-muted);margin:1.25rem 0 0.75rem;font-weight:600;">Redes Sociales</h4>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="cfgSocialInstagram">Instagram (URL o usuario)</label>
+        <input class="form-input-admin" id="cfgSocialInstagram" maxlength="300" placeholder="@stratonaudio" />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="cfgSocialFacebook">Facebook (URL o usuario)</label>
+        <input class="form-input-admin" id="cfgSocialFacebook" maxlength="300" placeholder="stratonaudio" />
+      </div>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin" for="cfgSocialTiktok">TikTok (URL o usuario)</label>
+      <input class="form-input-admin" id="cfgSocialTiktok" maxlength="300" placeholder="@stratonaudio" style="max-width:50%;" />
+    </div>
+
+    <div class="form-actions">
+      <span id="settingsMsg" style="font-size:0.8125rem;margin-right:auto;display:none;"></span>
+      <button type="submit" class="btn-admin btn-primary-admin">💾 Guardar configuración</button>
+    </div>
+  </form>
 </div>
+
+<script>
+(function () {
+  'use strict';
+
+  // Mapeo de IDs de campo a keys de configuración
+  var fieldMap = {
+    cfgSiteName: 'site_name',
+    cfgSiteDescription: 'site_description',
+    cfgHeroTitle: 'hero_title',
+    cfgHeroSubtitle: 'hero_subtitle',
+    cfgContactEmail: 'contact_email',
+    cfgContactPhone: 'contact_phone',
+    cfgWhatsapp: 'whatsapp_number',
+    cfgContactAddress: 'contact_address',
+    cfgBusinessHours: 'business_hours',
+    cfgSocialInstagram: 'social_instagram',
+    cfgSocialFacebook: 'social_facebook',
+    cfgSocialTiktok: 'social_tiktok',
+  };
+
+  loadSettings();
+
+  document.getElementById('settingsForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    saveSettings();
+  });
+
+  function loadSettings() {
+    var msgEl = document.getElementById('settingsMsg');
+    msgEl.style.display = 'inline';
+    msgEl.style.color = 'var(--color-text-muted)';
+    msgEl.textContent = 'Cargando configuración...';
+
+    fetch('/api/settings')
+      .then(function (r) { return r.json(); })
+      .then(function (settings) {
+        // Rellenar campos desde las keys conocidas
+        Object.keys(fieldMap).forEach(function (fieldId) {
+          var key = fieldMap[fieldId];
+          var el = document.getElementById(fieldId);
+          if (el && settings[key] !== undefined) {
+            el.value = settings[key];
+          }
+        });
+        msgEl.style.color = 'var(--color-accent)';
+        msgEl.textContent = '✓ Configuración cargada';
+        setTimeout(function () { msgEl.style.display = 'none'; }, 2000);
+      })
+      .catch(function (err) {
+        console.error('Error cargando settings:', err);
+        msgEl.style.color = 'var(--color-danger)';
+        msgEl.textContent = 'Error al cargar la configuración';
+      });
+  }
+
+  function saveSettings() {
+    var msgEl = document.getElementById('settingsMsg');
+    msgEl.style.display = 'inline';
+    msgEl.style.color = 'var(--color-text-muted)';
+    msgEl.textContent = 'Guardando...';
+
+    var body = {};
+    Object.keys(fieldMap).forEach(function (fieldId) {
+      var key = fieldMap[fieldId];
+      var el = document.getElementById(fieldId);
+      if (el) {
+        body[key] = el.value.trim();
+      }
+    });
+
+    fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Error del servidor'); });
+        return r.json();
+      })
+      .then(function (data) {
+        msgEl.style.color = 'var(--color-accent)';
+        msgEl.textContent = '✓ Configuración guardada (' + (data.updated || Object.keys(body).length) + ' valores)';
+        setTimeout(function () { msgEl.style.display = 'none'; }, 3000);
+      })
+      .catch(function (err) {
+        msgEl.style.color = 'var(--color-danger)';
+        msgEl.textContent = 'Error: ' + err.message;
+      });
+  }
+})();
+</script>

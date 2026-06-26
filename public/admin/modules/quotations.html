@@ -1,6 +1,299 @@
-<!-- Quotations Module Stub -->
-<div class="module-stub">
-  <div class="module-stub-icon">📨</div>
-  <h2>Cotizaciones</h2>
-  <p>Solicitudes de cotización recibidas.</p>
+<!-- Quotations Module — Lista + Vista detalle + Cambio de estado -->
+<div class="card" id="quotationsToolbar">
+  <div class="card-header">
+    <h3 class="card-title">📨 Cotizaciones</h3>
+    <div style="display:flex;gap:0.5rem;align-items:center;">
+      <select id="quotationsDateFilter" style="padding:0.35rem 0.75rem;border-radius:var(--radius);background:var(--color-surface);color:var(--color-text);border:1px solid var(--color-border);font-size:0.8rem;">
+        <option value="all">Todas</option>
+        <option value="today">Hoy</option>
+        <option value="week">Esta semana</option>
+        <option value="month">Este mes</option>
+      </select>
+      <button class="btn-admin btn-ghost-admin" id="btnRefreshQuotations" title="Actualizar">🔄 Actualizar</button>
+    </div>
+  </div>
 </div>
+
+<!-- Tabla de cotizaciones -->
+<div class="card" id="quotationsTableCard">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Cliente</th>
+          <th>Fecha</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="quotationsTbody">
+        <tr><td colspan="5"><div class="loading-admin">Cargando cotizaciones...</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Vista detalle (oculta por defecto) -->
+<div class="card" id="quotationsDetailCard" style="display:none;">
+  <div class="card-header">
+    <h3 class="card-title" id="quotationsDetailTitle">Cotización #—</h3>
+    <button class="btn-admin btn-ghost-admin" id="btnBackQuotations">← Volver a la lista</button>
+  </div>
+  <div id="quotationsDetailBody"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var statusLabels = {
+    pending: 'Pendiente',
+    contacted: 'Contactado',
+    quoted: 'Cotizado',
+    closed: 'Cerrado',
+  };
+
+  var statusBadgeClasses = {
+    pending: 'pending',
+    contacted: 'info',
+    quoted: 'published',
+    closed: 'inactive',
+  };
+
+  var els = {
+    tableCard: document.getElementById('quotationsTableCard'),
+    tbody: document.getElementById('quotationsTbody'),
+    detailCard: document.getElementById('quotationsDetailCard'),
+    detailTitle: document.getElementById('quotationsDetailTitle'),
+    detailBody: document.getElementById('quotationsDetailBody'),
+    btnRefresh: document.getElementById('btnRefreshQuotations'),
+    btnBack: document.getElementById('btnBackQuotations'),
+    dateFilter: document.getElementById('quotationsDateFilter'),
+  };
+
+  loadQuotations();
+
+  els.btnRefresh.addEventListener('click', loadQuotations);
+  els.btnBack.addEventListener('click', showList);
+  els.dateFilter.addEventListener('change', loadQuotations);
+
+  function loadQuotations() {
+    els.tableCard.style.display = '';
+    els.detailCard.style.display = 'none';
+
+    fetch('/api/quotations')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var filter = els.dateFilter.value;
+        if (filter !== 'all') {
+          var start = getFilterStart(filter);
+          data = data.filter(function (q) { return new Date(q.created_at) >= start; });
+        }
+        renderTable(data);
+      })
+      .catch(function (err) {
+        console.error('Error cargando cotizaciones:', err);
+        els.tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state-admin"><p>Error al cargar cotizaciones</p></div></td></tr>';
+      });
+  }
+
+  function getFilterStart(filter) {
+    var now = new Date();
+    if (filter === 'today') {
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (filter === 'week') {
+      var day = now.getDay();
+      var diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      return new Date(now.getFullYear(), now.getMonth(), diff);
+    } else if (filter === 'month') {
+      return new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+    return null;
+  }
+
+  function renderTable(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      els.tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state-admin"><div class="empty-state-admin-icon">📨</div><p>No hay cotizaciones recibidas</p></div></td></tr>';
+      return;
+    }
+
+    els.tbody.innerHTML = rows.map(function (q) {
+      var badgeClass = statusBadgeClasses[q.status] || 'pending';
+      var badgeText = statusLabels[q.status] || q.status;
+      var dateStr = q.created_at ? new Date(q.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+
+      return '<tr class="quotationRow" data-id="' + q.id + '" style="cursor:pointer;">' +
+        '<td><span style="color:var(--color-text-muted);">#' + q.id + '</span></td>' +
+        '<td><strong>' + esc(q.customer_name || '—') + '</strong><br><small style="color:var(--color-text-muted);">' + esc(q.email || '') + '</small></td>' +
+        '<td>' + dateStr + '</td>' +
+        '<td><span class="status-badge ' + badgeClass + '">' + badgeText + '</span></td>' +
+        '<td>' +
+          '<button class="btn-admin btn-ghost-admin btnViewQuotation" data-id="' + q.id + '" style="padding:0.25rem 0.75rem;font-size:0.75rem;">📋 Ver</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+
+    // Click en la fila o botón "Ver" abre detalle
+    var viewBtns = document.querySelectorAll('.btnViewQuotation');
+    for (var i = 0; i < viewBtns.length; i++) {
+      viewBtns[i].addEventListener('click', function (e) {
+        e.stopPropagation();
+        showDetail(parseInt(this.dataset.id, 10));
+      });
+    }
+
+    var rows = document.querySelectorAll('.quotationRow');
+    for (var j = 0; j < rows.length; j++) {
+      rows[j].addEventListener('click', function () {
+        showDetail(parseInt(this.dataset.id, 10));
+      });
+    }
+  }
+
+  function showList() {
+    els.tableCard.style.display = '';
+    els.detailCard.style.display = 'none';
+  }
+
+  function showDetail(id) {
+    fetch('/api/quotations/' + id)
+      .then(function (r) {
+        if (!r.ok) throw new Error('Cotización no encontrada');
+        return r.json();
+      })
+      .then(renderDetail)
+      .catch(function (err) { alert('Error: ' + err.message); });
+  }
+
+  function renderDetail(q) {
+    els.detailTitle.textContent = 'Cotización #' + q.id;
+    els.tableCard.style.display = 'none';
+    els.detailCard.style.display = '';
+
+    var currentBadgeClass = statusBadgeClasses[q.status] || 'pending';
+    var currentBadgeText = statusLabels[q.status] || q.status;
+    var dateStr = q.created_at ? new Date(q.created_at).toLocaleString('es-CO') : '—';
+
+    // Parse products
+    var productsHtml = '';
+    try {
+      var products = q.products_json ? JSON.parse(q.products_json) : null;
+      if (Array.isArray(products) && products.length > 0) {
+        productsHtml = '<table class="table" style="margin-top:0.5rem;"><thead><tr><th>Producto</th><th>Cantidad</th><th>Notas</th></tr></thead><tbody>' +
+          products.map(function (p) {
+            var name = p.name || p.product_name || p.title || '—';
+            var qty = p.quantity || p.qty || '1';
+            var notes = p.notes || '';
+            return '<tr><td>' + esc(name) + '</td><td>' + esc(String(qty)) + '</td><td style="color:var(--color-text-muted);">' + esc(notes) + '</td></tr>';
+          }).join('') +
+          '</tbody></table>';
+      } else if (typeof products === 'object' && products !== null) {
+        productsHtml = '<pre style="background:var(--color-surface);padding:0.75rem;border-radius:var(--radius);font-size:0.75rem;overflow-x:auto;color:var(--color-text-secondary);">' + esc(JSON.stringify(products, null, 2)) + '</pre>';
+      } else {
+        productsHtml = '<p style="color:var(--color-text-muted);">No se especificaron productos.</p>';
+      }
+    } catch (e) {
+      productsHtml = '<p style="color:var(--color-text-muted);">' + esc(q.products_json || 'No se especificaron productos.') + '</p>';
+    }
+
+    var statusOptions = Object.keys(statusLabels).map(function (key) {
+      var selected = key === q.status ? ' selected' : '';
+      return '<option value="' + key + '"' + selected + '>' + statusLabels[key] + '</option>';
+    }).join('');
+
+    els.detailBody.innerHTML =
+      '<div class="form-row-admin">' +
+        '<div class="form-group-admin">' +
+          '<label class="form-label-admin">Cliente</label>' +
+          '<p style="font-size:0.9375rem;">' + esc(q.customer_name || '—') + '</p>' +
+        '</div>' +
+        '<div class="form-group-admin">' +
+          '<label class="form-label-admin">Fecha de solicitud</label>' +
+          '<p style="font-size:0.9375rem;color:var(--color-text-muted);">' + dateStr + '</p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="form-row-admin">' +
+        '<div class="form-group-admin">' +
+          '<label class="form-label-admin">Email</label>' +
+          '<p style="font-size:0.9375rem;">' + esc(q.email || '—') + '</p>' +
+        '</div>' +
+        '<div class="form-group-admin">' +
+          '<label class="form-label-admin">Teléfono</label>' +
+          '<p style="font-size:0.9375rem;">' + esc(q.phone || '—') + '</p>' +
+        '</div>' +
+      '</div>' +
+      (q.company || q.city ? '<div class="form-row-admin">' +
+        '<div class="form-group-admin">' +
+          '<label class="form-label-admin">Empresa</label>' +
+          '<p style="font-size:0.9375rem;">' + esc(q.company || '—') + '</p>' +
+        '</div>' +
+        '<div class="form-group-admin">' +
+          '<label class="form-label-admin">Ciudad</label>' +
+          '<p style="font-size:0.9375rem;">' + esc(q.city || '—') + '</p>' +
+        '</div>' +
+      '</div>' : '') +
+      (q.event_date ? '<div class="form-group-admin">' +
+        '<label class="form-label-admin">Fecha del evento</label>' +
+        '<p style="font-size:0.9375rem;">' + esc(q.event_date) + '</p>' +
+      '</div>' : '') +
+      (q.notes ? '<div class="form-group-admin">' +
+        '<label class="form-label-admin">Notas del cliente</label>' +
+        '<p style="font-size:0.9375rem;white-space:pre-wrap;">' + esc(q.notes) + '</p>' +
+      '</div>' : '') +
+      '<div class="form-group-admin">' +
+        '<label class="form-label-admin">Productos solicitados</label>' +
+        productsHtml +
+      '</div>' +
+      '<div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius);padding:1rem;margin-top:1rem;">' +
+        '<div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">' +
+          '<label class="form-label-admin" style="margin:0;">Estado actual: <span class="status-badge ' + currentBadgeClass + '" style="margin-left:0.25rem;">' + currentBadgeText + '</span></label>' +
+          '<select class="form-select-admin" id="quotationStatusSelect" style="width:auto;min-width:160px;">' + statusOptions + '</select>' +
+          '<button class="btn-admin btn-primary-admin" id="btnUpdateStatus">Actualizar estado</button>' +
+          '<span id="statusMsg" style="font-size:0.8rem;display:none;"></span>' +
+        '</div>' +
+      '</div>';
+
+    // Bind status update
+    document.getElementById('btnUpdateStatus').addEventListener('click', function () {
+      var newStatus = document.getElementById('quotationStatusSelect').value;
+      updateQuotationStatus(q.id, newStatus);
+    });
+  }
+
+  function updateQuotationStatus(id, newStatus) {
+    var msgEl = document.getElementById('statusMsg');
+    msgEl.style.display = 'inline';
+    msgEl.style.color = 'var(--color-text-muted)';
+    msgEl.textContent = 'Actualizando...';
+
+    fetch('/api/quotations/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Error del servidor'); });
+        return r.json();
+      })
+      .then(function (updated) {
+        msgEl.style.color = 'var(--color-accent)';
+        msgEl.textContent = '✓ Estado actualizado a "' + (statusLabels[updated.status] || updated.status) + '"';
+
+        // Recargar el detalle con los datos actualizados
+        setTimeout(function () { showDetail(id); }, 800);
+      })
+      .catch(function (err) {
+        msgEl.style.color = 'var(--color-danger)';
+        msgEl.textContent = 'Error: ' + err.message;
+      });
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+})();
+</script>

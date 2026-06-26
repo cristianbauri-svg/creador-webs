@@ -1,6 +1,575 @@
-<!-- Products Module Stub -->
-<div class="module-stub">
-  <div class="module-stub-icon">📦</div>
-  <h2>Productos</h2>
-  <p>Gestión de equipos de audio, iluminación, pantallas LED y más.</p>
+<!-- Products Module — CRUD completo -->
+<div class="card" id="productsToolbar">
+  <div class="card-header">
+    <h3 class="card-title">📦 Productos</h3>
+    <button class="btn-admin btn-primary-admin" id="btnAddProduct">+ Agregar Producto</button>
+  </div>
 </div>
+
+<!-- Tabla de productos -->
+<div class="card" id="productsTableCard">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Imagen</th>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="productsTbody">
+        <tr><td colspan="5"><div class="loading-admin">Cargando productos...</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Formulario (oculto por defecto) -->
+<div class="card" id="productsFormCard" style="display:none;">
+  <div class="card-header">
+    <h3 class="card-title" id="productsFormTitle">Nuevo Producto</h3>
+  </div>
+  <form id="productsForm" autocomplete="off">
+    <input type="hidden" id="prodId" />
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="prodTitle">Nombre *</label>
+        <input class="form-input-admin" id="prodTitle" required maxlength="200" placeholder="Ej: Line Array Meyer Sound LEO" />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="prodCategory">Categoría</label>
+        <select class="form-select-admin" id="prodCategory">
+          <option value="Audio">Audio</option>
+          <option value="Pantallas LED">Pantallas LED</option>
+          <option value="Proyectores">Proyectores</option>
+          <option value="Iluminación">Iluminación</option>
+          <option value="Otros">Otros</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="prodServiceType">Tipo</label>
+        <select class="form-select-admin" id="prodServiceType">
+          <option value="Venta">Venta</option>
+          <option value="Alquiler">Alquiler</option>
+        </select>
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="prodStatus">Estado</label>
+        <select class="form-select-admin" id="prodStatus">
+          <option value="draft">Borrador</option>
+          <option value="published">Publicado</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin" for="prodDescription">Descripción</label>
+      <textarea class="form-textarea-admin" id="prodDescription" rows="3" placeholder="Descripción del producto..."></textarea>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin">Características</label>
+      <div id="prodFeatures"></div>
+      <button type="button" class="btn-admin btn-ghost-admin" id="btnAddFeature" style="margin-top:0.5rem;font-size:0.75rem;">+ Agregar otra característica</button>
+    </div>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin">Imagen principal</label>
+        <div id="prodImageDrop" style="border:2px dashed var(--color-border);border-radius:var(--radius);padding:1.5rem;text-align:center;cursor:pointer;transition:border-color 200ms ease;min-height:100px;display:flex;align-items:center;justify-content:center;">
+          <div id="prodImageDropMsg" style="color:var(--color-text-muted);font-size:0.8125rem;">Arrastra una imagen aquí o haz clic para seleccionar</div>
+        </div>
+        <input type="file" id="prodImageFile" hidden accept="image/webp,image/jpeg,image/png" />
+        <small style="color:var(--color-text-muted);font-size:0.7rem;display:block;margin-top:0.35rem;">Formatos aceptados: WebP (recomendado), JPEG, PNG. Tamaño máximo: 5 MB. Tamaño recomendado: 800×600 px. Las imágenes se mostrarán con un recorte uniforme (object-fit: cover) en el sitio público.</small>
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="prodSortOrder">Orden</label>
+        <input class="form-input-admin" id="prodSortOrder" type="number" value="0" min="0" />
+      </div>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin">Galería</label>
+      <div id="prodGalleryDrop" style="border:2px dashed var(--color-border);border-radius:var(--radius);padding:1.5rem;text-align:center;cursor:pointer;transition:border-color 200ms ease;min-height:80px;display:flex;align-items:center;justify-content:center;">
+        <div id="prodGalleryDropMsg" style="color:var(--color-text-muted);font-size:0.8125rem;">Arrastra varias imágenes aquí o haz clic para seleccionar</div>
+      </div>
+      <div id="prodGalleryPreviews" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;"></div>
+      <input type="file" id="prodGalleryFile" hidden accept="image/webp,image/jpeg,image/png" multiple />
+      <button type="button" class="btn-admin btn-ghost-admin" id="btnAddMoreImages" style="margin-top:0.5rem;font-size:0.75rem;">+ Agregar más imágenes</button>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn-admin btn-ghost-admin" id="btnCancelProduct">Cancelar</button>
+      <button type="submit" class="btn-admin btn-primary-admin">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var currentId = null;
+  var formVisible = false;
+  var mainImageFile = null;        // File seleccionado para imagen principal
+  var existingImageUrl = '';       // URL existente (al editar)
+  var galleryFiles = [];           // Array de Files para galería
+  var existingGalleryUrls = [];    // URLs existentes de galería
+
+  var els = {
+    toolbar: document.getElementById('productsToolbar'),
+    tableCard: document.getElementById('productsTableCard'),
+    tbody: document.getElementById('productsTbody'),
+    formCard: document.getElementById('productsFormCard'),
+    formTitle: document.getElementById('productsFormTitle'),
+    form: document.getElementById('productsForm'),
+    prodId: document.getElementById('prodId'),
+    prodTitle: document.getElementById('prodTitle'),
+    prodCategory: document.getElementById('prodCategory'),
+    prodServiceType: document.getElementById('prodServiceType'),
+    prodStatus: document.getElementById('prodStatus'),
+    prodDescription: document.getElementById('prodDescription'),
+    prodFeatures: document.getElementById('prodFeatures'),
+    btnAddFeature: document.getElementById('btnAddFeature'),
+    prodImageDrop: document.getElementById('prodImageDrop'),
+    prodImageDropMsg: document.getElementById('prodImageDropMsg'),
+    prodImageFile: document.getElementById('prodImageFile'),
+    prodSortOrder: document.getElementById('prodSortOrder'),
+    prodGalleryDrop: document.getElementById('prodGalleryDrop'),
+    prodGalleryDropMsg: document.getElementById('prodGalleryDropMsg'),
+    prodGalleryPreviews: document.getElementById('prodGalleryPreviews'),
+    prodGalleryFile: document.getElementById('prodGalleryFile'),
+    btnAddMoreImages: document.getElementById('btnAddMoreImages'),
+    btnAdd: document.getElementById('btnAddProduct'),
+    btnCancel: document.getElementById('btnCancelProduct'),
+  };
+
+  // Iniciar: cargar lista
+  loadProducts();
+
+  // Eventos
+  els.btnAdd.addEventListener('click', function () { showForm(); });
+  els.btnCancel.addEventListener('click', function () { hideForm(); });
+  els.btnAddFeature.addEventListener('click', function () { addFeatureInput(''); });
+  els.form.addEventListener('submit', function (e) { e.preventDefault(); saveProduct(); });
+
+  // Drag & drop — Imagen principal
+  initDropZone(els.prodImageDrop, els.prodImageFile, function (file) {
+    mainImageFile = file;
+    showImagePreview(file, els.prodImageDrop);
+  });
+  els.prodImageDrop.addEventListener('click', function () { els.prodImageFile.click(); });
+  els.prodImageFile.addEventListener('change', function () {
+    if (els.prodImageFile.files && els.prodImageFile.files[0]) {
+      mainImageFile = els.prodImageFile.files[0];
+      showImagePreview(mainImageFile, els.prodImageDrop);
+    }
+  });
+
+  // Drag & drop — Galería
+  initDropZone(els.prodGalleryDrop, els.prodGalleryFile, function (files) {
+    for (var i = 0; i < files.length; i++) { galleryFiles.push(files[i]); }
+    renderGalleryPreviews();
+  });
+  els.prodGalleryDrop.addEventListener('click', function () { els.prodGalleryFile.click(); });
+  els.prodGalleryFile.addEventListener('change', function () {
+    if (els.prodGalleryFile.files) {
+      for (var i = 0; i < els.prodGalleryFile.files.length; i++) { galleryFiles.push(els.prodGalleryFile.files[i]); }
+      renderGalleryPreviews();
+      els.prodGalleryFile.value = '';
+    }
+  });
+  els.btnAddMoreImages.addEventListener('click', function () { els.prodGalleryFile.click(); });
+
+  function loadProducts() {
+    fetch('/api/products')
+      .then(function (r) { return r.json(); })
+      .then(renderTable)
+      .catch(function (err) {
+        console.error('Error cargando productos:', err);
+        els.tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state-admin"><p>Error al cargar productos</p></div></td></tr>';
+      });
+  }
+
+  function renderTable(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      els.tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state-admin"><div class="empty-state-admin-icon">📦</div><p>No hay productos registrados</p></div></td></tr>';
+      return;
+    }
+
+    els.tbody.innerHTML = rows.map(function (p) {
+      var img = p.image_url
+        ? '<img src="' + esc(p.image_url) + '" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:4px;" />'
+        : '<span style="display:inline-flex;width:48px;height:48px;background:var(--color-surface);border-radius:4px;align-items:center;justify-content:center;color:var(--color-text-muted);">📷</span>';
+      var badgeClass = p.status === 'published' ? 'published' : 'draft';
+      var badgeText = p.status === 'published' ? 'Publicado' : 'Borrador';
+      var typeBadge = p.service_type === 'Alquiler' ? '🏷️ Alquiler' : '💰 Venta';
+
+      return '<tr>' +
+        '<td>' + img + '</td>' +
+        '<td><strong>' + esc(p.title) + '</strong><br><small style="color:var(--color-text-muted);">' + esc(typeBadge) + '</small></td>' +
+        '<td>' + esc(p.category || '—') + '</td>' +
+        '<td><span class="status-badge ' + badgeClass + '">' + badgeText + '</span></td>' +
+        '<td>' +
+          '<button class="btn-admin btn-ghost-admin btnEditProduct" data-id="' + p.id + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">✏️</button> ' +
+          '<button class="btn-admin btn-danger-admin btnDelProduct" data-id="' + p.id + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">🗑️</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+
+    // Bind edit buttons
+    var editBtns = els.tbody.querySelectorAll('.btnEditProduct');
+    for (var i = 0; i < editBtns.length; i++) {
+      editBtns[i].addEventListener('click', function () {
+        var id = parseInt(this.dataset.id, 10);
+        editProduct(id);
+      });
+    }
+
+    // Bind delete buttons
+    var delBtns = els.tbody.querySelectorAll('.btnDelProduct');
+    for (var j = 0; j < delBtns.length; j++) {
+      delBtns[j].addEventListener('click', function () {
+        var id = parseInt(this.dataset.id, 10);
+        deleteProduct(id);
+      });
+    }
+  }
+
+  function showForm(product) {
+    currentId = product ? product.id : null;
+    els.formTitle.textContent = product ? 'Editar Producto' : 'Nuevo Producto';
+    els.prodId.value = product ? product.id : '';
+    els.prodTitle.value = product ? (product.title || '') : '';
+    els.prodCategory.value = product ? (product.category || 'Audio') : 'Audio';
+    els.prodServiceType.value = product ? (product.service_type || 'Venta') : 'Venta';
+    els.prodStatus.value = product ? (product.status || 'draft') : 'draft';
+    els.prodDescription.value = product ? (product.description || '') : '';
+    // Construir lista de características dinámica (separadas por \n)
+    var featuresList = [];
+    if (product && product.features) {
+      featuresList = product.features.split('\n').filter(function (s) { return s.trim(); });
+    }
+    buildFeaturesList(featuresList);
+    els.prodSortOrder.value = product ? (product.sort_order || 0) : 0;
+    els.formCard.style.display = '';
+    formVisible = true;
+
+    // Resetear estado de archivos
+    mainImageFile = null;
+    galleryFiles = [];
+    existingImageUrl = product ? (product.image_url || '') : '';
+    existingGalleryUrls = [];
+    if (product && product.gallery_json) {
+      try { var g = JSON.parse(product.gallery_json); if (Array.isArray(g)) existingGalleryUrls = g; } catch (e) {}
+    }
+
+    // Mostrar preview de imagen existente o resetear drop zone
+    if (existingImageUrl) {
+      showImagePreview(existingImageUrl, els.prodImageDrop);
+    } else {
+      resetImageDrop();
+    }
+
+    // Mostrar previews de galería existente
+    renderGalleryPreviews();
+  }
+
+  function hideForm() {
+    els.formCard.style.display = 'none';
+    formVisible = false;
+    els.form.reset();
+    els.prodFeatures.innerHTML = '';
+    resetImageDrop();
+    galleryFiles = [];
+    existingGalleryUrls = [];
+    els.prodGalleryPreviews.innerHTML = '';
+    els.prodGalleryDropMsg.style.display = '';
+    currentId = null;
+  }
+
+  function saveProduct() {
+    var title = els.prodTitle.value.trim();
+
+    if (!title) {
+      alert('El nombre del producto es obligatorio.');
+      return;
+    }
+
+    // Mostrar estado de carga
+    var submitBtn = els.form.querySelector('button[type="submit"]');
+    var originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Subiendo imágenes...';
+
+    // Subir imagen principal si hay archivo nuevo, si no mantener URL existente
+    var imagePromise;
+    if (mainImageFile) {
+      imagePromise = uploadFile(mainImageFile).then(function (result) { return result.url; });
+    } else {
+      imagePromise = Promise.resolve(existingImageUrl || null);
+    }
+
+    // Subir archivos de galería
+    var galleryUploads = [];
+    for (var i = 0; i < galleryFiles.length; i++) {
+      galleryUploads.push(uploadFile(galleryFiles[i]));
+    }
+
+    Promise.all([imagePromise].concat(galleryUploads.length > 0 ? Promise.all(galleryUploads) : Promise.resolve([])))
+      .then(function (results) {
+        var imageUrl = results[0];
+        var galleryResults = galleryUploads.length > 0 ? results[1] : [];
+
+        // Combinar URLs existentes de galería con las nuevas
+        var allGalleryUrls = existingGalleryUrls.slice();
+        for (var j = 0; j < galleryResults.length; j++) {
+          allGalleryUrls.push(galleryResults[j].url);
+        }
+
+        var body = {
+          title: title,
+          category: els.prodCategory.value,
+          service_type: els.prodServiceType.value,
+          description: els.prodDescription.value.trim() || null,
+          features: collectFeatures(),
+          image_url: imageUrl,
+          gallery_json: allGalleryUrls.length > 0 ? JSON.stringify(allGalleryUrls) : null,
+          status: els.prodStatus.value,
+          sort_order: parseInt(els.prodSortOrder.value, 10) || 0,
+        };
+
+        var url = currentId ? '/api/products/' + currentId : '/api/products';
+        var method = currentId ? 'PUT' : 'POST';
+
+        return fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }).then(function (r) {
+          if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Error del servidor'); });
+          return r.json();
+        });
+      })
+      .then(function () {
+        hideForm();
+        loadProducts();
+      })
+      .catch(function (err) {
+        alert('Error: ' + err.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      });
+  }
+
+  function editProduct(id) {
+    fetch('/api/products/' + id)
+      .then(function (r) { return r.json(); })
+      .then(function (product) { showForm(product); })
+      .catch(function (err) { alert('Error al cargar producto: ' + err.message); });
+  }
+
+  function deleteProduct(id) {
+    if (!confirm('¿Eliminar este producto? Esta acción no se puede deshacer.')) return;
+
+    fetch('/api/products/' + id, { method: 'DELETE' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Error del servidor');
+        return r.json();
+      })
+      .then(function () { loadProducts(); })
+      .catch(function (err) { alert('Error: ' + err.message); });
+  }
+
+  // --- Lista dinámica de características ---
+
+  function buildFeaturesList(items) {
+    els.prodFeatures.innerHTML = '';
+    if (!items || items.length === 0) {
+      addFeatureInput('');
+    } else {
+      for (var i = 0; i < items.length; i++) {
+        addFeatureInput(items[i]);
+      }
+    }
+  }
+
+  function addFeatureInput(value) {
+    var row = document.createElement('div');
+    row.className = 'feature-row';
+    row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;';
+
+    var bullet = document.createElement('span');
+    bullet.style.cssText = 'display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--color-accent);flex-shrink:0;align-self:center;';
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-input-admin';
+    input.placeholder = 'Ej: Potencia 2000W RMS';
+    input.value = value || '';
+    input.style.cssText = 'flex:1;';
+
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '✕';
+    delBtn.style.cssText = 'flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:none;background:transparent;color:var(--color-text-muted);cursor:pointer;font-size:0.875rem;transition:all 200ms ease;';
+    delBtn.addEventListener('mouseenter', function () { delBtn.style.color = 'var(--color-danger)'; delBtn.style.background = 'rgba(229,62,62,0.1)'; });
+    delBtn.addEventListener('mouseleave', function () { delBtn.style.color = 'var(--color-text-muted)'; delBtn.style.background = 'transparent'; });
+    delBtn.addEventListener('click', function () { removeFeatureInput(row); });
+
+    row.appendChild(bullet);
+    row.appendChild(input);
+    row.appendChild(delBtn);
+    els.prodFeatures.appendChild(row);
+
+    updateFeatureRemoveButtons();
+  }
+
+  function removeFeatureInput(row) {
+    var rows = els.prodFeatures.querySelectorAll('.feature-row');
+    if (rows.length <= 1) {
+      alert('Al menos una característica es obligatoria.');
+      return;
+    }
+    row.remove();
+    updateFeatureRemoveButtons();
+  }
+
+  function updateFeatureRemoveButtons() {
+    var rows = els.prodFeatures.querySelectorAll('.feature-row');
+    for (var i = 0; i < rows.length; i++) {
+      var btn = rows[i].querySelector('button');
+      if (rows.length === 1) {
+        btn.style.display = 'none';
+      } else {
+        btn.style.display = '';
+      }
+    }
+  }
+
+  function collectFeatures() {
+    var inputs = els.prodFeatures.querySelectorAll('.feature-row input');
+    var items = [];
+    for (var i = 0; i < inputs.length; i++) {
+      var val = inputs[i].value.trim();
+      if (val) items.push(val);
+    }
+    return items.length > 0 ? items.join('\n') : null;
+  }
+
+  // Utilidades
+  function esc(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function initDropZone(dropEl, fileInput, onFiles) {
+    dropEl.addEventListener('dragover', function (e) { e.preventDefault(); dropEl.style.borderColor = 'var(--color-accent)'; });
+    dropEl.addEventListener('dragleave', function () { dropEl.style.borderColor = 'var(--color-border)'; });
+    dropEl.addEventListener('drop', function (e) {
+      e.preventDefault();
+      dropEl.style.borderColor = 'var(--color-border)';
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        var files = e.dataTransfer.files;
+        // Si el input es multiple, pasa todos; si no, solo el primero
+        if (fileInput.multiple) {
+          onFiles(files);
+        } else {
+          onFiles(files[0]);
+        }
+      }
+    });
+  }
+
+  function showImagePreview(src, dropEl) {
+    var isUrl = typeof src === 'string';
+    var imgSrc = isUrl ? src : URL.createObjectURL(src);
+    var msgEl = dropEl.querySelector('[id$="DropMsg"]');
+    if (msgEl) msgEl.style.display = 'none';
+
+    // Eliminar preview anterior
+    var oldPreview = dropEl.querySelector('img');
+    if (oldPreview) oldPreview.remove();
+
+    var img = document.createElement('img');
+    img.src = imgSrc;
+    img.style.cssText = 'max-width:100%;max-height:200px;border-radius:4px;object-fit:cover;';
+    dropEl.style.padding = '0.5rem';
+    dropEl.appendChild(img);
+  }
+
+  function resetImageDrop() {
+    mainImageFile = null;
+    var oldImg = els.prodImageDrop.querySelector('img');
+    if (oldImg) oldImg.remove();
+    els.prodImageDrop.style.padding = '1.5rem';
+    els.prodImageDropMsg.style.display = '';
+  }
+
+  function renderGalleryPreviews() {
+    els.prodGalleryPreviews.innerHTML = '';
+
+    // URLs existentes
+    for (var i = 0; i < existingGalleryUrls.length; i++) {
+      addGalleryPreview(existingGalleryUrls[i], i, true);
+    }
+
+    // Archivos nuevos
+    for (var j = 0; j < galleryFiles.length; j++) {
+      addGalleryPreview(galleryFiles[j], existingGalleryUrls.length + j, false);
+    }
+
+    // Mostrar/ocultar mensaje del drop zone
+    var hasContent = existingGalleryUrls.length > 0 || galleryFiles.length > 0;
+    els.prodGalleryDropMsg.style.display = hasContent ? 'none' : '';
+    if (hasContent) {
+      els.prodGalleryDrop.style.padding = '0.75rem';
+    } else {
+      els.prodGalleryDrop.style.padding = '1.5rem';
+    }
+  }
+
+  function addGalleryPreview(src, index, isUrl) {
+    var imgSrc = isUrl ? src : URL.createObjectURL(src);
+
+    var wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:relative;width:80px;height:60px;flex-shrink:0;';
+
+    var img = document.createElement('img');
+    img.src = imgSrc;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:4px;';
+
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '✕';
+    delBtn.style.cssText = 'position:absolute;top:-6px;right:-6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:none;background:var(--color-danger);color:#fff;cursor:pointer;font-size:0.6rem;line-height:1;';
+    delBtn.addEventListener('click', function () {
+      if (isUrl) {
+        existingGalleryUrls.splice(index, 1);
+      } else {
+        var fileIdx = index - existingGalleryUrls.length;
+        galleryFiles.splice(fileIdx, 1);
+      }
+      renderGalleryPreviews();
+    });
+
+    wrapper.appendChild(img);
+    wrapper.appendChild(delBtn);
+    els.prodGalleryPreviews.appendChild(wrapper);
+  }
+
+  function uploadFile(file) {
+    var formData = new FormData();
+    formData.append('file', file);
+
+    return fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    }).then(function (r) {
+      if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Error al subir imagen'); });
+      return r.json();
+    });
+  }
+})();
+</script>

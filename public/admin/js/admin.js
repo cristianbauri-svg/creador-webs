@@ -94,9 +94,9 @@
   }
 
   // =========================================================
-  // Cargar módulos
+  // Cargar módulos desde archivos HTML externos
   // =========================================================
-  function loadModule(name) {
+  async function loadModule(name) {
     const content = $('#moduleContent');
     const title = $('#moduleTitle');
     const mod = modules[name];
@@ -106,19 +106,52 @@
     currentModule = name;
     title.textContent = mod.title;
 
-    // Renderizar según módulo
-    switch (name) {
-      case 'dashboard': renderDashboard(content); break;
-      case 'products': renderStub(content, name, 'Productos', 'Equipos de audio, iluminación, pantallas LED y más.'); break;
-      case 'services': renderStub(content, name, 'Servicios', 'Gestiona los servicios que ofrece Straton Audio.'); break;
-      case 'packages': renderStub(content, name, 'Paquetes', 'Administra los paquetes comerciales y precios.'); break;
-      case 'events': renderStub(content, name, 'Eventos', 'Portafolio de eventos realizados.'); break;
-      case 'testimonials': renderStub(content, name, 'Testimonios', 'Testimonios de clientes.'); break;
-      case 'pages': renderStub(content, name, 'Páginas', 'Contenido editable del sitio web.'); break;
-      case 'quotations': renderStub(content, name, 'Cotizaciones', 'Solicitudes de cotización recibidas.'); break;
-      case 'settings': renderStub(content, name, 'Configuración', 'Ajustes del sitio y datos de contacto.'); break;
-      default: renderDashboard(content);
+    // Dashboard se renderiza inline
+    if (name === 'dashboard') {
+      renderDashboard(content);
+      return;
     }
+
+    // Mostrar loading mientras se carga el módulo
+    content.innerHTML = '<div class="loading-admin">Cargando módulo...</div>';
+
+    try {
+      const resp = await fetch(`/admin/modules/${name}.html`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const html = await resp.text();
+      injectModuleHTML(content, html);
+    } catch (err) {
+      console.error(`Error cargando módulo "${name}":`, err);
+      content.innerHTML = `
+        <div class="module-stub">
+          <div class="module-stub-icon">⚠️</div>
+          <h2>Error al cargar el módulo</h2>
+          <p>No se pudo cargar "${name}". Verifica la conexión e inténtalo de nuevo.</p>
+        </div>`;
+    }
+  }
+
+  /**
+   * Inyecta HTML con scripts en un contenedor.
+   * Extrae <script> tags, inserta el DOM, y ejecuta los scripts.
+   */
+  function injectModuleHTML(container, htmlString) {
+    // Extraer scripts del HTML
+    const scripts = [];
+    const htmlWithoutScripts = htmlString.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gi, (match, code) => {
+      scripts.push(code);
+      return '';
+    });
+
+    // Inyectar el HTML
+    container.innerHTML = htmlWithoutScripts;
+
+    // Ejecutar los scripts en orden
+    scripts.forEach(code => {
+      const script = document.createElement('script');
+      script.textContent = code;
+      container.appendChild(script);
+    });
   }
 
   // =========================================================

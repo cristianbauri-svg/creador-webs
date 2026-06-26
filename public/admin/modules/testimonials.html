@@ -1,6 +1,235 @@
-<!-- Testimonials Module Stub -->
-<div class="module-stub">
-  <div class="module-stub-icon">💬</div>
-  <h2>Testimonios</h2>
-  <p>Testimonios de clientes.</p>
+<!-- Testimonials Module — CRUD completo -->
+<div class="card" id="testimonialsToolbar">
+  <div class="card-header">
+    <h3 class="card-title">💬 Testimonios</h3>
+    <button class="btn-admin btn-primary-admin" id="btnAddTestimonial">+ Agregar Testimonio</button>
+  </div>
 </div>
+
+<div class="card" id="testimonialsTableCard">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Empresa</th>
+          <th>Visible</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="testimonialsTbody">
+        <tr><td colspan="4"><div class="loading-admin">Cargando testimonios...</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" id="testimonialsFormCard" style="display:none;">
+  <div class="card-header">
+    <h3 class="card-title" id="testimonialsFormTitle">Nuevo Testimonio</h3>
+  </div>
+  <form id="testimonialsForm" autocomplete="off">
+    <input type="hidden" id="tstId" />
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="tstClientName">Nombre del cliente *</label>
+        <input class="form-input-admin" id="tstClientName" required maxlength="200" placeholder="Ej: María García" />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="tstCompany">Empresa</label>
+        <input class="form-input-admin" id="tstCompany" maxlength="200" placeholder="Ej: Empresa XYZ S.A.S." />
+      </div>
+    </div>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="tstAvatarUrl">URL de avatar</label>
+        <input class="form-input-admin" id="tstAvatarUrl" placeholder="https://..." />
+      </div>
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="tstEventId">ID de evento (opcional)</label>
+        <input class="form-input-admin" id="tstEventId" type="number" min="1" placeholder="Ej: 1" />
+      </div>
+    </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin" for="tstQuote">Cita *</label>
+      <textarea class="form-textarea-admin" id="tstQuote" required rows="4" placeholder="El testimonio del cliente..."></textarea>
+    </div>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" for="tstStatus">Estado</label>
+        <select class="form-select-admin" id="tstStatus">
+          <option value="draft">Borrador</option>
+          <option value="published">Publicado</option>
+        </select>
+      </div>
+      <div class="form-group-admin" style="display:flex;align-items:flex-end;padding-bottom:0.25rem;">
+        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;color:var(--color-text-secondary);font-size:0.8125rem;">
+          <input type="checkbox" id="tstVisible" checked style="accent-color:var(--color-accent);" />
+          Visible en el sitio
+        </label>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn-admin btn-ghost-admin" id="btnCancelTestimonial">Cancelar</button>
+      <button type="submit" class="btn-admin btn-primary-admin">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var currentId = null;
+
+  var els = {
+    tbody: document.getElementById('testimonialsTbody'),
+    formCard: document.getElementById('testimonialsFormCard'),
+    formTitle: document.getElementById('testimonialsFormTitle'),
+    form: document.getElementById('testimonialsForm'),
+    tstId: document.getElementById('tstId'),
+    tstClientName: document.getElementById('tstClientName'),
+    tstCompany: document.getElementById('tstCompany'),
+    tstAvatarUrl: document.getElementById('tstAvatarUrl'),
+    tstEventId: document.getElementById('tstEventId'),
+    tstQuote: document.getElementById('tstQuote'),
+    tstStatus: document.getElementById('tstStatus'),
+    tstVisible: document.getElementById('tstVisible'),
+    btnAdd: document.getElementById('btnAddTestimonial'),
+    btnCancel: document.getElementById('btnCancelTestimonial'),
+  };
+
+  loadTestimonials();
+
+  els.btnAdd.addEventListener('click', function () { showForm(); });
+  els.btnCancel.addEventListener('click', function () { hideForm(); });
+  els.form.addEventListener('submit', function (e) { e.preventDefault(); saveTestimonial(); });
+
+  function loadTestimonials() {
+    fetch('/api/testimonials')
+      .then(function (r) { return r.json(); })
+      .then(renderTable)
+      .catch(function (err) {
+        console.error('Error cargando testimonios:', err);
+        els.tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state-admin"><p>Error al cargar testimonios</p></div></td></tr>';
+      });
+  }
+
+  function renderTable(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      els.tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state-admin"><div class="empty-state-admin-icon">💬</div><p>No hay testimonios registrados</p></div></td></tr>';
+      return;
+    }
+
+    els.tbody.innerHTML = rows.map(function (t) {
+      var visibleBadge = t.visible
+        ? '<span class="status-badge published">Visible</span>'
+        : '<span class="status-badge inactive">Oculto</span>';
+      var avatar = t.avatar_url
+        ? '<img src="' + esc(t.avatar_url) + '" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:50%;margin-right:0.4rem;vertical-align:middle;" />'
+        : '';
+
+      return '<tr>' +
+        '<td>' + avatar + '<strong>' + esc(t.client_name) + '</strong></td>' +
+        '<td>' + esc(t.company || '—') + '</td>' +
+        '<td>' + visibleBadge + '</td>' +
+        '<td>' +
+          '<button class="btn-admin btn-ghost-admin btnEditTst" data-id="' + t.id + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">✏️</button> ' +
+          '<button class="btn-admin btn-danger-admin btnDelTst" data-id="' + t.id + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">🗑️</button>' +
+        '</td>' +
+        '</tr>';
+    }).join('');
+
+    bindClicks('.btnEditTst', editTestimonial);
+    bindClicks('.btnDelTst', deleteTestimonial);
+  }
+
+  function showForm(tst) {
+    currentId = tst ? tst.id : null;
+    els.formTitle.textContent = tst ? 'Editar Testimonio' : 'Nuevo Testimonio';
+    els.tstId.value = tst ? tst.id : '';
+    els.tstClientName.value = tst ? (tst.client_name || '') : '';
+    els.tstCompany.value = tst ? (tst.company || '') : '';
+    els.tstAvatarUrl.value = tst ? (tst.avatar_url || '') : '';
+    els.tstEventId.value = tst ? (tst.event_id || '') : '';
+    els.tstQuote.value = tst ? (tst.quote || '') : '';
+    els.tstStatus.value = tst ? (tst.status || 'draft') : 'draft';
+    els.tstVisible.checked = tst ? (tst.visible ? true : false) : true;
+    els.formCard.style.display = '';
+  }
+
+  function hideForm() {
+    els.formCard.style.display = 'none';
+    els.form.reset();
+    currentId = null;
+  }
+
+  function saveTestimonial() {
+    var body = {
+      client_name: els.tstClientName.value.trim(),
+      company: els.tstCompany.value.trim() || null,
+      avatar_url: els.tstAvatarUrl.value.trim() || null,
+      event_id: els.tstEventId.value ? parseInt(els.tstEventId.value, 10) : null,
+      quote: els.tstQuote.value.trim(),
+      status: els.tstStatus.value,
+      visible: els.tstVisible.checked,
+    };
+
+    if (!body.client_name) {
+      alert('El nombre del cliente es obligatorio.');
+      return;
+    }
+    if (!body.quote) {
+      alert('La cita es obligatoria.');
+      return;
+    }
+
+    var url = currentId ? '/api/testimonials/' + currentId : '/api/testimonials';
+    var method = currentId ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Error del servidor'); });
+        return r.json();
+      })
+      .then(function () { hideForm(); loadTestimonials(); })
+      .catch(function (err) { alert('Error: ' + err.message); });
+  }
+
+  function editTestimonial(id) {
+    fetch('/api/testimonials/' + id)
+      .then(function (r) { return r.json(); })
+      .then(function (tst) { showForm(tst); })
+      .catch(function (err) { alert('Error al cargar testimonio: ' + err.message); });
+  }
+
+  function deleteTestimonial(id) {
+    if (!confirm('¿Eliminar este testimonio? Esta acción no se puede deshacer.')) return;
+    fetch('/api/testimonials/' + id, { method: 'DELETE' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Error del servidor');
+        return r.json();
+      })
+      .then(function () { loadTestimonials(); })
+      .catch(function (err) { alert('Error: ' + err.message); });
+  }
+
+  function bindClicks(selector, handler) {
+    var btns = document.querySelectorAll(selector);
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener('click', function () { handler(parseInt(this.dataset.id, 10)); });
+    }
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+})();
+</script>
