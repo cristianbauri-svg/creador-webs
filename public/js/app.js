@@ -8,99 +8,117 @@
   'use strict';
 
   // =========================================================
-  // Carrito de Cotización — estado global
+  // Barra Sticky de Cotización
   // =========================================================
   var cartItems = [];
 
-  function loadCartFromStorage() {
-    try {
-      var stored = localStorage.getItem('straton_cart');
-      if (stored) {
-        var parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) cartItems = parsed;
-      }
-    } catch(e) {
-      cartItems = [];
-    }
+  /** Devuelve referencias frescas a los elementos de la barra (lazy, porque el
+   *  script carga antes que el HTML del cart-bar). */
+  function getCartBarElements() {
+    return {
+      cartBar: document.getElementById('cart-bar'),
+      cartBarSummary: document.getElementById('cart-bar-summary'),
+      cartBarTotal: document.getElementById('cart-bar-total'),
+      cartBarClear: document.getElementById('cart-bar-clear'),
+      cartBarWhatsapp: document.getElementById('cart-bar-whatsapp'),
+    };
   }
 
-  function saveCartToStorage() {
-    try {
-      localStorage.setItem('straton_cart', JSON.stringify(cartItems));
-    } catch(e) {}
+  function renderCartBar() {
+    var els = getCartBarElements();
+    if (!els.cartBar) return;
+    if (cartItems.length === 0) {
+      els.cartBar.classList.add('hidden');
+      return;
+    }
+    els.cartBar.classList.remove('hidden');
+    var tagsHtml = cartItems.map(function(item, index) {
+      return '<span class="cart-bar-tag">' +
+        escapeHtml(item.name) +
+        ' <button data-cart-remove="' + index + '" title="Quitar">&times;</button>' +
+        '</span>';
+    }).join('');
+    els.cartBarSummary.innerHTML = tagsHtml || 'Sin productos';
+    var total = cartItems.reduce(function(sum, item) {
+      var price = item.price || item.total || 0;
+      var qty = item.quantity || 1;
+      return sum + (price * qty);
+    }, 0);
+    els.cartBarTotal.textContent = total > 0 ? 'Total estimado $' + total.toLocaleString('es-CO') : '';
   }
 
   function addToCart(item) {
     cartItems.push(item);
-    saveCartToStorage();
-    renderCartPanel();
-    updateCartCounter();
+    renderCartBar();
   }
 
   function removeFromCart(index) {
     if (index >= 0 && index < cartItems.length) {
       cartItems.splice(index, 1);
-      saveCartToStorage();
-      renderCartPanel();
-      updateCartCounter();
+      renderCartBar();
     }
   }
 
-  function renderCartPanel() {
-    var itemsContainer = $('#cartPanelItems');
-    var emptyState = $('#cartPanelEmpty');
-    var footer = $('#cartPanelFooter');
-
-    if (cartItems.length === 0) {
-      itemsContainer.innerHTML = '';
-      emptyState.style.display = '';
-      footer.style.display = 'none';
-      return;
-    }
-
-    emptyState.style.display = 'none';
-    footer.style.display = '';
-
-    itemsContainer.innerHTML = cartItems.map(function(item, i) {
-      var itemImage = item.image
-        ? '<img src="' + escapeHtml(item.image) + '" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:4px;flex-shrink:0;" />'
-        : '<div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;background:var(--color-surface);border-radius:4px;flex-shrink:0;font-size:1.2rem;">📦</div>';
-      var typeBadge = item.type === 'product'
-        ? '<span style="display:inline-block;padding:0.1rem 0.35rem;border-radius:100px;font-size:0.6rem;font-weight:600;text-transform:uppercase;background:rgba(0,0,0,0.75);border:1px solid var(--color-gold);color:var(--color-gold);">Producto</span>'
-        : '<span style="display:inline-block;padding:0.1rem 0.35rem;border-radius:100px;font-size:0.6rem;font-weight:600;text-transform:uppercase;background:rgba(0,0,0,0.75);border:1px solid var(--color-gold);color:var(--color-accent);">Paquete</span>';
-      return '<div class="cart-item">' +
-        itemImage +
-        '<div class="cart-item-info">' +
-          '<p class="cart-item-name">' + escapeHtml(item.name) + '</p>' +
-          '<p class="cart-item-type">' + typeBadge + '</p>' +
-        '</div>' +
-        '<button class="cart-item-remove" data-cart-remove="' + i + '" title="Eliminar">&times;</button>' +
-      '</div>';
-    }).join('');
+  function clearCart() {
+    cartItems = [];
+    renderCartBar();
   }
 
-  function updateCartCounter() {
-    var counter = $('#cartCounter');
-    if (cartItems.length > 0) {
-      counter.textContent = cartItems.length;
-      counter.style.display = 'flex';
-    } else {
-      counter.style.display = 'none';
-    }
+  function buildWhatsAppLink() {
+    var phone = '573102646751';
+    var msg = '\u{1F389} *Hola Straton Audio, quiero esta cotización:*\n\n';
+    msg += '\u{1F4CB} *Detalle del pedido*\n──────────────────\n';
+    cartItems.forEach(function(item) {
+      var qty = item.quantity || 1;
+      msg += '\u{25B8} ' + qty + 'x ' + item.name;
+      if (item.price) msg += ' \u{2192} $' + (item.price * qty).toLocaleString('es-CO');
+      msg += '\n';
+    });
+    msg += '──────────────────\n';
+    var total = cartItems.reduce(function(s, i) {
+      var price = i.price || i.total || 0;
+      var qty = i.quantity || 1;
+      return s + (price * qty);
+    }, 0);
+    if (total > 0) msg += '\u{1F4B0} *Total estimado:* $' + total.toLocaleString('es-CO') + '\n\n';
+    msg += '\u{1F464} *Nombre:* \n\u{1F4E7} *Email:* \n\u{1F4F1} *Teléfono:* \n\u{1F4C5} *Fecha del evento:* \n\u{1F4AC} *Comentarios:* \n\n';
+    msg += '¿Me confirman disponibilidad y los detalles? \u{1F64C}';
+    var url = 'https://api.whatsapp.com/send?phone=' + phone + '&text=' + encodeURIComponent(msg);
+    return url;
   }
 
-  function toggleCartPanel() {
-    var panel = $('#cartPanel');
-    var overlay = $('#cartOverlay');
-    var isOpen = panel.classList.contains('open');
-    if (isOpen) {
-      panel.classList.remove('open');
-      overlay.classList.remove('open');
-    } else {
-      panel.classList.add('open');
-      overlay.classList.add('open');
-    }
+  /** Registra los listeners de la barra sticky. Se invoca desde init()
+   *  cuando el DOM ya está completo y los elementos existen. */
+  function initCartBarEvents() {
+    var els = getCartBarElements();
+    if (els.cartBarClear) els.cartBarClear.addEventListener('click', clearCart);
+    if (els.cartBarWhatsapp) els.cartBarWhatsapp.addEventListener('click', function() {
+      window.open(buildWhatsAppLink(), '_blank');
+    });
+    if (els.cartBarSummary) els.cartBarSummary.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-cart-remove]');
+      if (btn) {
+        var index = parseInt(btn.getAttribute('data-cart-remove'));
+        removeFromCart(index);
+      }
+    });
   }
+
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-add-to-cart]');
+    if (!btn) return;
+    e.preventDefault();
+    try {
+      var item = JSON.parse(btn.getAttribute('data-add-to-cart').replace(/&quot;/g, '"'));
+      var qty = parseInt(btn.getAttribute('data-product-qty')) || 1;
+      item.quantity = qty;
+      addToCart(item);
+    } catch(err) {
+      console.error('Error añadiendo al carrito:', err);
+    }
+  });
+
+  renderCartBar();
 
   // =========================================================
   // Utilidades
@@ -432,14 +450,7 @@
                 </li>`;
               }).join('')}
             </ul>` : ''}
-            <div style="display:flex;align-items:center;gap:0.5rem;margin-top:var(--space-4);">
-              <div style="display:flex;align-items:center;gap:0.35rem;flex-shrink:0;">
-                <button class="qty-btn qty-minus" data-qty-target="qty-${p.id}" style="width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.5);color:#fff;border:none;cursor:pointer;font-size:0.7rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">−</button>
-                <span id="qty-${p.id}" style="min-width:20px;text-align:center;font-size:0.85rem;font-weight:600;">1</span>
-                <button class="qty-btn qty-plus" data-qty-target="qty-${p.id}" style="width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.5);color:#fff;border:none;cursor:pointer;font-size:0.7rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">+</button>
-              </div>
-              <button data-add-to-cart="${JSON.stringify({type:'product',id:p.id,name:p.title,image:p.image_url||''}).replace(/"/g,'&quot;')}" data-product-qty="1" class="btn btn-primary" style="flex:1;text-align:center;">Añadir a cotización</button>
-            </div>
+            <button data-add-to-cart="${JSON.stringify({type:'product',id:p.id,name:p.title,image:p.image_url||''}).replace(/"/g,'&quot;')}" class="btn btn-primary" style="margin-top:var(--space-4);align-self:flex-start;">Añadir a cotización</button>
             ${galleryHtml}
           </div>
         </article>`;
@@ -751,79 +762,12 @@
   async function init() {
     initNav();
     initCounters();
-
-    // Inicializar carrito desde localStorage
-    loadCartFromStorage();
-    updateCartCounter();
+    initCartBarEvents();
 
     // Limitar fecha del evento a hoy en adelante
     var today = new Date().toISOString().split('T')[0];
     var eventDateInput = document.getElementById('event_date');
     if (eventDateInput) { eventDateInput.setAttribute('min', today); }
-
-    // Event listeners del carrito
-    var cartToggle = $('#cartToggle');
-    var cartPanelClose = $('#cartPanelClose');
-    var cartOverlay = $('#cartOverlay');
-
-    if (cartToggle) cartToggle.addEventListener('click', toggleCartPanel);
-    if (cartPanelClose) cartPanelClose.addEventListener('click', toggleCartPanel);
-    if (cartOverlay) cartOverlay.addEventListener('click', toggleCartPanel);
-
-    // Listener delegado para añadir al carrito
-    document.addEventListener('click', function(e) {
-      var btn = e.target.closest('[data-add-to-cart]');
-      if (!btn) return;
-      e.preventDefault();
-      try {
-        var item = JSON.parse(btn.getAttribute('data-add-to-cart').replace(/&quot;/g, '"'));
-        var qty = parseInt(btn.getAttribute('data-product-qty')) || 1;
-        item.quantity = qty;
-        addToCart(item);
-        // Abrir el panel para feedback visual
-        var panel = $('#cartPanel');
-        if (panel && !panel.classList.contains('open')) {
-          toggleCartPanel();
-        }
-      } catch(err) {
-        console.error('Error al añadir al carrito:', err);
-      }
-    });
-
-    // Listener delegado para botones de cantidad (+/-)
-    document.addEventListener('click', function(e) {
-      var btn = e.target.closest('.qty-btn');
-      if (!btn) return;
-      e.preventDefault();
-      var targetId = btn.getAttribute('data-qty-target');
-      var span = document.getElementById(targetId);
-      if (!span) return;
-      var current = parseInt(span.textContent) || 1;
-      var newQty;
-      if (btn.classList.contains('qty-plus')) {
-        newQty = current + 1;
-      } else {
-        newQty = Math.max(1, current - 1);
-      }
-      span.textContent = newQty;
-      // Actualizar el data-product-qty del botón "Añadir a cotización" en la misma card
-      var cardBody = btn.closest('.service-card-body');
-      if (cardBody) {
-        var addBtn = cardBody.querySelector('[data-add-to-cart]');
-        if (addBtn) {
-          addBtn.setAttribute('data-product-qty', newQty);
-        }
-      }
-    });
-
-    // Listener delegado para eliminar del carrito
-    document.addEventListener('click', function(e) {
-      var btn = e.target.closest('[data-cart-remove]');
-      if (!btn) return;
-      e.preventDefault();
-      var index = parseInt(btn.getAttribute('data-cart-remove'));
-      removeFromCart(index);
-    });
 
     // Cargar datos en paralelo
     const promises = [
@@ -838,7 +782,6 @@
 
     await Promise.allSettled(promises);
 
-    renderCartPanel();
     initContactForm();
   }
 
