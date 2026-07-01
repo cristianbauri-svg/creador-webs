@@ -16,6 +16,7 @@
 
 /* ----- Design Tokens ----- */
 :root {
+  --cart-bar-height: 70px;
   --color-bg: #0A0A0A;
   --color-bg-alt: #0F0F0F;
   --color-card: #121212;
@@ -96,6 +97,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-bottom: 90px; /* altura de la barra + margen */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -107,6 +109,7 @@ body {
   color: var(--color-text);
   background-color: var(--color-bg);
   overflow-x: hidden;
+  padding-bottom: 90px;
 }
 
 img, video, svg {
@@ -731,6 +734,7 @@ ul { list-style: none; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: var(--space-6);
+  align-items: start;
 }
 
 .event-card {
@@ -1473,6 +1477,7 @@ a.whatsapp-float {
   padding: 12px 20px;
   z-index: 2000;
   transition: transform 0.3s ease;
+  pointer-events: none;
 }
 .cart-bar.hidden {
   transform: translateY(100%);
@@ -1485,6 +1490,7 @@ a.whatsapp-float {
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
+  pointer-events: auto;
 }
 .cart-bar-left {
   display: flex;
@@ -1492,10 +1498,12 @@ a.whatsapp-float {
   gap: 12px;
   flex: 1;
   min-width: 0;
+  pointer-events: auto;
 }
 .cart-bar-icon {
   font-size: 1.5rem;
   flex-shrink: 0;
+  pointer-events: auto;
 }
 .cart-bar-info {
   flex: 1;
@@ -1508,6 +1516,7 @@ a.whatsapp-float {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  pointer-events: auto;
 }
 .cart-bar-tag {
   display: inline-flex;
@@ -1520,6 +1529,7 @@ a.whatsapp-float {
   border-radius: 100px;
   font-size: 0.75rem;
   white-space: nowrap;
+  pointer-events: auto;
 }
 .cart-bar-tag button {
   background: none;
@@ -1531,6 +1541,7 @@ a.whatsapp-float {
   line-height: 1;
   margin-left: 2px;
   opacity: 0.7;
+  pointer-events: auto;
 }
 .cart-bar-tag button:hover {
   opacity: 1;
@@ -1541,12 +1552,14 @@ a.whatsapp-float {
   font-weight: 600;
   color: var(--color-accent);
   margin-top: 4px;
+  pointer-events: auto;
 }
 .cart-bar-right {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  pointer-events: auto;
 }
 .cart-bar-clear {
   background: none;
@@ -1557,6 +1570,7 @@ a.whatsapp-float {
   font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.2s;
+  pointer-events: auto;
 }
 .cart-bar-clear:hover {
   border-color: var(--color-danger);
@@ -1575,6 +1589,7 @@ a.whatsapp-float {
               0 0 24px rgba(29, 185, 84, 0.5),
               0 0 48px rgba(29, 185, 84, 0.3);
   transition: all 0.2s ease;
+  pointer-events: auto;
 }
 .cart-bar-whatsapp:hover {
   background: rgba(29, 185, 84, 0.68);
@@ -1595,4 +1610,43 @@ a.whatsapp-float {
     flex: 1;
     text-align: center;
   }
+}
+
+#contacto {
+  padding-bottom: 100px;
+}
+
+/* Modal de datos del cliente */
+.client-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.client-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+}
+.client-modal-content {
+  position: relative;
+  background: var(--color-card, #121212);
+  border: 1px solid var(--color-border, #2c2d38);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 450px;
+  width: 90%;
+  z-index: 1;
+}
+.client-modal-content h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
 }

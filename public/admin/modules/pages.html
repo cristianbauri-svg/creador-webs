@@ -42,9 +42,10 @@
       </div>
     </div>
     <div class="form-group-admin">
-      <label class="form-label-admin" for="pageContent">Contenido (JSON)</label>
-      <textarea class="form-textarea-admin" id="pageContent" rows="8" placeholder='{"hero_title": "Acerca de", "body": "Texto de la página..."}'></textarea>
-      <small style="color:var(--color-text-muted);font-size:0.7rem;">Objeto JSON con los bloques de contenido de la página.</small>
+      <label class="form-label-admin">Contenido</label>
+      <div id="pageContentFields"></div>
+      <button type="button" class="btn-admin btn-ghost-admin" id="btnAddField" style="margin-top:0.5rem;font-size:0.75rem;">+ Agregar campo</button>
+      <small style="color:var(--color-text-muted);font-size:0.7rem;">Define los bloques de contenido como pares clave-valor.</small>
     </div>
     <div class="form-row-admin">
       <div class="form-group-admin">
@@ -84,7 +85,8 @@
     pageId: document.getElementById('pageId'),
     pageSlug: document.getElementById('pageSlug'),
     pageTitle: document.getElementById('pageTitle'),
-    pageContent: document.getElementById('pageContent'),
+    pageContentFields: document.getElementById('pageContentFields'),
+    btnAddField: document.getElementById('btnAddField'),
     pageMetaTitle: document.getElementById('pageMetaTitle'),
     pageMetaDescription: document.getElementById('pageMetaDescription'),
     pageStatus: document.getElementById('pageStatus'),
@@ -97,6 +99,7 @@
   els.btnAdd.addEventListener('click', function () { showForm(); });
   els.btnCancel.addEventListener('click', function () { hideForm(); });
   els.form.addEventListener('submit', function (e) { e.preventDefault(); savePage(); });
+  els.btnAddField.addEventListener('click', function () { addContentField('', ''); });
 
   function loadPages() {
     fetch('/api/pages')
@@ -141,7 +144,7 @@
     els.pageId.value = page ? page.id : '';
     els.pageSlug.value = page ? (page.slug || '') : '';
     els.pageTitle.value = page ? (page.title || '') : '';
-    els.pageContent.value = page ? fmtContentToInput(page.content_json) : '';
+    populateContentFields(page ? page.content_json : null);
     els.pageMetaTitle.value = page ? (page.meta_title || '') : '';
     els.pageMetaDescription.value = page ? (page.meta_description || '') : '';
     els.pageStatus.value = page ? (page.status || 'draft') : 'draft';
@@ -166,7 +169,7 @@
   }
 
   function savePage() {
-    var contentJson = parseContentJson(els.pageContent.value);
+    var contentJson = collectContentJson();
 
     var body = {
       slug: els.pageSlug.value.trim(),
@@ -179,11 +182,6 @@
 
     if (!body.slug) {
       alert('El slug es obligatorio.');
-      return;
-    }
-
-    if (contentJson === null && els.pageContent.value.trim()) {
-      alert('El campo "Contenido" debe ser un objeto JSON válido. Ejemplo: {"hero_title": "Título"}');
       return;
     }
 
@@ -228,25 +226,111 @@
     }
   }
 
-  function fmtContentToInput(contentJson) {
-    if (!contentJson) return '';
-    try {
-      var obj = JSON.parse(contentJson);
-      return JSON.stringify(obj, null, 2);
-    } catch (e) {
-      return contentJson || '';
+  /** Llena el contenedor de campos clave-valor desde un JSON string. */
+  function populateContentFields(contentJson) {
+    els.pageContentFields.innerHTML = '';
+    var pairs = [];
+    if (contentJson) {
+      try {
+        var obj = JSON.parse(contentJson);
+        if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
+          var keys = Object.keys(obj);
+          for (var i = 0; i < keys.length; i++) {
+            pairs.push({ key: keys[i], value: obj[keys[i]] !== null && obj[keys[i]] !== undefined ? String(obj[keys[i]]) : '' });
+          }
+        }
+      } catch (e) { /* JSON inválido — se muestra vacío */ }
+    }
+    if (pairs.length === 0) {
+      addContentField('', '');
+    } else {
+      for (var j = 0; j < pairs.length; j++) {
+        addContentField(pairs[j].key, pairs[j].value);
+      }
     }
   }
 
-  function parseContentJson(input) {
-    if (!input || !input.trim()) return null;
-    try {
-      var parsed = JSON.parse(input.trim());
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null;
-      return JSON.stringify(parsed);
-    } catch (e) {
-      return null;
+  /** Agrega una fila con inputs de clave, valor y botón de eliminar. */
+  function addContentField(key, value) {
+    var row = document.createElement('div');
+    row.className = 'content-field-row';
+    row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;';
+
+    var bullet = document.createElement('span');
+    bullet.style.cssText = 'display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--color-accent);flex-shrink:0;align-self:center;';
+
+    var keyInput = document.createElement('input');
+    keyInput.type = 'text';
+    keyInput.className = 'form-input-admin';
+    keyInput.placeholder = 'Ej: hero_title';
+    keyInput.value = key || '';
+    keyInput.style.cssText = 'flex:1;';
+
+    var valueInput = document.createElement('input');
+    valueInput.type = 'text';
+    valueInput.className = 'form-input-admin';
+    valueInput.placeholder = 'Ej: Bienvenidos a Straton Audio';
+    valueInput.value = value || '';
+    valueInput.style.cssText = 'flex:2;';
+
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '✕';
+    delBtn.style.cssText = 'flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:none;background:transparent;color:var(--color-text-muted);cursor:pointer;font-size:0.875rem;transition:all 200ms ease;';
+    delBtn.addEventListener('mouseenter', function () { delBtn.style.color = 'var(--color-danger)'; delBtn.style.background = 'rgba(229,62,62,0.1)'; });
+    delBtn.addEventListener('mouseleave', function () { delBtn.style.color = 'var(--color-text-muted)'; delBtn.style.background = 'transparent'; });
+    delBtn.addEventListener('click', function () { removeContentField(row); });
+
+    row.appendChild(bullet);
+    row.appendChild(keyInput);
+    row.appendChild(valueInput);
+    row.appendChild(delBtn);
+    els.pageContentFields.appendChild(row);
+
+    updateContentFieldButtons();
+  }
+
+  /** Elimina una fila. Si es la última, la vacía en vez de eliminarla. */
+  function removeContentField(row) {
+    var rows = els.pageContentFields.querySelectorAll('.content-field-row');
+    if (rows.length <= 1) {
+      // Vaciar los inputs en vez de eliminar
+      var inputs = row.querySelectorAll('input');
+      if (inputs[0]) inputs[0].value = '';
+      if (inputs[1]) inputs[1].value = '';
+      return;
     }
+    row.remove();
+    updateContentFieldButtons();
+  }
+
+  /** Oculta los botones ✕ si solo queda una fila. */
+  function updateContentFieldButtons() {
+    var rows = els.pageContentFields.querySelectorAll('.content-field-row');
+    for (var i = 0; i < rows.length; i++) {
+      var btn = rows[i].querySelector('button');
+      if (rows.length === 1) {
+        btn.style.display = 'none';
+      } else {
+        btn.style.display = '';
+      }
+    }
+  }
+
+  /** Recolecta todos los pares clave-valor y los convierte en un JSON string. */
+  function collectContentJson() {
+    var rows = els.pageContentFields.querySelectorAll('.content-field-row');
+    var obj = {};
+    for (var i = 0; i < rows.length; i++) {
+      var inputs = rows[i].querySelectorAll('input');
+      var key = inputs[0] ? inputs[0].value.trim() : '';
+      var value = inputs[1] ? inputs[1].value.trim() : '';
+      if (key) {
+        obj[key] = value;
+      }
+    }
+    if (Object.keys(obj).length === 0) return null;
+    return JSON.stringify(obj);
   }
 
   function esc(str) {

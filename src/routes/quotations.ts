@@ -8,6 +8,19 @@ import type { Env } from "../index";
 export async function handleQuotations(request: Request, env: Env, pathname: string): Promise<Response> {
   const method = request.method;
 
+  // Rate limiting: máximo 5 cotizaciones por hora por IP
+  if (method === "POST") {
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const rateKey = `ratelimit:quotation:${ip}`;
+    const currentCount = parseInt(await env.STRATON_KV.get(rateKey) || "0");
+
+    if (currentCount >= 5) {
+      return error("Demasiadas solicitudes. Intenta de nuevo en una hora.", 429);
+    }
+
+    await env.STRATON_KV.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
+  }
+
   // GET /api/quotations/:id
   const match = pathname.match(/^\/api\/quotations\/(\d+)$/);
   if (match) {
@@ -17,15 +30,32 @@ export async function handleQuotations(request: Request, env: Env, pathname: str
     return error("Method not allowed", 405);
   }
 
-  if (method === "GET") return listQuotations(env);
+  if (method === "GET") return listQuotations(request, env);
   if (method === "POST") return createQuotation(request, env);
   return error("Method not allowed", 405);
 }
 
-async function listQuotations(env: Env): Promise<Response> {
+async function listQuotations(request: Request, env: Env): Promise<Response> {
   try {
-    const rows = await queryAll(env.STRATON_DB, "SELECT * FROM quotations ORDER BY created_at DESC");
-    return json(rows);
+    const url = new URL(request.url);
+    const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
+    const perPage = Math.min(100, Math.max(1, parseInt(url.searchParams.get("per_page") || "20")));
+    const offset = (page - 1) * perPage;
+
+    const countResult = await queryOne(env.STRATON_DB, "SELECT COUNT(*) as total FROM quotations");
+    const total = (countResult?.total as number) || 0;
+
+    const rows = await queryAll(env.STRATON_DB, "SELECT * FROM quotations ORDER BY created_at DESC LIMIT ? OFFSET ?", [perPage, offset]);
+
+    return new Response(JSON.stringify(rows), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "X-Total-Count": String(total),
+        "X-Page": String(page),
+        "X-Per-Page": String(perPage),
+      },
+    });
   } catch (e) {
     return handleDbError(e);
   }
@@ -44,6 +74,21 @@ async function getQuotation(env: Env, id: number): Promise<Response> {
 async function createQuotation(request: Request, env: Env): Promise<Response> {
   try {
     const body = await request.json() as Record<string, unknown>;
+
+    // Validar formato de email
+    if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
+      return error("Formato de email inválido", 400);
+    }
+
+    // Validar formato de teléfono (mínimo 7 dígitos, permite +, espacios, guiones)
+    if (body.phone && body.phone.replace(/[^0-9]/g, '').length < 7) {
+      return error("El teléfono debe tener al menos 7 dígitos", 400);
+    }
+
+    // Validar formato de fecha ISO 8601 (YYYY-MM-DD)
+    if (body.event_date && !/^\d{4}-\d{2}-\d{2}$/.test(body.event_date)) {
+      return error("Formato de fecha inválido. Use YYYY-MM-DD.", 400);
+    }
 
     const result = await execute(
       env.STRATON_DB,
@@ -126,8 +171,7 @@ async function sendTelegramNotification(quotation: Record<string, unknown>, env:
     });
 
     if (!response.ok) {
-      const respText = await response.text();
-      console.error('Telegram notification failed:', response.status, respText);
+      console.error('Telegram notification failed');
     }
   } catch (err) {
     console.error('Telegram notification error:', err);

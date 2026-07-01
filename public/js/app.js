@@ -7,10 +7,14 @@
 (function () {
   'use strict';
 
+  // Settings globales cargados desde KV
+  var siteSettings = {};
+
   // =========================================================
   // Barra Sticky de Cotización
   // =========================================================
-  var cartItems = [];
+  window.cartItems = [];
+  var cartItems = window.cartItems;
 
   /** Devuelve referencias frescas a los elementos de la barra (lazy, porque el
    *  script carga antes que el HTML del cart-bar). */
@@ -18,7 +22,7 @@
     return {
       cartBar: document.getElementById('cart-bar'),
       cartBarSummary: document.getElementById('cart-bar-summary'),
-      cartBarTotal: document.getElementById('cart-bar-total'),
+      cartBarTotalLarge: document.getElementById('cart-bar-total-large'),
       cartBarClear: document.getElementById('cart-bar-clear'),
       cartBarWhatsapp: document.getElementById('cart-bar-whatsapp'),
     };
@@ -32,19 +36,29 @@
       return;
     }
     els.cartBar.classList.remove('hidden');
+
+    // Construir tags con el texto adecuado y botón de eliminar
     var tagsHtml = cartItems.map(function(item, index) {
+      var displayName = item.type === 'package' ? item.name : 'Añadido';
+      var qty = item.quantity || 1;
+      var text = qty > 1 ? displayName + ' (' + qty + ')' : displayName;
       return '<span class="cart-bar-tag">' +
-        escapeHtml(item.name) +
+        escapeHtml(text) +
         ' <button data-cart-remove="' + index + '" title="Quitar">&times;</button>' +
         '</span>';
     }).join('');
+
     els.cartBarSummary.innerHTML = tagsHtml || 'Sin productos';
+
+    // Calcular total
     var total = cartItems.reduce(function(sum, item) {
       var price = item.price || item.total || 0;
       var qty = item.quantity || 1;
       return sum + (price * qty);
     }, 0);
-    els.cartBarTotal.textContent = total > 0 ? 'Total estimado $' + total.toLocaleString('es-CO') : '';
+
+    // Mostrar total en el nuevo elemento
+    els.cartBarTotalLarge.textContent = total > 0 ? '$' + total.toLocaleString('es-CO') : '$0';
   }
 
   function addToCart(item) {
@@ -60,12 +74,12 @@
   }
 
   function clearCart() {
-    cartItems = [];
+    window.cartItems = cartItems = [];
     renderCartBar();
   }
 
   function buildWhatsAppLink() {
-    var phone = '573102646751';
+    var phone = getWhatsAppNumber();
     var msg = '\u{1F389} *Hola Straton Audio, quiero esta cotización:*\n\n';
     msg += '\u{1F4CB} *Detalle del pedido*\n──────────────────\n';
     cartItems.forEach(function(item) {
@@ -93,8 +107,90 @@
     var els = getCartBarElements();
     if (els.cartBarClear) els.cartBarClear.addEventListener('click', clearCart);
     if (els.cartBarWhatsapp) els.cartBarWhatsapp.addEventListener('click', function() {
-      window.open(buildWhatsAppLink(), '_blank');
+      // Mostrar modal para pedir datos del cliente
+      var modal = document.getElementById('clientModal');
+      if (modal) {
+        modal.style.display = 'flex';
+      }
     });
+
+    // Manejar el envío del formulario del modal
+    var modalForm = document.getElementById('clientModalForm');
+    if (modalForm) {
+      modalForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var name = document.getElementById('modalName').value.trim();
+        var email = document.getElementById('modalEmail').value.trim();
+        var phone = document.getElementById('modalPhone').value.trim();
+
+        if (!name || !phone) {
+          alert('Por favor, completa Nombre y Teléfono.');
+          return;
+        }
+
+        // Cerrar modal
+        document.getElementById('clientModal').style.display = 'none';
+
+        // Construir y abrir enlace de WhatsApp con los datos del cliente
+        var msg = '🎉 *Hola Straton Audio, quiero esta cotización:*\n\n';
+        msg += '📋 *Detalle del pedido*\n──────────────────\n';
+        cartItems.forEach(function(item) {
+          var qty = item.quantity || 1;
+          msg += '▸ ' + qty + 'x ' + item.name + '\n';
+        });
+        msg += '──────────────────\n';
+        var total = cartItems.reduce(function(s, i) {
+          var price = i.price || i.total || 0;
+          var qty = i.quantity || 1;
+          return s + (price * qty);
+        }, 0);
+        if (total > 0) msg += '💰 *Total estimado:* $' + total.toLocaleString('es-CO') + '\n\n';
+        msg += '👤 *Nombre:* ' + name + '\n';
+        msg += '📧 *Email:* ' + email + '\n';
+        msg += '📱 *Teléfono:* ' + phone + '\n';
+        msg += '\n¿Me confirman disponibilidad y los detalles? 🙌';
+
+        window.open('https://api.whatsapp.com/send?phone=' + getWhatsAppNumber() + '&text=' + encodeURIComponent(msg), '_blank');
+
+        // Enviar cotización al backend con los datos reales
+        var payload = {
+          customer_name: name,
+          email: email,
+          phone: phone,
+          notes: 'Cotización enviada desde WhatsApp',
+          products_json: cartItems.length > 0 ? JSON.stringify(cartItems) : null
+        };
+
+        fetch('/api/quotations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        .then(function(r) { return r.json(); })
+        .catch(function(err) { console.error('Error al registrar cotización:', err); });
+
+        // Limpiar formulario modal
+        modalForm.reset();
+      });
+    }
+
+    // Cancelar modal
+    var modalCancel = document.getElementById('modalCancel');
+    if (modalCancel) {
+      modalCancel.addEventListener('click', function() {
+        document.getElementById('clientModal').style.display = 'none';
+      });
+    }
+
+    // Cerrar modal al hacer clic fuera
+    var clientModalEl = document.getElementById('clientModal');
+    if (clientModalEl) {
+      clientModalEl.addEventListener('click', function(e) {
+        if (e.target === this) {
+          this.style.display = 'none';
+        }
+      });
+    }
     if (els.cartBarSummary) els.cartBarSummary.addEventListener('click', function(e) {
       var btn = e.target.closest('[data-cart-remove]');
       if (btn) {
@@ -145,6 +241,10 @@
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  function getWhatsAppNumber() {
+    return (siteSettings && siteSettings.whatsapp_number) ? siteSettings.whatsapp_number.replace(/[^0-9]/g, '') : '573102646751';
   }
 
   // =========================================================
@@ -255,6 +355,9 @@
     try {
       const settings = await apiFetch('/api/settings');
 
+      // Guardar en global para acceso desde otras funciones
+      siteSettings = settings;
+
       // Hero
       if (settings.hero_title) {
         const heroTitle = $('#heroTitle');
@@ -286,25 +389,24 @@
       }
 
       // Social
+      const social = $('#footerSocial');
+      let socialLinks = '';
       if (settings.social_instagram) {
-        const social = $('#footerSocial');
-        social.innerHTML +=
+        socialLinks +=
           `<a href="${escapeHtml(settings.social_instagram)}" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram">📷</a>`;
       }
       if (settings.social_facebook) {
-        const social = $('#footerSocial');
-        social.innerHTML +=
+        socialLinks +=
           `<a href="${escapeHtml(settings.social_facebook)}" target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook">👍</a>`;
       }
       if (settings.social_tiktok) {
-        const social = $('#footerSocial');
-        social.innerHTML +=
+        socialLinks +=
           `<a href="${escapeHtml(settings.social_tiktok)}" target="_blank" rel="noopener noreferrer" aria-label="TikTok" title="TikTok">♪</a>`;
       }
+      social.innerHTML = socialLinks;
 
       return settings;
     } catch (err) {
-      console.warn('Error cargando settings:', err);
       return {};
     }
   }
@@ -328,7 +430,6 @@
       if (page.title) ogTitleEl.setAttribute('content', page.title);
     } catch (err) {
       // Si no hay página home, usamos defaults del HTML — no es crítico
-      console.debug('Meta tags: usando defaults (no hay página home aún)');
     }
   }
 
@@ -450,7 +551,7 @@
                 </li>`;
               }).join('')}
             </ul>` : ''}
-            <button data-add-to-cart="${JSON.stringify({type:'product',id:p.id,name:p.title,image:p.image_url||''}).replace(/"/g,'&quot;')}" class="btn btn-primary" style="margin-top:var(--space-4);align-self:flex-start;">Añadir a cotización</button>
+            <button data-add-to-cart="${JSON.stringify({type:'product',id:p.id,name:p.title,image:p.image_url||'',price:0}).replace(/"/g,'&quot;')}" class="btn btn-primary" style="margin-top:var(--space-4);align-self:flex-start;">Añadir a cotización</button>
             ${galleryHtml}
           </div>
         </article>`;
@@ -487,6 +588,9 @@
               : (pkg.includes_json || []);
           } catch { includes = []; }
 
+          var priceMatch = pkg.price_range ? pkg.price_range.match(/[\d,]+/) : null;
+          var price = priceMatch ? parseInt(priceMatch[0].replace(/,/g, '')) : 0;
+
           return `
             <article class="package-card ${i === 0 ? 'featured' : ''} animate-in">
               <h3 class="package-name">${escapeHtml(pkg.name)}</h3>
@@ -495,7 +599,7 @@
               <ul class="package-includes">
                 ${includes.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
               </ul>
-              <button data-add-to-cart="${JSON.stringify({type:'package',id:pkg.id,name:pkg.name,image:''}).replace(/"/g,'&quot;')}" class="btn btn-primary">Añadir a cotización</button>
+              <button data-add-to-cart="${JSON.stringify({type:'package',id:pkg.id,name:pkg.name,image:'',price:price}).replace(/"/g,'&quot;')}" class="btn btn-primary">Añadir a cotización</button>
             </article>
           `;
         }).join('');
@@ -510,7 +614,7 @@
             ¿No encuentras lo que buscas? Creamos un paquete personalizado
             para las necesidades específicas de tu evento.
           </p>
-          <button data-add-to-cart='{"type":"package","id":"custom","name":"Paquete a la medida","image":""}' class="btn btn-outline" style="border-color: var(--color-gold); color: var(--color-gold);">
+          <button data-add-to-cart='{"type":"package","id":"custom","name":"Paquete a la medida","image":"","price":0}' class="btn btn-outline" style="border-color: var(--color-gold); color: var(--color-gold);">
             Añadir a cotización
           </button>
         </article>
@@ -528,7 +632,7 @@
             Cuéntanos sobre tu evento y crearemos un paquete personalizado
             para tus necesidades específicas.
           </p>
-          <button data-add-to-cart='{"type":"package","id":"custom","name":"Paquete a la medida","image":""}' class="btn btn-outline" style="border-color: var(--color-gold); color: var(--color-gold);">
+          <button data-add-to-cart='{"type":"package","id":"custom","name":"Paquete a la medida","image":"","price":0}' class="btn btn-outline" style="border-color: var(--color-gold); color: var(--color-gold);">
             Añadir a cotización
           </button>
         </article>
@@ -536,9 +640,32 @@
     }
   }
 
+  // Variable en clausura para evitar múltiples registros (IIFE scope)
+  var eventsAccordionReady = false;
+
+  function initEventsAccordion() {
+    if (eventsAccordionReady) return;
+    eventsAccordionReady = true;
+
+    document.addEventListener('toggle', function(e) {
+      var opened = e.target;
+      if (opened.tagName !== 'DETAILS') return;
+      if (!opened.classList.contains('event-comparator')) return;
+      if (!opened.open) return;
+
+      document.querySelectorAll('details.event-comparator[open]').forEach(function(d) {
+        if (d !== opened) d.open = false;
+      });
+    }, true);
+  }
+
+  initEventsAccordion();
+
   // =========================================================
   // Cargar Eventos (Portafolio)
   // =========================================================
+
+
   async function loadEvents() {
     const container = $('#eventsContainer');
     const filters = $$('.filter-btn');
@@ -587,16 +714,42 @@
           return `
             <article class="event-card animate-in" data-type="${ev.event_type || ''}">
               <img class="event-card-image"
-                   src="${escapeHtml(imgSrc)}"
+                   src="${escapeHtml(gallery.length > 0 ? gallery[0] : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80')}"
                    alt="${escapeHtml(ev.title)}"
                    loading="lazy"
                    onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80'" />
               <div class="event-card-body">
                 <span class="event-card-type">${typeLabels[ev.event_type] || ev.event_type || 'Evento'}</span>
                 <h3 class="event-card-title">${escapeHtml(ev.title)}</h3>
-                ${ev.solution ? `<p class="event-card-solution">${escapeHtml(ev.solution)}</p>` : ''}
-                ${ev.result ? `<div class="event-card-result">${escapeHtml(ev.result)}</div>` : ''}
               </div>
+${ev.before_media_url && ev.after_media_url ? `
+  <details class="event-comparator">
+    <summary style="display:inline-flex;align-items:center;gap:0.35rem;margin-top:0.5rem;background:var(--color-accent);color:#fff;border:none;padding:0.4rem 1rem;border-radius:100px;font-size:0.8rem;cursor:pointer;list-style:none;">
+      Ver más <span class="summary-arrow" style="font-size:0.7rem;">▼</span>
+    </summary>
+    <style>
+      .event-comparator > summary::-webkit-details-marker { display: none; }
+    </style>
+    <div class="event-card-detail" style="padding:0 1rem 1rem 1rem;">
+      <div class="event-comparison" style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <div class="event-before" style="flex:1;">
+          <div style="position:relative;overflow:hidden;border-radius:var(--radius);">
+            <img src="${escapeHtml(ev.before_media_url)}" alt="Antes" loading="lazy" style="width:100%;height:140px;object-fit:cover;display:block;" />
+            <span style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.7);color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;">Antes</span>
+          </div>
+          ${ev.solution ? `<p style="font-size:0.8rem;color:var(--color-text-muted);margin-top:0.35rem;">${escapeHtml(ev.solution)}</p>` : ''}
+        </div>
+        <div class="event-after" style="flex:1;">
+          <div style="position:relative;overflow:hidden;border-radius:var(--radius);">
+            <img src="${escapeHtml(ev.after_media_url)}" alt="Después" loading="lazy" style="width:100%;height:140px;object-fit:cover;display:block;" />
+            <span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.7);color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;">Después</span>
+          </div>
+          ${ev.result ? `<p style="font-size:0.8rem;color:var(--color-text-muted);margin-top:0.35rem;">${escapeHtml(ev.result)}</p>` : ''}
+        </div>
+      </div>
+    </div>
+  </details>
+` : ''}
             </article>
           `;
         }).join('');
@@ -649,7 +802,10 @@
           <article class="testimonial-card animate-in">
             <blockquote class="testimonial-quote">${escapeHtml(t.quote)}</blockquote>
             <div class="testimonial-author">
-              <div class="testimonial-avatar">${initial}</div>
+              ${t.avatar_url
+                ? `<img src="${escapeHtml(t.avatar_url)}" alt="${escapeHtml(t.client_name)}" class="testimonial-avatar" style="width:48px;height:48px;object-fit:cover;border-radius:50%;" loading="lazy" />`
+                : `<div class="testimonial-avatar">${initial}</div>`
+              }
               <div>
                 <div class="testimonial-name">${escapeHtml(t.client_name)}</div>
                 ${t.company ? `<div class="testimonial-company">${escapeHtml(t.company)}</div>` : ''}
@@ -671,89 +827,8 @@
   // Formulario de Cotización
   // =========================================================
   function initContactForm() {
-    const form = $('#quotationForm');
-    const submitBtn = $('#formSubmit');
-    const messages = $('#formMessages');
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      // Validación simple
-      const fields = {
-        customer_name: form.customer_name.value.trim(),
-        email: form.email.value.trim(),
-        phone: form.phone.value.trim(),
-      };
-
-      // Limpiar errores previos
-      $$('.form-error', form).forEach(el => el.remove());
-
-      let hasError = false;
-      if (!fields.customer_name) {
-        showFieldError(form.customer_name, 'El nombre es obligatorio');
-        hasError = true;
-      }
-      if (!fields.email) {
-        showFieldError(form.email, 'El correo es obligatorio');
-        hasError = true;
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) {
-        showFieldError(form.email, 'Correo inválido');
-        hasError = true;
-      }
-      if (!fields.phone) {
-        showFieldError(form.phone, 'El teléfono es obligatorio');
-        hasError = true;
-      }
-
-      if (hasError) return;
-
-      // Enviar
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Enviando...';
-
-      try {
-        await apiFetch('/api/quotations', {
-          method: 'POST',
-          body: JSON.stringify({
-            customer_name: fields.customer_name,
-            email: fields.email,
-            phone: fields.phone,
-            company: form.company.value.trim() || null,
-            city: form.city.value.trim() || null,
-            event_date: form.event_date.value ? form.event_date.value.split('-').reverse().join('-') : null,
-            notes: form.notes.value.trim() || null,
-            products_json: cartItems.length > 0 ? JSON.stringify(cartItems) : null,
-          }),
-        });
-
-        // Éxito
-        form.innerHTML = `
-          <div class="form-success">
-            <div class="form-success-icon">✓</div>
-            <h3>¡Solicitud enviada!</h3>
-            <p>Recibirás una respuesta personalizada en las próximas 24 horas hábiles.</p>
-          </div>
-        `;
-      } catch (err) {
-        console.error('Error al enviar cotización:', err);
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Enviar solicitud de cotización';
-        messages.innerHTML = `<p style="color: #ff4444; font-size: var(--text-sm);">Error al enviar. Intenta de nuevo o contáctanos por WhatsApp.</p>`;
-      }
-    });
-
-    function showFieldError(input, message) {
-      const error = document.createElement('div');
-      error.className = 'form-error';
-      error.textContent = message;
-      input.parentNode.appendChild(error);
-      input.style.borderColor = '#ff4444';
-      input.addEventListener('input', () => {
-        input.style.borderColor = '';
-        const err = input.parentNode.querySelector('.form-error');
-        if (err) err.remove();
-      }, { once: true });
-    }
+    // El envío se maneja por el onsubmit inline en el HTML.
+    // Esta función queda como placeholder por si se necesita en el futuro.
   }
 
   // =========================================================
@@ -825,3 +900,53 @@
   });
 
 })();
+
+window.handleContactSubmit = async function(event) {
+  event.preventDefault();
+
+  var form = document.getElementById('quotationForm');
+  if (!form) return;
+
+  var customer_name = form.querySelector('[name="customer_name"]').value.trim();
+  var email = form.querySelector('[name="email"]').value.trim();
+  var phone = form.querySelector('[name="phone"]').value.trim();
+
+  if (!customer_name || !email || !phone) {
+    alert('Por favor, completa los campos obligatorios (Nombre, Email, Teléfono).');
+    return;
+  }
+
+  var submitBtn = document.getElementById('formSubmit');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando...';
+  }
+
+  try {
+    var response = await fetch('/api/quotations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_name: customer_name,
+        email: email,
+        phone: phone,
+        company: form.querySelector('[name="company"]').value.trim() || null,
+        city: form.querySelector('[name="city"]').value.trim() || null,
+        event_date: form.querySelector('[name="event_date"]').value || null,
+        notes: form.querySelector('[name="notes"]').value.trim() || null,
+        products_json: (window.cartItems && window.cartItems.length > 0) ? JSON.stringify(window.cartItems) : null
+      })
+    });
+
+    if (!response.ok) throw new Error('Error del servidor');
+
+    form.innerHTML = '<div class="form-success"><div class="form-success-icon">✓</div><h3>¡Solicitud enviada!</h3><p>Recibirás una respuesta personalizada en las próximas 24 horas hábiles.</p></div>';
+  } catch (err) {
+    console.error('Error al enviar cotización:', err);
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Enviar solicitud de cotización';
+    }
+    alert('Error al enviar. Intenta de nuevo o contáctanos por WhatsApp.');
+  }
+};

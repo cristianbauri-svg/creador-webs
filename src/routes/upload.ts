@@ -45,6 +45,21 @@ export async function handleUpload(request: Request, env: Env): Promise<Response
     );
   }
 
+  // Validar magic bytes (firma real del archivo)
+  const arr = await file.arrayBuffer();
+  const bytes = new Uint8Array(arr);
+  const header = bytes.slice(0, 12);
+
+  // Firmas: PNG, JPEG, WebP
+  const isPNG = header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4E && header[3] === 0x47;
+  const isJPEG = header[0] === 0xFF && header[1] === 0xD8 && header[2] === 0xFF;
+  const isWebP = header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46 &&
+                 header[8] === 0x57 && header[9] === 0x45 && header[10] === 0x42 && header[11] === 0x50;
+
+  if (!isPNG && !isJPEG && !isWebP) {
+    return error("Tipo de archivo no válido. Solo se permiten PNG, JPEG y WebP.", 400);
+  }
+
   // Generar nombre único
   const ext = file.type.split("/")[1] || "jpg";
   const key = `products/${crypto.randomUUID()}.${ext}`;

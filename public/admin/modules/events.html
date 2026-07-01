@@ -64,17 +64,30 @@
     </div>
     <div class="form-row-admin">
       <div class="form-group-admin">
-        <label class="form-label-admin" for="evtBeforeUrl">URL media Antes</label>
-        <input class="form-input-admin" id="evtBeforeUrl" placeholder="https://..." />
+        <label class="form-label-admin">URL media Antes</label>
+        <div id="evtBeforeDrop" style="border:2px dashed var(--color-border);border-radius:var(--radius);padding:1.5rem;text-align:center;cursor:pointer;transition:border-color 200ms ease;min-height:100px;display:flex;align-items:center;justify-content:center;">
+          <div id="evtBeforeDropMsg" style="color:var(--color-text-muted);font-size:0.8125rem;">Arrastra una imagen aquí o haz clic para seleccionar</div>
+        </div>
+        <input type="file" id="evtBeforeFile" hidden accept="image/webp,image/jpeg,image/png" />
+        <small style="color:var(--color-text-muted);font-size:0.7rem;display:block;margin-top:0.35rem;">Formatos aceptados: WebP (recomendado), JPEG, PNG. Tamaño máximo: 5 MB.</small>
       </div>
       <div class="form-group-admin">
-        <label class="form-label-admin" for="evtAfterUrl">URL media Después</label>
-        <input class="form-input-admin" id="evtAfterUrl" placeholder="https://..." />
+        <label class="form-label-admin">URL media Después</label>
+        <div id="evtAfterDrop" style="border:2px dashed var(--color-border);border-radius:var(--radius);padding:1.5rem;text-align:center;cursor:pointer;transition:border-color 200ms ease;min-height:100px;display:flex;align-items:center;justify-content:center;">
+          <div id="evtAfterDropMsg" style="color:var(--color-text-muted);font-size:0.8125rem;">Arrastra una imagen aquí o haz clic para seleccionar</div>
+        </div>
+        <input type="file" id="evtAfterFile" hidden accept="image/webp,image/jpeg,image/png" />
+        <small style="color:var(--color-text-muted);font-size:0.7rem;display:block;margin-top:0.35rem;">Formatos aceptados: WebP (recomendado), JPEG, PNG. Tamaño máximo: 5 MB.</small>
       </div>
     </div>
     <div class="form-group-admin">
-      <label class="form-label-admin" for="evtGallery">Galería (URLs separadas por coma)</label>
-      <textarea class="form-textarea-admin" id="evtGallery" rows="2" placeholder="https://..., https://..."></textarea>
+      <label class="form-label-admin">Galería</label>
+      <div id="evtGalleryDrop" style="border:2px dashed var(--color-border);border-radius:var(--radius);padding:1.5rem;text-align:center;cursor:pointer;transition:border-color 200ms ease;min-height:80px;display:flex;align-items:center;justify-content:center;">
+        <div id="evtGalleryDropMsg" style="color:var(--color-text-muted);font-size:0.8125rem;">Arrastra varias imágenes aquí o haz clic para seleccionar</div>
+      </div>
+      <div id="evtGalleryPreviews" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;"></div>
+      <input type="file" id="evtGalleryFile" hidden accept="image/webp,image/jpeg,image/png" multiple />
+      <button type="button" class="btn-admin btn-ghost-admin" id="btnAddMoreGalleryImages" style="margin-top:0.5rem;font-size:0.75rem;">+ Agregar más imágenes</button>
     </div>
     <div class="form-actions">
       <button type="button" class="btn-admin btn-ghost-admin" id="btnCancelEvent">Cancelar</button>
@@ -88,6 +101,12 @@
   'use strict';
 
   var currentId = null;
+  var beforeImageFile = null;
+  var existingBeforeUrl = '';
+  var afterImageFile = null;
+  var existingAfterUrl = '';
+  var galleryFiles = [];
+  var existingGalleryUrls = [];
 
   var typeLabels = {
     corporativo: '🏢 Corporativo',
@@ -106,9 +125,17 @@
     evtStatus: document.getElementById('evtStatus'),
     evtSolution: document.getElementById('evtSolution'),
     evtResult: document.getElementById('evtResult'),
-    evtBeforeUrl: document.getElementById('evtBeforeUrl'),
-    evtAfterUrl: document.getElementById('evtAfterUrl'),
-    evtGallery: document.getElementById('evtGallery'),
+    evtBeforeDrop: document.getElementById('evtBeforeDrop'),
+    evtBeforeDropMsg: document.getElementById('evtBeforeDropMsg'),
+    evtBeforeFile: document.getElementById('evtBeforeFile'),
+    evtAfterDrop: document.getElementById('evtAfterDrop'),
+    evtAfterDropMsg: document.getElementById('evtAfterDropMsg'),
+    evtAfterFile: document.getElementById('evtAfterFile'),
+    evtGalleryDrop: document.getElementById('evtGalleryDrop'),
+    evtGalleryDropMsg: document.getElementById('evtGalleryDropMsg'),
+    evtGalleryPreviews: document.getElementById('evtGalleryPreviews'),
+    evtGalleryFile: document.getElementById('evtGalleryFile'),
+    btnAddMoreGalleryImages: document.getElementById('btnAddMoreGalleryImages'),
     btnAdd: document.getElementById('btnAddEvent'),
     btnCancel: document.getElementById('btnCancelEvent'),
   };
@@ -118,6 +145,47 @@
   els.btnAdd.addEventListener('click', function () { showForm(); });
   els.btnCancel.addEventListener('click', function () { hideForm(); });
   els.form.addEventListener('submit', function (e) { e.preventDefault(); saveEvent(); });
+
+  // Drag & drop — Media Antes
+  initDropZone(els.evtBeforeDrop, els.evtBeforeFile, function (file) {
+    beforeImageFile = file;
+    showImagePreview(file, els.evtBeforeDrop);
+  });
+  els.evtBeforeDrop.addEventListener('click', function () { els.evtBeforeFile.click(); });
+  els.evtBeforeFile.addEventListener('change', function () {
+    if (els.evtBeforeFile.files && els.evtBeforeFile.files[0]) {
+      beforeImageFile = els.evtBeforeFile.files[0];
+      showImagePreview(beforeImageFile, els.evtBeforeDrop);
+    }
+  });
+
+  // Drag & drop — Media Después
+  initDropZone(els.evtAfterDrop, els.evtAfterFile, function (file) {
+    afterImageFile = file;
+    showImagePreview(file, els.evtAfterDrop);
+  });
+  els.evtAfterDrop.addEventListener('click', function () { els.evtAfterFile.click(); });
+  els.evtAfterFile.addEventListener('change', function () {
+    if (els.evtAfterFile.files && els.evtAfterFile.files[0]) {
+      afterImageFile = els.evtAfterFile.files[0];
+      showImagePreview(afterImageFile, els.evtAfterDrop);
+    }
+  });
+
+  // Drag & drop — Galería
+  initDropZone(els.evtGalleryDrop, els.evtGalleryFile, function (files) {
+    for (var i = 0; i < files.length; i++) { galleryFiles.push(files[i]); }
+    renderGalleryPreviews();
+  });
+  els.evtGalleryDrop.addEventListener('click', function () { els.evtGalleryFile.click(); });
+  els.evtGalleryFile.addEventListener('change', function () {
+    if (els.evtGalleryFile.files) {
+      for (var j = 0; j < els.evtGalleryFile.files.length; j++) { galleryFiles.push(els.evtGalleryFile.files[j]); }
+      renderGalleryPreviews();
+      els.evtGalleryFile.value = '';
+    }
+  });
+  els.btnAddMoreGalleryImages.addEventListener('click', function () { els.evtGalleryFile.click(); });
 
   function loadEvents() {
     fetch('/api/events')
@@ -164,49 +232,132 @@
     els.evtStatus.value = evt ? (evt.status || 'draft') : 'draft';
     els.evtSolution.value = evt ? (evt.solution || '') : '';
     els.evtResult.value = evt ? (evt.result || '') : '';
-    els.evtBeforeUrl.value = evt ? (evt.before_media_url || '') : '';
-    els.evtAfterUrl.value = evt ? (evt.after_media_url || '') : '';
-    els.evtGallery.value = evt ? parseGalleryToInput(evt.gallery_json) : '';
+
+    // Resetear estado de archivos
+    beforeImageFile = null;
+    existingBeforeUrl = evt ? (evt.before_media_url || '') : '';
+    afterImageFile = null;
+    existingAfterUrl = evt ? (evt.after_media_url || '') : '';
+
+    if (existingBeforeUrl) {
+      showImagePreview(existingBeforeUrl, els.evtBeforeDrop);
+    } else {
+      resetImageDrop(els.evtBeforeDrop, els.evtBeforeDropMsg);
+    }
+
+    if (existingAfterUrl) {
+      showImagePreview(existingAfterUrl, els.evtAfterDrop);
+    } else {
+      resetImageDrop(els.evtAfterDrop, els.evtAfterDropMsg);
+    }
+
+    // Galería
+    galleryFiles = [];
+    existingGalleryUrls = [];
+    if (evt && evt.gallery_json) {
+      try { var g = JSON.parse(evt.gallery_json); if (Array.isArray(g)) existingGalleryUrls = g; } catch (e) {}
+    }
+    renderGalleryPreviews();
+
     els.formCard.style.display = '';
   }
 
   function hideForm() {
     els.formCard.style.display = 'none';
     els.form.reset();
+    resetImageDrop(els.evtBeforeDrop, els.evtBeforeDropMsg);
+    resetImageDrop(els.evtAfterDrop, els.evtAfterDropMsg);
+    beforeImageFile = null;
+    existingBeforeUrl = '';
+    afterImageFile = null;
+    existingAfterUrl = '';
+    galleryFiles = [];
+    existingGalleryUrls = [];
+    els.evtGalleryPreviews.innerHTML = '';
+    els.evtGalleryDropMsg.style.display = '';
+    els.evtGalleryDrop.style.padding = '1.5rem';
     currentId = null;
   }
 
   function saveEvent() {
-    var body = {
-      title: els.evtTitle.value.trim(),
-      event_type: els.evtType.value,
-      solution: els.evtSolution.value.trim() || null,
-      result: els.evtResult.value.trim() || null,
-      before_media_url: els.evtBeforeUrl.value.trim() || null,
-      after_media_url: els.evtAfterUrl.value.trim() || null,
-      gallery_json: parseGalleryFromInput(els.evtGallery.value),
-      status: els.evtStatus.value,
-    };
+    var title = els.evtTitle.value.trim();
 
-    if (!body.title) {
+    if (!title) {
       alert('El título del evento es obligatorio.');
       return;
     }
 
-    var url = currentId ? '/api/events/' + currentId : '/api/events';
-    var method = currentId ? 'PUT' : 'POST';
+    var submitBtn = els.form.querySelector('button[type="submit"]');
+    var originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Subiendo imágenes...';
 
-    fetch(url, {
-      method: method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-      .then(function (r) {
-        if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Error del servidor'); });
-        return r.json();
+    var beforePromise;
+    if (beforeImageFile) {
+      beforePromise = uploadFile(beforeImageFile).then(function (result) { return result.url; });
+    } else {
+      beforePromise = Promise.resolve(existingBeforeUrl || null);
+    }
+
+    var afterPromise;
+    if (afterImageFile) {
+      afterPromise = uploadFile(afterImageFile).then(function (result) { return result.url; });
+    } else {
+      afterPromise = Promise.resolve(existingAfterUrl || null);
+    }
+
+    // Subir archivos de galería
+    var galleryUploads = [];
+    for (var k = 0; k < galleryFiles.length; k++) {
+      galleryUploads.push(uploadFile(galleryFiles[k]));
+    }
+
+    Promise.all([beforePromise, afterPromise, Promise.all(galleryUploads)])
+      .then(function (results) {
+        var beforeUrl = results[0];
+        var afterUrl = results[1];
+        var galleryResults = results[2];
+
+        // Combinar URLs existentes de galería con las nuevas
+        var allGalleryUrls = existingGalleryUrls.slice();
+        for (var m = 0; m < galleryResults.length; m++) {
+          allGalleryUrls.push(galleryResults[m].url);
+        }
+
+        var body = {
+          title: title,
+          event_type: els.evtType.value,
+          solution: els.evtSolution.value.trim() || null,
+          result: els.evtResult.value.trim() || null,
+          before_media_url: beforeUrl,
+          after_media_url: afterUrl,
+          gallery_json: allGalleryUrls.length > 0 ? JSON.stringify(allGalleryUrls) : null,
+          status: els.evtStatus.value,
+        };
+
+        var url = currentId ? '/api/events/' + currentId : '/api/events';
+        var method = currentId ? 'PUT' : 'POST';
+
+        return fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }).then(function (r) {
+          if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Error del servidor'); });
+          return r.json();
+        });
       })
-      .then(function () { hideForm(); loadEvents(); })
-      .catch(function (err) { alert('Error: ' + err.message); });
+      .then(function () {
+        hideForm();
+        loadEvents();
+        var btn = document.querySelector('#eventsForm button[type="submit"]');
+        if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+      })
+      .catch(function (err) {
+        alert('Error: ' + err.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      });
   }
 
   function editEvent(id) {
@@ -234,20 +385,56 @@
     }
   }
 
-  function parseGalleryToInput(galleryJson) {
-    if (!galleryJson) return '';
-    try {
-      var arr = JSON.parse(galleryJson);
-      return Array.isArray(arr) ? arr.join(', ') : '';
-    } catch (e) {
-      return galleryJson || '';
+  function renderGalleryPreviews() {
+    els.evtGalleryPreviews.innerHTML = '';
+
+    // URLs existentes
+    for (var i = 0; i < existingGalleryUrls.length; i++) {
+      addGalleryPreview(existingGalleryUrls[i], i, true);
+    }
+
+    // Archivos nuevos
+    for (var j = 0; j < galleryFiles.length; j++) {
+      addGalleryPreview(galleryFiles[j], existingGalleryUrls.length + j, false);
+    }
+
+    // Mostrar/ocultar mensaje del drop zone
+    var hasContent = existingGalleryUrls.length > 0 || galleryFiles.length > 0;
+    els.evtGalleryDropMsg.style.display = hasContent ? 'none' : '';
+    if (hasContent) {
+      els.evtGalleryDrop.style.padding = '0.75rem';
+    } else {
+      els.evtGalleryDrop.style.padding = '1.5rem';
     }
   }
 
-  function parseGalleryFromInput(input) {
-    if (!input || !input.trim()) return null;
-    var urls = input.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
-    return urls.length > 0 ? JSON.stringify(urls) : null;
+  function addGalleryPreview(src, index, isUrl) {
+    var imgSrc = isUrl ? src : URL.createObjectURL(src);
+
+    var wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:relative;width:80px;height:60px;flex-shrink:0;';
+
+    var img = document.createElement('img');
+    img.src = imgSrc;
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:4px;';
+
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '✕';
+    delBtn.style.cssText = 'position:absolute;top:-6px;right:-6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:none;background:var(--color-danger);color:#fff;cursor:pointer;font-size:0.6rem;line-height:1;';
+    delBtn.addEventListener('click', function () {
+      if (isUrl) {
+        existingGalleryUrls.splice(index, 1);
+      } else {
+        var fileIdx = index - existingGalleryUrls.length;
+        galleryFiles.splice(fileIdx, 1);
+      }
+      renderGalleryPreviews();
+    });
+
+    wrapper.appendChild(img);
+    wrapper.appendChild(delBtn);
+    els.evtGalleryPreviews.appendChild(wrapper);
   }
 
   function esc(str) {
@@ -255,6 +442,59 @@
     var div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  function initDropZone(dropEl, fileInput, onFiles) {
+    dropEl.addEventListener('dragover', function (e) { e.preventDefault(); dropEl.style.borderColor = 'var(--color-accent)'; });
+    dropEl.addEventListener('dragleave', function () { dropEl.style.borderColor = 'var(--color-border)'; });
+    dropEl.addEventListener('drop', function (e) {
+      e.preventDefault();
+      dropEl.style.borderColor = 'var(--color-border)';
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        var files = e.dataTransfer.files;
+        if (fileInput.multiple) {
+          onFiles(files);
+        } else {
+          onFiles(files[0]);
+        }
+      }
+    });
+  }
+
+  function showImagePreview(src, dropEl) {
+    var isUrl = typeof src === 'string';
+    var imgSrc = isUrl ? src : URL.createObjectURL(src);
+    var msgEl = dropEl.querySelector('[id$="DropMsg"]');
+    if (msgEl) msgEl.style.display = 'none';
+
+    var oldPreview = dropEl.querySelector('img');
+    if (oldPreview) oldPreview.remove();
+
+    var img = document.createElement('img');
+    img.src = imgSrc;
+    img.style.cssText = 'max-width:100%;max-height:200px;border-radius:4px;object-fit:cover;';
+    dropEl.style.padding = '0.5rem';
+    dropEl.appendChild(img);
+  }
+
+  function resetImageDrop(dropEl, msgEl) {
+    var oldImg = dropEl.querySelector('img');
+    if (oldImg) oldImg.remove();
+    dropEl.style.padding = '1.5rem';
+    msgEl.style.display = '';
+  }
+
+  function uploadFile(file) {
+    var formData = new FormData();
+    formData.append('file', file);
+
+    return fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    }).then(function (r) {
+      if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Error al subir imagen'); });
+      return r.json();
+    });
   }
 })();
 </script>

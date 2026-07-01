@@ -11,13 +11,3 @@ CREATE TABLE IF NOT EXISTS pages (
     status TEXT DEFAULT 'draft',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-
--- Slugs iniciales del sitio
-INSERT OR IGNORE INTO pages (slug, title, status) VALUES
-    ('home', 'Inicio', 'draft'),
-    ('about', 'Nosotros', 'draft'),
-    ('services', 'Servicios', 'draft'),
-    ('packages', 'Paquetes', 'draft'),
-    ('events', 'Eventos', 'draft'),
-    ('testimonials', 'Testimonios', 'draft'),
-    ('contact', 'Contacto', 'draft');

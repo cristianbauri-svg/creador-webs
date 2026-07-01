@@ -32,15 +32,31 @@ async function listPages(request: Request, env: Env): Promise<Response> {
   try {
     const url = new URL(request.url);
     const status = url.searchParams.get("status");
-    let sql = "SELECT * FROM pages WHERE 1=1";
+    const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
+    const perPage = Math.min(100, Math.max(1, parseInt(url.searchParams.get("per_page") || "20")));
+    const offset = (page - 1) * perPage;
+
+    let whereClause = "WHERE 1=1";
     const params: unknown[] = [];
     if (status) {
-      sql += " AND status = ?";
+      whereClause += " AND status = ?";
       params.push(status);
     }
-    sql += " ORDER BY id ASC";
-    const rows = await queryAll(env.STRATON_DB, sql, params);
-    return json(rows);
+
+    const countResult = await queryOne(env.STRATON_DB, `SELECT COUNT(*) as total FROM pages ${whereClause}`, params);
+    const total = (countResult?.total as number) || 0;
+
+    const rows = await queryAll(env.STRATON_DB, `SELECT * FROM pages ${whereClause} ORDER BY id ASC LIMIT ? OFFSET ?`, [...params, perPage, offset]);
+
+    return new Response(JSON.stringify(rows), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "X-Total-Count": String(total),
+        "X-Page": String(page),
+        "X-Per-Page": String(perPage),
+      },
+    });
   } catch (e) {
     return handleDbError(e);
   }
