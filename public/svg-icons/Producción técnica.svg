@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="iconGrad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1DB954" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#0D8A3F" stop-opacity="0.95"/>
+    </linearGradient>
+    <filter id="iconGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#iconGlow)">
+    <!-- Engranaje izquierdo (grande) — dientes -->
+    <circle cx="16" cy="20" r="13" fill="none" stroke="url(#iconGrad)" stroke-width="3" stroke-dasharray="6 4.5"/>
+    <!-- Engranaje izquierdo — cuerpo -->
+    <circle cx="16" cy="20" r="9" fill="none" stroke="url(#iconGrad)" stroke-width="2.5"/>
+    <!-- Engranaje izquierdo — centro -->
+    <circle cx="16" cy="20" r="3.5" fill="none" stroke="url(#iconGrad)" stroke-width="2.5"/>
+    <!-- Engranaje derecho (pequeño) — dientes -->
+    <circle cx="34" cy="28" r="10.5" fill="none" stroke="url(#iconGrad)" stroke-width="3" stroke-dasharray="5.5 4"/>
+    <!-- Engranaje derecho — cuerpo -->
+    <circle cx="34" cy="28" r="7" fill="none" stroke="url(#iconGrad)" stroke-width="2.5"/>
+    <!-- Engranaje derecho — centro -->
+    <circle cx="34" cy="28" r="2.5" fill="none" stroke="url(#iconGrad)" stroke-width="2.5"/>
+  </g>
+</svg>

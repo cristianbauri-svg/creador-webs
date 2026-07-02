@@ -434,47 +434,204 @@
   }
 
   // =========================================================
-  // Cargar Servicios
+  // Servicios — Bioluminescent Grid (reemplaza loadServices)
   // =========================================================
+
+  // Mapeo de títulos de servicio → archivo SVG
+  const SERVICE_ICON_MAP = {
+    'audio profesional': 'sonido.svg',
+    'iluminación escénica': 'Iluminación.svg',
+    'pantallas led y video': 'Pantalla Led.svg',
+    'producción técnica': 'Producción técnica.svg',
+    'soporte para eventos corporativos': 'Soporte para eventos.svg',
+  };
+
+  function getServiceIconPath(title) {
+    const key = (title || '').toLowerCase().trim();
+    return SERVICE_ICON_MAP[key] || null;
+  }
+
+  function getServiceSpan(index) {
+    // Regla de asignación automática de spans asimétricos
+    const pattern = [
+      'col-span-2 row-span-2', // 0: tarjeta grande destacada
+      '',                       // 1: normal
+      '',                       // 2: normal
+      'col-span-2',            // 3: ancha
+      '',                       // 4: normal
+      'row-span-2',            // 5: alta
+    ];
+    return pattern[index % pattern.length];
+  }
+
+  function renderServiceCard(service, index) {
+    const spanClass = getServiceSpan(index);
+    const iconPath = getServiceIconPath(service.title);
+    const iconHtml = iconPath
+      ? `<img src="/svg-icons/${iconPath}" alt="" class="service-card-svg" width="24" height="24" />`
+      : (service.icon ? `<span class="service-card-emoji">${service.icon}</span>` : '');
+
+    return `
+      <article class="bio-card ${spanClass}" data-service-id="${service.id}" data-index="${index}">
+        <div class="bio-card-glow"></div>
+        <div class="bio-card-content">
+          <div class="service-card-icon">${iconHtml}</div>
+          <h3 class="service-card-title">${escapeHtml(service.title)}</h3>
+          <p class="service-card-desc">${escapeHtml(service.description || '')}</p>
+          <span class="service-card-expand-hint">Ver más →</span>
+        </div>
+      </article>`;
+  }
+
   async function loadServices() {
-    const container = $('#servicesContainer');
+    const grid = document.getElementById('servicesGrid');
+    if (!grid) return;
+
     try {
       const services = await apiFetch('/api/services?status=published');
 
       if (!services || services.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">🎵</div>
-            <h3>Próximamente</h3>
-            <p>Estamos preparando nuestra oferta de servicios. Muy pronto estará disponible.</p>
-          </div>
-        `;
+        grid.innerHTML = `<div class="empty-state"><p>No hay servicios disponibles.</p></div>`;
         return;
       }
 
-      container.innerHTML = services.map(s => {
-        const imgHtml = s.image_url
-          ? `<img class="service-card-image" src="${escapeHtml(s.image_url)}" alt="${escapeHtml(s.title)}" loading="eager" />`
-          : '';
-        return `
-        <article class="service-card animate-in">
-          ${imgHtml}
-          <div class="service-card-body">
-            <h3>${escapeHtml(s.title)}</h3>
-            <p>${escapeHtml(s.description || '')}</p>
-          </div>
-        </article>`;
-      }).join('');
+      grid.innerHTML = services.map((s, i) => renderServiceCard(s, i)).join('');
 
-      initAnimations();
+      // Guardar datos para re-vincular clics tras colapsar
+      window.__servicesData = services;
+
+      // Vincular clics a cada card
+      document.querySelectorAll('.bio-card').forEach(card => {
+        card._svcClickHandler = function handler() {
+          const id = parseInt(card.dataset.serviceId, 10);
+          const service = services.find(s => s.id === id);
+          if (service) showServiceDetail(service, card);
+        };
+        card.addEventListener('click', card._svcClickHandler);
+      });
+
+      initBioMouseTracking(grid);
+      animateCardsIn();
     } catch (err) {
-      console.error('Error cargando servicios:', err);
-      container.innerHTML = `
-        <div class="error-state">
-          <p>No se pudieron cargar los servicios. Verifica la conexión.</p>
-        </div>
-      `;
+      grid.innerHTML = `<div class="empty-state"><p>Error al cargar servicios.</p></div>`;
+      console.error('loadServices:', err);
     }
+  }
+
+  // --- Efecto bioluminiscente: tracking del mouse ---
+  function initBioMouseTracking(grid) {
+    grid.addEventListener('mousemove', (e) => {
+      const rect = grid.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      grid.style.setProperty('--mouse-x', `${x}%`);
+      grid.style.setProperty('--mouse-y', `${y}%`);
+    });
+    grid.addEventListener('mouseleave', () => {
+      grid.style.setProperty('--mouse-x', '50%');
+      grid.style.setProperty('--mouse-y', '50%');
+    });
+  }
+
+  // --- Animación stagger con GSAP ---
+  function animateCardsIn() {
+    if (typeof gsap !== 'undefined') {
+      gsap.from('.bio-card', {
+        opacity: 0,
+        y: 24,
+        duration: 0.5,
+        stagger: 0.08,
+        ease: 'power2.out',
+      });
+    }
+    // Fallback sin GSAP: las tarjetas se muestran directamente (ya están en el DOM)
+  }
+
+  // --- Expansión inline de la card ---
+
+  function showServiceDetail(service, cardElement) {
+    const grid = document.getElementById('servicesGrid');
+    if (!grid || !cardElement) return;
+
+    // Si ya hay una expandida y es distinta, colapsarla primero
+    const currentExpanded = grid.querySelector('.bio-card.expanded');
+    if (currentExpanded && currentExpanded !== cardElement) {
+      collapseCard(currentExpanded, grid);
+    }
+
+    // Si la misma card ya está expandida, colapsarla y salir
+    if (cardElement.classList.contains('expanded')) {
+      collapseCard(cardElement, grid);
+      return;
+    }
+
+    // Guardar el HTML original de la card para restaurarlo después
+    const originalHTML = cardElement.innerHTML;
+
+    // Construir el HTML expandido
+    const mediaHTML = service.video_url
+      ? `<video src="${escapeHtml(service.video_url)}" controls preload="metadata"></video>`
+      : (service.image_url
+          ? `<img src="${escapeHtml(service.image_url)}" alt="${escapeHtml(service.title)}" />`
+          : '');
+
+    const featuresHTML = service.features
+      ? service.features.split('\n').filter(f => f.trim()).map(f => `
+          <div class="feature-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>${escapeHtml(f.trim())}</span>
+          </div>`).join('')
+      : '';
+
+    cardElement.innerHTML = `
+      <div class="bio-card-expanded-close" id="btnCollapseCard" aria-label="Cerrar detalle">&times;</div>
+      <div class="bio-card-expanded-media">${mediaHTML}</div>
+      <div class="bio-card-expanded-info">
+        <h2 class="detail-title">${escapeHtml(service.title)}</h2>
+        <p class="detail-description">${escapeHtml(service.description || '')}</p>
+        <div class="detail-features">${featuresHTML}</div>
+        <a href="#contacto" class="cta-button">
+          Solicitar cotización
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>`;
+
+    cardElement.classList.add('expanded');
+    cardElement.dataset.originalHTML = originalHTML;
+    grid.classList.add('has-expanded');
+
+    // Scroll suave a la card expandida
+    cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Listener del botón cerrar
+    const closeBtn = cardElement.querySelector('#btnCollapseCard');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        collapseCard(cardElement, grid);
+      });
+    }
+  }
+
+  function collapseCard(cardElement, grid) {
+    if (cardElement.dataset.originalHTML) {
+      cardElement.innerHTML = cardElement.dataset.originalHTML;
+      delete cardElement.dataset.originalHTML;
+    }
+    cardElement.classList.remove('expanded');
+    grid.classList.remove('has-expanded');
+
+    // Re-vincular el evento de clic a la card restaurada
+    const services = window.__servicesData || [];
+    if (cardElement._svcClickHandler) {
+      cardElement.removeEventListener('click', cardElement._svcClickHandler);
+    }
+    cardElement._svcClickHandler = function handler() {
+      const id = parseInt(cardElement.dataset.serviceId, 10);
+      const service = services.find(s => s.id === id);
+      if (service) showServiceDetail(service, cardElement);
+    };
+    cardElement.addEventListener('click', cardElement._svcClickHandler);
   }
 
   // =========================================================
@@ -837,6 +994,7 @@ ${ev.before_media_url && ev.after_media_url ? `
   async function init() {
     initNav();
     initCounters();
+    initStatsBanner();
     initCartBarEvents();
 
     // Limitar fecha del evento a hoy en adelante
@@ -898,6 +1056,43 @@ ${ev.before_media_url && ev.after_media_url ? `
       });
     }
   });
+
+// ⚠️ PROTEGIDO: No eliminar esta función. Controla la barra de estadísticas debajo del Hero.
+function initStatsBanner() {
+  var banner = document.getElementById('statsBanner');
+  if (!banner) return;
+
+  function animateCounter(counter) {
+    var target = parseInt(counter.getAttribute('data-target'));
+    var duration = 2000;
+    var step = target / (duration / 16);
+    var current = 0;
+    var timer = setInterval(function() {
+      current += step;
+      if (current >= target) {
+        counter.textContent = target;
+        clearInterval(timer);
+      } else {
+        counter.textContent = Math.floor(current);
+      }
+    }, 16);
+  }
+
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        banner.classList.add('animate');
+        var counters = banner.querySelectorAll('.counter');
+        counters.forEach(function(counter, index) {
+          setTimeout(function() { animateCounter(counter); }, index * 200);
+        });
+        observer.unobserve(banner);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  observer.observe(banner);
+}
 
 })();
 

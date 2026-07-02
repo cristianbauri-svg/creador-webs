@@ -68,6 +68,11 @@
       <label class="form-label-admin" for="svcDescription">Descripción</label>
       <textarea class="form-textarea-admin" id="svcDescription" rows="3" placeholder="Descripción del servicio..."></textarea>
     </div>
+    <div class="form-group-admin">
+      <label class="form-label-admin">Características</label>
+      <div id="featuresList"></div>
+      <button type="button" class="btn-admin btn-ghost-admin" id="btnAddFeature" style="margin-top:0.5rem;font-size:0.75rem;">+ Agregar otra característica</button>
+    </div>
     <div class="form-actions">
       <button type="button" class="btn-admin btn-ghost-admin" id="btnCancelService">Cancelar</button>
       <button type="submit" class="btn-admin btn-primary-admin">Guardar</button>
@@ -97,6 +102,8 @@
     svcSortOrder: document.getElementById('svcSortOrder'),
     svcStatus: document.getElementById('svcStatus'),
     svcDescription: document.getElementById('svcDescription'),
+    featuresList: document.getElementById('featuresList'),
+    btnAddFeature: document.getElementById('btnAddFeature'),
     btnAdd: document.getElementById('btnAddService'),
     btnCancel: document.getElementById('btnCancelService'),
   };
@@ -105,6 +112,7 @@
 
   els.btnAdd.addEventListener('click', function () { showForm(); });
   els.btnCancel.addEventListener('click', function () { hideForm(); });
+  els.btnAddFeature.addEventListener('click', function () { addFeatureInput(''); });
   els.form.addEventListener('submit', function (e) { e.preventDefault(); saveService(); });
 
   // Drag & drop — Imagen del servicio
@@ -176,6 +184,13 @@
       resetImageDrop(els.svcImageDrop, els.svcImageDropMsg);
     }
 
+    // Construir lista de características dinámica
+    var features = [];
+    if (service && service.features) {
+      features = service.features.split('\n').filter(function (f) { return f.trim() !== ''; });
+    }
+    buildFeaturesList(features);
+
     els.formCard.style.display = '';
   }
 
@@ -183,6 +198,7 @@
     els.formCard.style.display = 'none';
     els.form.reset();
     resetImageDrop(els.svcImageDrop, els.svcImageDropMsg);
+    els.featuresList.innerHTML = '';
     svcImageFile = null;
     existingImageUrl = '';
     currentId = null;
@@ -216,6 +232,7 @@
         sort_order: parseInt(els.svcSortOrder.value, 10) || 0,
         status: els.svcStatus.value,
         description: els.svcDescription.value.trim() || null,
+        features: collectFeatures(),
       };
 
       var url = currentId ? '/api/services/' + currentId : '/api/services';
@@ -230,7 +247,12 @@
         return r.json();
       });
     })
-      .then(function () { hideForm(); loadServices(); })
+      .then(function () {
+        hideForm();
+        loadServices();
+        var btn = document.querySelector('#servicesForm button[type="submit"]');
+        if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+      })
       .catch(function (err) {
         alert('Error: ' + err.message);
         submitBtn.disabled = false;
@@ -322,5 +344,83 @@
       return r.json();
     });
   }
+
+  // --- Lista dinámica de características ---
+
+  function buildFeaturesList(items) {
+    els.featuresList.innerHTML = '';
+    if (!items || items.length === 0) {
+      addFeatureInput('');
+    } else {
+      for (var i = 0; i < items.length; i++) {
+        addFeatureInput(items[i]);
+      }
+    }
+  }
+
+  function addFeatureInput(value) {
+    var row = document.createElement('div');
+    row.className = 'feature-row';
+    row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;';
+
+    var bullet = document.createElement('span');
+    bullet.textContent = '•';
+    bullet.style.cssText = 'color:var(--color-accent);font-weight:700;font-size:1.2rem;flex-shrink:0;';
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-input-admin';
+    input.placeholder = 'Ej: Sonido envolvente 360°';
+    input.value = value || '';
+    input.style.cssText = 'flex:1;';
+
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '✕';
+    delBtn.style.cssText = 'flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:none;background:transparent;color:var(--color-text-muted);cursor:pointer;font-size:0.875rem;transition:all 200ms ease;';
+    delBtn.addEventListener('mouseenter', function () { delBtn.style.color = 'var(--color-danger)'; delBtn.style.background = 'rgba(229,62,62,0.1)'; });
+    delBtn.addEventListener('mouseleave', function () { delBtn.style.color = 'var(--color-text-muted)'; delBtn.style.background = 'transparent'; });
+    delBtn.addEventListener('click', function () { removeFeatureInput(row); });
+
+    row.appendChild(bullet);
+    row.appendChild(input);
+    row.appendChild(delBtn);
+    els.featuresList.appendChild(row);
+
+    updateFeatureRemoveButtons();
+  }
+
+  function removeFeatureInput(row) {
+    var rows = els.featuresList.querySelectorAll('.feature-row');
+    if (rows.length <= 1) {
+      alert('Al menos una característica es obligatoria.');
+      return;
+    }
+    row.remove();
+    updateFeatureRemoveButtons();
+  }
+
+  function updateFeatureRemoveButtons() {
+    var rows = els.featuresList.querySelectorAll('.feature-row');
+    for (var i = 0; i < rows.length; i++) {
+      var btn = rows[i].querySelector('button');
+      if (rows.length === 1) {
+        btn.style.display = 'none';
+      } else {
+        btn.style.display = '';
+      }
+    }
+  }
+
+  function collectFeatures() {
+    var inputs = els.featuresList.querySelectorAll('.feature-row input');
+    var items = [];
+    for (var i = 0; i < inputs.length; i++) {
+      var val = inputs[i].value.trim();
+      if (val) items.push(val);
+    }
+    return items.length > 0 ? items.join('\n') : null;
+  }
+
 })();
 </script>

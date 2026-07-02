@@ -15,6 +15,7 @@
 
   <link rel="stylesheet" href="/css/styles.css?v=20260628" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔊</text></svg>" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
   <!-- Estilos del carrito de cotización -->
   <style>
@@ -135,6 +136,89 @@
         right: -3px;
       }
     }
+.stats-banner {
+  background: linear-gradient(135deg, #0A0A0A 0%, #0F0F0F 50%, #121212 100%);
+  padding: 64px 0;
+  position: relative;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+.stats-banner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-accent), var(--color-gold), var(--color-accent), transparent);
+}
+.stats-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 40px;
+  position: relative;
+  z-index: 1;
+}
+.stat-item {
+  text-align: center;
+  padding: 20px 30px;
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+  max-width: 300px;
+}
+.stat-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.08);
+}
+@media (max-width: 968px) {
+  .stat-item:not(:last-child)::after { display: none; }
+}
+.stat-number {
+  font-size: 40px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 10px;
+  line-height: 1;
+  display: block;
+  opacity: 0.7;
+  transform: translateY(30px);
+  animation: fadeInUpBanner 0.8s ease forwards;
+}
+.stat-label {
+  font-size: 12px;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+  opacity: 0.7;
+  transform: translateY(20px);
+  animation: fadeInUpBanner 0.8s ease 0.3s forwards;
+}
+@keyframes fadeInUpBanner {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 0.7; transform: translateY(0); }
+}
+.stat-item:hover .stat-number { transform: scale(1.05); transition: transform 0.3s ease; }
+.stat-item:hover { transform: translateY(-5px); transition: transform 0.3s ease; }
+@media (max-width: 768px) {
+  .stats-banner { padding: 60px 20px; }
+  .stat-number { font-size: 34px; }
+  .stat-label { font-size: 11px; }
+  .stat-item { padding: 20px; min-width: 100%; }
+}
+@media (max-width: 480px) {
+  .stat-number { font-size: 30px; }
+  .stats-container { gap: 20px; }
+}
+
   </style>
 </head>
 <body>
@@ -194,21 +278,38 @@
           <a href="#contacto" class="btn btn-primary btn-lg">Solicitar cotización</a>
           <a href="#portafolio" class="btn btn-outline btn-lg">Ver portafolio</a>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <div class="hero-stats" id="heroStats">
-          <div>
-            <div class="hero-stat-value" data-count="150">0</div>
-            <div class="hero-stat-label">Eventos realizados</div>
-          </div>
-          <div>
-            <div class="hero-stat-value" data-count="12">0</div>
-            <div class="hero-stat-label">Años de experiencia</div>
-          </div>
-          <div>
-            <div class="hero-stat-value" data-count="98">0%</div>
-            <div class="hero-stat-label">Clientes satisfechos</div>
-          </div>
-        </div>
+  <!-- ⚠️ PROTEGIDO: No eliminar esta sección. Es la barra de estadísticas debajo del Hero. -->
+  <!-- Stats Banner -->
+  <section class="stats-banner" id="statsBanner">
+    <div class="stats-container">
+      <div class="stat-item">
+        <span class="stat-number">
+          <span class="counter" data-target="500">500</span><span style="color: var(--color-accent);">+</span>
+        </span>
+        <div class="stat-label">Eventos Realizados</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">
+          <span class="counter" data-target="12">12</span>
+          <span style="color: var(--color-gold);"> años</span>
+        </span>
+        <div class="stat-label">De Experiencia</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">
+          <span class="counter" data-target="300">300</span><span style="color: var(--color-accent);">+</span>
+        </span>
+        <div class="stat-label">Clientes Satisfechos</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">
+          <span class="counter" data-target="24">24</span><span style="color: var(--color-gold);">/7</span>
+        </span>
+        <div class="stat-label">Soporte Técnico</div>
       </div>
     </div>
   </section>
@@ -239,16 +340,18 @@
   </section>
 
   <!-- ============================================= -->
-  <!-- Servicios -->
+  <!-- Servicios — Bioluminescent Grid -->
   <!-- ============================================= -->
-  <section class="section" id="servicios">
+  <section class="section services-bioluminescent" id="servicios">
     <div class="container">
       <div class="section-header">
         <span class="section-tag">Servicios</span>
         <h2 class="section-title">Soluciones técnicas integrales</h2>
         <p class="section-subtitle">Equipos de última generación y personal certificado para cada tipo de evento.</p>
       </div>
-      <div class="services-grid" id="servicesContainer">
+
+      <!-- Grid bioluminiscente -->
+      <div class="bio-grid" id="servicesGrid">
         <div class="loading-state">Cargando servicios...</div>
       </div>
     </div>
@@ -269,6 +372,31 @@
       </div>
     </div>
   </section>
+
+  <!-- Consola de audio digital animada -->
+  <div class="eq-console" aria-hidden="true">
+    <div class="eq-console-grid"></div>
+    <div class="eq-console-measure"></div>
+    <div class="eq-console-bars" id="eqBars"></div>
+  </div>
+  <script>
+    (function() {
+      var container = document.getElementById('eqBars');
+      if (!container) return;
+      var waveClasses = ['eq-wave-a', 'eq-wave-b', 'eq-wave-c', 'eq-wave-d'];
+      var totalBars = 50;
+      var html = '';
+      for (var i = 0; i < totalBars; i++) {
+        var wave = waveClasses[i % waveClasses.length];
+        var isGold = (i % 3 === 0);
+        var isPeak = (i % 7 === 0);
+        var delay = (i * 0.06).toFixed(2);
+        var cls = 'eq-bar' + (isGold ? ' eq-bar--gold' : '') + (isPeak ? ' eq-bar--peak' : '');
+        html += '<div class="' + cls + '" style="animation-name:' + wave + ';animation-delay:' + delay + 's"></div>';
+      }
+      container.innerHTML = html;
+    })();
+  </script>
 
   <!-- ============================================= -->
   <!-- Paquetes -->

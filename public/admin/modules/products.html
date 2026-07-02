@@ -353,6 +353,8 @@
       .then(function () {
         hideForm();
         loadProducts();
+        var btn = document.querySelector('#productsForm button[type="submit"]');
+        if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
       })
       .catch(function (err) {
         alert('Error: ' + err.message);

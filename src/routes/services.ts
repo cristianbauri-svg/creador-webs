@@ -71,9 +71,9 @@ async function createService(request: Request, env: Env): Promise<Response> {
 
     const result = await execute(
       env.STRATON_DB,
-      `INSERT INTO services (title, description, icon, image_url, sort_order, status)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [body.title, body.description || null, body.icon || null, body.image_url || null, body.sort_order || 0, body.status || "draft"]
+      `INSERT INTO services (title, description, icon, image_url, sort_order, status, features)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [body.title, body.description || null, body.icon || null, body.image_url || null, body.sort_order || 0, body.status || "draft", body.features || null]
     );
 
     const inserted = await queryOne(env.STRATON_DB, "SELECT * FROM services WHERE id = ?", [result.meta.last_row_id]);
@@ -91,7 +91,7 @@ async function updateService(request: Request, env: Env, id: number): Promise<Re
     const body = await request.json() as Record<string, unknown>;
     const sets: string[] = [];
     const params: unknown[] = [];
-    const fields = ["title", "description", "icon", "image_url", "sort_order", "status"];
+    const fields = ["title", "description", "icon", "image_url", "sort_order", "status", "features"];
     for (const field of fields) {
       if (body[field] !== undefined) {
         sets.push(`${field} = ?`);

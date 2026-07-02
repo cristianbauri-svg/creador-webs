@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="iconGrad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1DB954" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#0D8A3F" stop-opacity="0.95"/>
+    </linearGradient>
+    <filter id="iconGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#iconGlow)">
+    <!-- Bombilla -->
+    <path d="M14 8 C6 8 5 20 12 24 C13 26 14 30 14 30 L34 30 C34 30 35 26 36 24 C43 20 42 8 34 8 C30 8 26 11 24 11 C22 11 18 8 14 8 Z" fill="none" stroke="url(#iconGrad)" stroke-width="2.5" stroke-linejoin="round"/>
+    <!-- Rosca -->
+    <line x1="16" y1="34" x2="32" y2="34" stroke="url(#iconGrad)" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="18" y1="38" x2="30" y2="38" stroke="url(#iconGrad)" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Contacto -->
+    <line x1="21" y1="42" x2="27" y2="42" stroke="url(#iconGrad)" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+</svg>

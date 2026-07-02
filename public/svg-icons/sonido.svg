@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="iconGrad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1DB954" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#0D8A3F" stop-opacity="0.95"/>
+    </linearGradient>
+    <filter id="iconGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#iconGlow)">
+    <!-- Altavoz -->
+    <path d="M22 8 L12 16 H6 v16 h6 l10 8 V8 z" fill="url(#iconGrad)" stroke="url(#iconGrad)" stroke-width="2.5" stroke-linejoin="round"/>
+    <!-- Ondas sonido -->
+    <path d="M28 16 C32 18 32 30 28 32" stroke="url(#iconGrad)" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M33 13 C40 17 40 31 33 35" stroke="url(#iconGrad)" stroke-width="2.5" stroke-linecap="round" opacity="0.55"/>
+  </g>
+</svg>
