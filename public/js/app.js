@@ -512,6 +512,12 @@
 
       initBioMouseTracking(grid);
       animateCardsIn();
+
+      // Expandir automáticamente la primera card
+      const firstCard = grid.querySelector('.bio-card');
+      if (firstCard && services.length > 0) {
+        showServiceDetail(services[0], firstCard, true);
+      }
     } catch (err) {
       grid.innerHTML = `<div class="empty-state"><p>Error al cargar servicios.</p></div>`;
       console.error('loadServices:', err);
@@ -549,7 +555,7 @@
 
   // --- Expansión inline de la card ---
 
-  function showServiceDetail(service, cardElement) {
+  function showServiceDetail(service, cardElement, skipScroll = false) {
     const grid = document.getElementById('servicesGrid');
     if (!grid || !cardElement) return;
 
@@ -600,8 +606,10 @@
     cardElement.dataset.originalHTML = originalHTML;
     grid.classList.add('has-expanded');
 
-    // Scroll suave a la card expandida
-    cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Scroll suave a la card expandida (solo si no es apertura por defecto)
+    if (!skipScroll) {
+      cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
 
     // Listener del botón cerrar
     const closeBtn = cardElement.querySelector('#btnCollapseCard');
@@ -715,6 +723,7 @@
       }).join('');
 
       initAnimations();
+      initProductCarousel();
     } catch (err) {
       console.error('Error cargando productos:', err);
       container.innerHTML = `
@@ -723,6 +732,197 @@
         </div>
       `;
     }
+  }
+
+  // =========================================================
+  // Carrusel de Productos — Navegación
+  // =========================================================
+  function initProductCarousel() {
+    var container = document.getElementById('productsContainer');
+    var prevBtn = document.getElementById('productsPrev');
+    var nextBtn = document.getElementById('productsNext');
+    if (!container || !prevBtn || !nextBtn) return;
+
+    if (container.dataset.carouselInit === 'true') return;
+    container.dataset.carouselInit = 'true';
+
+    var realCards = Array.from(container.children);
+    var realCount = realCards.length;
+    if (realCount === 0) return;
+
+    // Si hay pocas cards, ocultar botones y salir
+    function getVisibleSlots() {
+      var w = container.clientWidth;
+      if (w > 1024) return 3;
+      if (w > 768) return 2;
+      return 1;
+    }
+    if (realCount <= getVisibleSlots()) {
+      prevBtn.classList.add('hidden');
+      nextBtn.classList.add('hidden');
+      return;
+    }
+
+    // --- 1. Clonar extremos para bucle infinito ---
+    var cloneTail = realCards.map(function(c) { var n = c.cloneNode(true); n.dataset.clone = 'true'; return n; });
+    var cloneHead = realCards.map(function(c) { var n = c.cloneNode(true); n.dataset.clone = 'true'; return n; });
+
+    // Limpiar IDs y marcar clones como decorativos
+    cloneTail.concat(cloneHead).forEach(function(n) {
+      n.removeAttribute('id');
+      n.setAttribute('aria-hidden', 'true');
+      var focusable = n.querySelectorAll('a, button, input, select, textarea, [tabindex]');
+      focusable.forEach(function(el) { el.tabIndex = -1; });
+    });
+
+    cloneTail.forEach(function(c) { container.appendChild(c); });
+    cloneHead.reverse().forEach(function(c) { container.insertBefore(c, container.firstChild); });
+
+    var currentIndex = realCount; // arranca en la primera card real
+
+    // Posicionar en la primera card real (sin animación)
+    container.scrollLeft = getCardScrollLeft(container.children[currentIndex]);
+
+    function getCardScrollLeft(card) {
+      var cRect = container.getBoundingClientRect();
+      var kRect = card.getBoundingClientRect();
+      return kRect.left - cRect.left + container.scrollLeft;
+    }
+
+    function getScrollDistance() {
+      var card = container.querySelector('.service-card');
+      if (!card) return 300;
+      var cardWidth = card.offsetWidth;
+      var containerStyle = window.getComputedStyle(container);
+      var gap = parseFloat(containerStyle.gap || 0) || parseFloat(containerStyle.columnGap || 0) || 24;
+      return cardWidth + gap;
+    }
+
+    function getNearestIndex() {
+      var containerCenter = container.scrollLeft + container.clientWidth / 2;
+      var nearest = 0;
+      var minDist = Infinity;
+      Array.from(container.children).forEach(function(card, i) {
+        var cardCenter = getCardScrollLeft(card) + card.offsetWidth / 2;
+        var dist = Math.abs(cardCenter - containerCenter);
+        if (dist < minDist) { minDist = dist; nearest = i; }
+      });
+      return nearest;
+    }
+
+    // --- 2. Navegación con scrollBy nativo ---
+    function goToNext() {
+      container.scrollBy({ left: getScrollDistance(), behavior: 'smooth' });
+    }
+    function goToPrev() {
+      container.scrollBy({ left: -getScrollDistance(), behavior: 'smooth' });
+    }
+
+    prevBtn.addEventListener('click', goToPrev);
+    nextBtn.addEventListener('click', goToNext);
+
+    // Pausar autoplay al usar los botones manualmente
+    prevBtn.addEventListener('click', pauseAndScheduleResume);
+    nextBtn.addEventListener('click', pauseAndScheduleResume);
+
+    // --- 3. Dots de paginación ---
+    var dotsWrapper = document.createElement('div');
+    dotsWrapper.className = 'carousel-dots';
+    container.parentNode.parentNode.appendChild(dotsWrapper);
+
+    for (var di = 0; di < realCount; di++) {
+      var dot = document.createElement('button');
+      dot.className = 'carousel-dot';
+      dot.setAttribute('aria-label', 'Ir al producto ' + (di + 1));
+      (function(idx) {
+        dot.addEventListener('click', function() {
+          currentIndex = realCount + idx;
+          var card = container.children[currentIndex];
+          if (card) {
+            container.scrollTo({ left: getCardScrollLeft(card), behavior: 'smooth' });
+            setTimeout(function() {
+              var nearest = getNearestIndex();
+              updateActiveCard(nearest);
+              updateDots();
+            }, 400);
+          }
+        });
+      })(di);
+      dotsWrapper.appendChild(dot);
+    }
+
+    function updateDots() {
+      var realIndex = currentIndex % realCount;
+      Array.from(dotsWrapper.children).forEach(function(d, i) {
+        d.classList.toggle('active', i === realIndex);
+      });
+    }
+
+    if (dotsWrapper.children.length > 0) {
+      dotsWrapper.children[0].classList.add('active');
+    }
+
+    function updateActiveCard(index) {
+      Array.from(container.children).forEach(function(card) {
+        card.classList.remove('is-active');
+      });
+      var visibleCard = container.children[index];
+      if (visibleCard) {
+        visibleCard.classList.add('is-active');
+      }
+    }
+
+    // --- 4. Detección de borde para loop infinito ---
+    function checkLoopBoundary() {
+      var nearest = getNearestIndex();
+
+      if (nearest >= realCount * 2) {
+        currentIndex = nearest - realCount;
+      } else if (nearest < realCount) {
+        currentIndex = nearest + realCount;
+      } else {
+        currentIndex = nearest;
+      }
+
+      updateActiveCard(nearest);
+      updateDots();
+    }
+
+    // Usar scrollend si está disponible, sino debounce
+    if ('onscrollend' in window) {
+      container.addEventListener('scrollend', checkLoopBoundary);
+    } else {
+      var scrollTimeout;
+      container.addEventListener('scroll', function() {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(checkLoopBoundary, 150);
+      }, { passive: true });
+    }
+
+    // --- 5. Autoplay con setInterval ---
+    var AUTOPLAY_DELAY = 3500;
+    var RESUME_DELAY = 10000;
+    var autoplayTimer = null;
+    var resumeTimer = null;
+
+    function startAutoplay() {
+      stopAutoplay();
+      autoplayTimer = setInterval(goToNext, AUTOPLAY_DELAY);
+    }
+    function stopAutoplay() {
+      clearInterval(autoplayTimer);
+    }
+    function pauseAndScheduleResume() {
+      stopAutoplay();
+      clearTimeout(resumeTimer);
+      resumeTimer = setTimeout(startAutoplay, RESUME_DELAY);
+    }
+
+    container.addEventListener('mouseenter', stopAutoplay);
+    container.addEventListener('mouseleave', startAutoplay);
+    container.addEventListener('touchstart', pauseAndScheduleResume, { passive: true });
+
+    startAutoplay();
   }
 
   // =========================================================
@@ -736,7 +936,6 @@
       let html = '';
 
       if (packages && packages.length > 0) {
-        // Primer paquete como featured si hay varios
         html += packages.map((pkg, i) => {
           let includes = [];
           try {
@@ -749,7 +948,7 @@
           var price = priceMatch ? parseInt(priceMatch[0].replace(/,/g, '')) : 0;
 
           return `
-            <article class="package-card ${i === 0 ? 'featured' : ''} animate-in">
+            <article class="package-card ${pkg.featured === 1 ? 'featured' : ''} animate-in">
               <h3 class="package-name">${escapeHtml(pkg.name)}</h3>
               <p class="package-description">${escapeHtml(pkg.description || '')}</p>
               ${pkg.price_range ? `<div class="package-price">${escapeHtml(pkg.price_range)}</div>` : ''}

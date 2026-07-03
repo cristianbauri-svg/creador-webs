@@ -54,6 +54,14 @@
         </select>
       </div>
     </div>
+    <div class="form-row-admin">
+      <div class="form-group-admin">
+        <label class="form-label-admin" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+          <input type="checkbox" id="pkgFeatured" value="1" style="width:auto;cursor:pointer;" />
+          <span>Destacado (MÁS SOLICITADO)</span>
+        </label>
+      </div>
+    </div>
     <div class="form-group-admin">
       <label class="form-label-admin" for="pkgDescription">Descripción</label>
       <textarea class="form-textarea-admin" id="pkgDescription" rows="3" placeholder="Descripción del paquete..."></textarea>
@@ -94,6 +102,7 @@
     includesList: document.getElementById('includesList'),
     btnAddInclude: document.getElementById('btnAddInclude'),
     pkgSortOrder: document.getElementById('pkgSortOrder'),
+    pkgFeatured: document.getElementById('pkgFeatured'),
     btnAdd: document.getElementById('btnAddPackage'),
     btnCancel: document.getElementById('btnCancelPackage'),
   };
@@ -151,6 +160,7 @@
     els.pkgStatus.value = pkg ? (pkg.status || 'draft') : 'draft';
     els.pkgDescription.value = pkg ? (pkg.description || '') : '';
     els.pkgSortOrder.value = pkg ? (pkg.sort_order || 0) : 0;
+    els.pkgFeatured.checked = pkg ? (pkg.featured === 1) : false;
 
     // Construir lista de items dinámica
     var items = [];
@@ -179,6 +189,7 @@
       includes_json: includesJson,
       status: els.pkgStatus.value,
       sort_order: parseInt(els.pkgSortOrder.value, 10) || 0,
+      featured: els.pkgFeatured.checked ? 1 : 0,
     };
 
     if (!body.name) {

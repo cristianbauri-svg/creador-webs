@@ -1,0 +1,1 @@
+ALTER TABLE packages ADD COLUMN featured INTEGER DEFAULT 0;

@@ -1765,13 +1765,9 @@ a.whatsapp-float {
 .service-card-expand-hint {
   font-size: 0.75rem;
   color: var(--color-accent);
-  opacity: 0;
+  opacity: 0.6;
   transition: opacity 0.3s ease;
   margin-top: auto;
-}
-
-.bio-card:hover .service-card-expand-hint {
-  opacity: 0.8;
 }
 
 /* Spans asimétricos */
@@ -1947,8 +1943,7 @@ a.whatsapp-float {
   text-overflow: ellipsis;
 }
 
-.bio-grid.has-expanded .bio-card:not(.expanded) .service-card-desc,
-.bio-grid.has-expanded .bio-card:not(.expanded) .service-card-expand-hint {
+.bio-grid.has-expanded .bio-card:not(.expanded) .service-card-desc {
   display: none;
 }
 
@@ -2139,5 +2134,207 @@ a.whatsapp-float {
 
   .eq-bar:nth-child(odd) {
     display: none;
+  }
+}
+
+/* =============================================
+   Efecto lumínico automático en móviles
+   ============================================= */
+
+@keyframes mobileGlow {
+  0%   { background-position: -100% 0; }
+  60%  { background-position: 200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@media (max-width: 768px) {
+  .bio-card:not(.expanded)::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    background: linear-gradient(90deg, transparent 0%, var(--color-accent-glow) 50%, transparent 100%);
+    background-size: 50% 100%;
+    background-repeat: no-repeat;
+    animation: mobileGlow 5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+/* =============================================
+   CARRUSEL DE PRODUCTOS (CSS Scroll Snap)
+   ============================================= */
+
+.products-carousel-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.products-carousel-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+/* Pista de scroll horizontal con snap */
+.products-carousel {
+  display: flex;
+  gap: var(--space-6);
+  overflow-x: auto;
+  scroll-behavior: auto !important;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE/Edge */
+  padding: var(--space-2) 0;      /* espacio para el glow de las cards */
+  flex: 1;
+}
+
+.products-carousel::-webkit-scrollbar {
+  display: none;                  /* Chrome/Safari */
+}
+
+/* Permitir desactivar snap durante saltos instantáneos (scroll infinito) */
+.products-carousel[data-jumping="true"] {
+  scroll-snap-type: none;
+}
+
+/* Cada card hace snap al inicio */
+.products-carousel > .service-card {
+  border: 2px solid transparent;
+  flex: 0 0 calc(33.333% - var(--space-6) * 2 / 3);
+  min-width: 300px;
+  scroll-snap-align: start;
+}
+
+/* Card activa en el carrusel */
+.products-carousel > .service-card.is-active {
+  border-color: rgba(29, 185, 84, 0.4);
+  box-shadow: 0 0 10px var(--color-accent-dim);
+}
+
+/* Estado vacío / carga dentro del carrusel */
+.products-carousel > .loading-state,
+.products-carousel > .empty-state,
+.products-carousel > .error-state {
+  flex: 1 0 100%;
+  scroll-snap-align: center;
+}
+
+/* Botones de navegación */
+.carousel-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  z-index: 2;
+}
+
+.carousel-btn:hover {
+  background: var(--color-accent-dim);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  box-shadow: 0 0 12px var(--color-accent-glow);
+}
+
+.carousel-btn:active {
+  transform: scale(0.92);
+}
+
+.carousel-prev {
+  margin-right: var(--space-3);
+}
+
+.carousel-next {
+  margin-left: var(--space-3);
+}
+
+/* --- Paginación: dots --- */
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: var(--space-6);
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  padding: 0;
+}
+
+.carousel-dot:hover {
+  background: var(--color-text-muted);
+}
+
+.carousel-dot.active {
+  width: 24px;
+  border-radius: 4px;
+  background: var(--color-accent);
+  box-shadow: 0 0 8px var(--color-accent-glow);
+}
+
+/* Ocultar botones cuando no hay suficientes cards (se maneja por JS) */
+.carousel-btn.hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* --- Responsive: tablet --- */
+@media (max-width: 1024px) {
+  .products-carousel > .service-card {
+    flex: 0 0 calc(50% - var(--space-6) / 2);
+    min-width: 280px;
+  }
+}
+
+/* --- Responsive: móvil --- */
+@media (max-width: 768px) {
+  .products-carousel-wrapper {
+    margin: 0 calc(-1 * var(--space-4));
+  }
+
+  .carousel-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;           /* Botones más chicos, pero visibles */
+  }
+
+  .products-carousel {
+    gap: var(--space-4);
+    scroll-padding: 0 calc((100vw - 82vw) / 2); /* centrar las cards */
+  }
+
+  .products-carousel > .service-card {
+    flex: 0 0 82vw;
+    min-width: 280px;
+    max-width: 360px;
+    scroll-snap-align: center;   /* centrar al hacer swipe */
+  }
+}
+
+@media (max-width: 480px) {
+  .products-carousel > .service-card {
+    flex: 0 0 85vw;
+    min-width: 260px;
   }
 }

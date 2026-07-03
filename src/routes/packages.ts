@@ -71,9 +71,9 @@ async function createPackage(request: Request, env: Env): Promise<Response> {
 
     const result = await execute(
       env.STRATON_DB,
-      `INSERT INTO packages (name, description, price_range, includes_json, recommended_event_type, status, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [body.name, body.description || null, body.price_range || null, body.includes_json || null, body.recommended_event_type || null, body.status || "draft", body.sort_order || 0]
+      `INSERT INTO packages (name, description, price_range, includes_json, recommended_event_type, status, sort_order, featured)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [body.name, body.description || null, body.price_range || null, body.includes_json || null, body.recommended_event_type || null, body.status || "draft", body.sort_order || 0, body.featured ? 1 : 0]
     );
 
     const inserted = await queryOne(env.STRATON_DB, "SELECT * FROM packages WHERE id = ?", [result.meta.last_row_id]);
@@ -91,7 +91,7 @@ async function updatePackage(request: Request, env: Env, id: number): Promise<Re
     const body = await request.json() as Record<string, unknown>;
     const sets: string[] = [];
     const params: unknown[] = [];
-    const fields = ["name", "description", "price_range", "includes_json", "recommended_event_type", "status", "sort_order"];
+    const fields = ["name", "description", "price_range", "includes_json", "recommended_event_type", "status", "sort_order", "featured"];
     for (const field of fields) {
       if (body[field] !== undefined) {
         sets.push(`${field} = ?`);
