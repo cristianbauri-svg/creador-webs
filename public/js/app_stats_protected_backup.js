@@ -434,212 +434,47 @@
   }
 
   // =========================================================
-  // Servicios — Bioluminescent Grid (reemplaza loadServices)
+  // Cargar Servicios
   // =========================================================
-
-  // Mapeo de títulos de servicio → archivo SVG
-  const SERVICE_ICON_MAP = {
-    'audio profesional': 'sonido.svg',
-    'iluminación escénica': 'Iluminación.svg',
-    'pantallas led y video': 'Pantalla Led.svg',
-    'producción técnica': 'Producción técnica.svg',
-    'soporte para eventos corporativos': 'Soporte para eventos.svg',
-  };
-
-  function getServiceIconPath(title) {
-    const key = (title || '').toLowerCase().trim();
-    return SERVICE_ICON_MAP[key] || null;
-  }
-
-  function getServiceSpan(index) {
-    // Regla de asignación automática de spans asimétricos
-    const pattern = [
-      'col-span-2 row-span-2', // 0: tarjeta grande destacada
-      '',                       // 1: normal
-      '',                       // 2: normal
-      'col-span-2',            // 3: ancha
-      '',                       // 4: normal
-      'row-span-2',            // 5: alta
-    ];
-    return pattern[index % pattern.length];
-  }
-
-  function renderServiceCard(service, index) {
-    const spanClass = getServiceSpan(index);
-    const iconPath = getServiceIconPath(service.title);
-    const iconHtml = iconPath
-      ? `<img src="/svg-icons/${iconPath}" alt="" class="service-card-svg" width="24" height="24" />`
-      : (service.icon ? `<span class="service-card-emoji">${service.icon}</span>` : '');
-
-    return `
-      <article class="bio-card ${spanClass}" data-service-id="${service.id}" data-index="${index}">
-        <div class="bio-card-glow"></div>
-        <div class="bio-card-content">
-          <div class="service-card-icon">${iconHtml}</div>
-          <h3 class="service-card-title">${escapeHtml(service.title)}</h3>
-          <p class="service-card-desc">${escapeHtml(service.description || '')}</p>
-          <span class="service-card-expand-hint">Ver más →</span>
-        </div>
-      </article>`;
-  }
-
   async function loadServices() {
-    const grid = document.getElementById('servicesGrid');
-    if (!grid) return;
-
+    const container = $('#servicesContainer');
     try {
       const services = await apiFetch('/api/services?status=published');
 
       if (!services || services.length === 0) {
-        grid.innerHTML = `<div class="empty-state"><p>No hay servicios disponibles.</p></div>`;
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🎵</div>
+            <h3>Próximamente</h3>
+            <p>Estamos preparando nuestra oferta de servicios. Muy pronto estará disponible.</p>
+          </div>
+        `;
         return;
       }
 
-      grid.innerHTML = services.map((s, i) => renderServiceCard(s, i)).join('');
+      container.innerHTML = services.map(s => {
+        const imgHtml = s.image_url
+          ? `<img class="service-card-image" src="${escapeHtml(s.image_url)}" alt="${escapeHtml(s.title)}" loading="eager" />`
+          : '';
+        return `
+        <article class="service-card animate-in">
+          ${imgHtml}
+          <div class="service-card-body">
+            <h3>${escapeHtml(s.title)}</h3>
+            <p>${escapeHtml(s.description || '')}</p>
+          </div>
+        </article>`;
+      }).join('');
 
-      // Guardar datos para re-vincular clics tras colapsar
-      window.__servicesData = services;
-
-      // Vincular clics a cada card
-      document.querySelectorAll('.bio-card').forEach(card => {
-        card._svcClickHandler = function handler() {
-          const id = parseInt(card.dataset.serviceId, 10);
-          const service = services.find(s => s.id === id);
-          if (service) showServiceDetail(service, card);
-        };
-        card.addEventListener('click', card._svcClickHandler);
-      });
-
-      initBioMouseTracking(grid);
-      animateCardsIn();
-
-      // Expandir automáticamente la primera card
-      const firstCard = grid.querySelector('.bio-card');
-      if (firstCard && services.length > 0) {
-        showServiceDetail(services[0], firstCard, true);
-      }
+      initAnimations();
     } catch (err) {
-      grid.innerHTML = `<div class="empty-state"><p>Error al cargar servicios.</p></div>`;
-      console.error('loadServices:', err);
+      console.error('Error cargando servicios:', err);
+      container.innerHTML = `
+        <div class="error-state">
+          <p>No se pudieron cargar los servicios. Verifica la conexión.</p>
+        </div>
+      `;
     }
-  }
-
-  // --- Efecto bioluminiscente: tracking del mouse ---
-  function initBioMouseTracking(grid) {
-    grid.addEventListener('mousemove', (e) => {
-      const rect = grid.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      grid.style.setProperty('--mouse-x', `${x}%`);
-      grid.style.setProperty('--mouse-y', `${y}%`);
-    });
-    grid.addEventListener('mouseleave', () => {
-      grid.style.setProperty('--mouse-x', '50%');
-      grid.style.setProperty('--mouse-y', '50%');
-    });
-  }
-
-  // --- Animación stagger con GSAP ---
-  function animateCardsIn() {
-    if (typeof gsap !== 'undefined') {
-      gsap.from('.bio-card', {
-        opacity: 0,
-        y: 24,
-        duration: 0.5,
-        stagger: 0.08,
-        ease: 'power2.out',
-      });
-    }
-    // Fallback sin GSAP: las tarjetas se muestran directamente (ya están en el DOM)
-  }
-
-  // --- Expansión inline de la card ---
-
-  function showServiceDetail(service, cardElement, skipScroll = false) {
-    const grid = document.getElementById('servicesGrid');
-    if (!grid || !cardElement) return;
-
-    // Si ya hay una expandida y es distinta, colapsarla primero
-    const currentExpanded = grid.querySelector('.bio-card.expanded');
-    if (currentExpanded && currentExpanded !== cardElement) {
-      collapseCard(currentExpanded, grid);
-    }
-
-    // Si la misma card ya está expandida, colapsarla y salir
-    if (cardElement.classList.contains('expanded')) {
-      collapseCard(cardElement, grid);
-      return;
-    }
-
-    // Guardar el HTML original de la card para restaurarlo después
-    const originalHTML = cardElement.innerHTML;
-
-    // Construir el HTML expandido
-    const mediaHTML = service.video_url
-      ? `<video src="${escapeHtml(service.video_url)}" controls preload="metadata"></video>`
-      : (service.image_url
-          ? `<img src="${escapeHtml(service.image_url)}" alt="${escapeHtml(service.title)}" />`
-          : '');
-
-    const featuresHTML = service.features
-      ? service.features.split('\n').filter(f => f.trim()).map(f => `
-          <div class="feature-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            <span>${escapeHtml(f.trim())}</span>
-          </div>`).join('')
-      : '';
-
-    cardElement.innerHTML = `
-      <div class="bio-card-expanded-close" id="btnCollapseCard" aria-label="Cerrar detalle">&times;</div>
-      <div class="bio-card-expanded-media">${mediaHTML}</div>
-      <div class="bio-card-expanded-info">
-        <h2 class="detail-title">${escapeHtml(service.title)}</h2>
-        <p class="detail-description">${escapeHtml(service.description || '')}</p>
-        <div class="detail-features">${featuresHTML}</div>
-        <a href="#contacto" class="cta-button">
-          Solicitar cotización
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </a>
-      </div>`;
-
-    cardElement.classList.add('expanded');
-    cardElement.dataset.originalHTML = originalHTML;
-    grid.classList.add('has-expanded');
-
-    // Scroll suave a la card expandida (solo si no es apertura por defecto)
-    if (!skipScroll) {
-      cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    // Listener del botón cerrar
-    const closeBtn = cardElement.querySelector('#btnCollapseCard');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        collapseCard(cardElement, grid);
-      });
-    }
-  }
-
-  function collapseCard(cardElement, grid) {
-    if (cardElement.dataset.originalHTML) {
-      cardElement.innerHTML = cardElement.dataset.originalHTML;
-      delete cardElement.dataset.originalHTML;
-    }
-    cardElement.classList.remove('expanded');
-    grid.classList.remove('has-expanded');
-
-    // Re-vincular el evento de clic a la card restaurada
-    const services = window.__servicesData || [];
-    if (cardElement._svcClickHandler) {
-      cardElement.removeEventListener('click', cardElement._svcClickHandler);
-    }
-    cardElement._svcClickHandler = function handler() {
-      const id = parseInt(cardElement.dataset.serviceId, 10);
-      const service = services.find(s => s.id === id);
-      if (service) showServiceDetail(service, cardElement);
-    };
-    cardElement.addEventListener('click', cardElement._svcClickHandler);
   }
 
   // =========================================================
@@ -723,7 +558,6 @@
       }).join('');
 
       initAnimations();
-      initProductCarousel();
     } catch (err) {
       console.error('Error cargando productos:', err);
       container.innerHTML = `
@@ -732,197 +566,6 @@
         </div>
       `;
     }
-  }
-
-  // =========================================================
-  // Carrusel de Productos — Navegación
-  // =========================================================
-  function initProductCarousel() {
-    var container = document.getElementById('productsContainer');
-    var prevBtn = document.getElementById('productsPrev');
-    var nextBtn = document.getElementById('productsNext');
-    if (!container || !prevBtn || !nextBtn) return;
-
-    if (container.dataset.carouselInit === 'true') return;
-    container.dataset.carouselInit = 'true';
-
-    var realCards = Array.from(container.children);
-    var realCount = realCards.length;
-    if (realCount === 0) return;
-
-    // Si hay pocas cards, ocultar botones y salir
-    function getVisibleSlots() {
-      var w = container.clientWidth;
-      if (w > 1024) return 3;
-      if (w > 768) return 2;
-      return 1;
-    }
-    if (realCount <= getVisibleSlots()) {
-      prevBtn.classList.add('hidden');
-      nextBtn.classList.add('hidden');
-      return;
-    }
-
-    // --- 1. Clonar extremos para bucle infinito ---
-    var cloneTail = realCards.map(function(c) { var n = c.cloneNode(true); n.dataset.clone = 'true'; return n; });
-    var cloneHead = realCards.map(function(c) { var n = c.cloneNode(true); n.dataset.clone = 'true'; return n; });
-
-    // Limpiar IDs y marcar clones como decorativos
-    cloneTail.concat(cloneHead).forEach(function(n) {
-      n.removeAttribute('id');
-      n.setAttribute('aria-hidden', 'true');
-      var focusable = n.querySelectorAll('a, button, input, select, textarea, [tabindex]');
-      focusable.forEach(function(el) { el.tabIndex = -1; });
-    });
-
-    cloneTail.forEach(function(c) { container.appendChild(c); });
-    cloneHead.reverse().forEach(function(c) { container.insertBefore(c, container.firstChild); });
-
-    var currentIndex = realCount; // arranca en la primera card real
-
-    // Posicionar en la primera card real (sin animación)
-    container.scrollLeft = getCardScrollLeft(container.children[currentIndex]);
-
-    function getCardScrollLeft(card) {
-      var cRect = container.getBoundingClientRect();
-      var kRect = card.getBoundingClientRect();
-      return kRect.left - cRect.left + container.scrollLeft;
-    }
-
-    function getScrollDistance() {
-      var card = container.querySelector('.service-card');
-      if (!card) return 300;
-      var cardWidth = card.offsetWidth;
-      var containerStyle = window.getComputedStyle(container);
-      var gap = parseFloat(containerStyle.gap || 0) || parseFloat(containerStyle.columnGap || 0) || 24;
-      return cardWidth + gap;
-    }
-
-    function getNearestIndex() {
-      var containerCenter = container.scrollLeft + container.clientWidth / 2;
-      var nearest = 0;
-      var minDist = Infinity;
-      Array.from(container.children).forEach(function(card, i) {
-        var cardCenter = getCardScrollLeft(card) + card.offsetWidth / 2;
-        var dist = Math.abs(cardCenter - containerCenter);
-        if (dist < minDist) { minDist = dist; nearest = i; }
-      });
-      return nearest;
-    }
-
-    // --- 2. Navegación con scrollBy nativo ---
-    function goToNext() {
-      container.scrollBy({ left: getScrollDistance(), behavior: 'smooth' });
-    }
-    function goToPrev() {
-      container.scrollBy({ left: -getScrollDistance(), behavior: 'smooth' });
-    }
-
-    prevBtn.addEventListener('click', goToPrev);
-    nextBtn.addEventListener('click', goToNext);
-
-    // Pausar autoplay al usar los botones manualmente
-    prevBtn.addEventListener('click', pauseAndScheduleResume);
-    nextBtn.addEventListener('click', pauseAndScheduleResume);
-
-    // --- 3. Dots de paginación ---
-    var dotsWrapper = document.createElement('div');
-    dotsWrapper.className = 'carousel-dots';
-    container.parentNode.parentNode.appendChild(dotsWrapper);
-
-    for (var di = 0; di < realCount; di++) {
-      var dot = document.createElement('button');
-      dot.className = 'carousel-dot';
-      dot.setAttribute('aria-label', 'Ir al producto ' + (di + 1));
-      (function(idx) {
-        dot.addEventListener('click', function() {
-          currentIndex = realCount + idx;
-          var card = container.children[currentIndex];
-          if (card) {
-            container.scrollTo({ left: getCardScrollLeft(card), behavior: 'smooth' });
-            setTimeout(function() {
-              var nearest = getNearestIndex();
-              updateActiveCard(nearest);
-              updateDots();
-            }, 400);
-          }
-        });
-      })(di);
-      dotsWrapper.appendChild(dot);
-    }
-
-    function updateDots() {
-      var realIndex = currentIndex % realCount;
-      Array.from(dotsWrapper.children).forEach(function(d, i) {
-        d.classList.toggle('active', i === realIndex);
-      });
-    }
-
-    if (dotsWrapper.children.length > 0) {
-      dotsWrapper.children[0].classList.add('active');
-    }
-
-    function updateActiveCard(index) {
-      Array.from(container.children).forEach(function(card) {
-        card.classList.remove('is-active');
-      });
-      var visibleCard = container.children[index];
-      if (visibleCard) {
-        visibleCard.classList.add('is-active');
-      }
-    }
-
-    // --- 4. Detección de borde para loop infinito ---
-    function checkLoopBoundary() {
-      var nearest = getNearestIndex();
-
-      if (nearest >= realCount * 2) {
-        currentIndex = nearest - realCount;
-      } else if (nearest < realCount) {
-        currentIndex = nearest + realCount;
-      } else {
-        currentIndex = nearest;
-      }
-
-      updateActiveCard(nearest);
-      updateDots();
-    }
-
-    // Usar scrollend si está disponible, sino debounce
-    if ('onscrollend' in window) {
-      container.addEventListener('scrollend', checkLoopBoundary);
-    } else {
-      var scrollTimeout;
-      container.addEventListener('scroll', function() {
-        clearTimeout(scrollTimeout);
-        scrollTimeout = setTimeout(checkLoopBoundary, 150);
-      }, { passive: true });
-    }
-
-    // --- 5. Autoplay con setInterval ---
-    var AUTOPLAY_DELAY = 3500;
-    var RESUME_DELAY = 10000;
-    var autoplayTimer = null;
-    var resumeTimer = null;
-
-    function startAutoplay() {
-      stopAutoplay();
-      autoplayTimer = setInterval(goToNext, AUTOPLAY_DELAY);
-    }
-    function stopAutoplay() {
-      clearInterval(autoplayTimer);
-    }
-    function pauseAndScheduleResume() {
-      stopAutoplay();
-      clearTimeout(resumeTimer);
-      resumeTimer = setTimeout(startAutoplay, RESUME_DELAY);
-    }
-
-    container.addEventListener('mouseenter', stopAutoplay);
-    container.addEventListener('mouseleave', startAutoplay);
-    container.addEventListener('touchstart', pauseAndScheduleResume, { passive: true });
-
-    startAutoplay();
   }
 
   // =========================================================
@@ -936,6 +579,7 @@
       let html = '';
 
       if (packages && packages.length > 0) {
+        // Primer paquete como featured si hay varios
         html += packages.map((pkg, i) => {
           let includes = [];
           try {
@@ -948,7 +592,7 @@
           var price = priceMatch ? parseInt(priceMatch[0].replace(/,/g, '')) : 0;
 
           return `
-            <article class="package-card ${pkg.featured === 1 ? 'featured' : ''} animate-in">
+            <article class="package-card ${i === 0 ? 'featured' : ''} animate-in">
               <h3 class="package-name">${escapeHtml(pkg.name)}</h3>
               <p class="package-description">${escapeHtml(pkg.description || '')}</p>
               ${pkg.price_range ? `<div class="package-price">${escapeHtml(pkg.price_range)}</div>` : ''}
@@ -1080,7 +724,7 @@
               </div>
 ${ev.before_media_url && ev.after_media_url ? `
   <details class="event-comparator">
-    <summary style="display:inline-flex;align-items:center;gap:0.35rem;margin-top:0.5rem;background:rgba(29,185,84,0.5);color:rgba(255,255,255,0.8);border:none;padding:0.4rem 1rem;border-radius:100px;font-size:0.8rem;cursor:pointer;list-style:none;">
+    <summary style="display:inline-flex;align-items:center;gap:0.35rem;margin-top:0.5rem;background:var(--color-accent);color:#fff;border:none;padding:0.4rem 1rem;border-radius:100px;font-size:0.8rem;cursor:pointer;list-style:none;">
       Ver más <span class="summary-arrow" style="font-size:0.7rem;">▼</span>
     </summary>
     <style>
@@ -1256,7 +900,6 @@ ${ev.before_media_url && ev.after_media_url ? `
     }
   });
 
-// ⚠️ PROTEGIDO: No eliminar esta función. Controla la barra de estadísticas debajo del Hero.
 function initStatsBanner() {
   var banner = document.getElementById('statsBanner');
   if (!banner) return;

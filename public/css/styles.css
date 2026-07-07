@@ -1613,8 +1613,35 @@ a.whatsapp-float {
 }
 
 #contacto {
+  position: relative;
   padding-bottom: 100px;
+  background-image: url('/images/imagen_ciudad_bg.webp');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
+
+#contacto::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 1;
+}
+
+#contacto .container {
+  position: relative;
+  z-index: 2;
+}
+
+#contacto .contact-info p {
+  color: #C8C8C8;
+}
+
+#contacto .contact-detail-label {
+  color: var(--color-accent);
+}
+
 
 /* Modal de datos del cliente */
 .client-modal {
