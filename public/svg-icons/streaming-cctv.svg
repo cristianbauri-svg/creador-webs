@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="iconGrad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1DB954" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#0D8A3F" stop-opacity="0.95"/>
+    </linearGradient>
+    <filter id="iconGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#iconGlow)">
+    <!-- Punto de origen (señal) -->
+    <circle cx="24" cy="38" r="3" fill="url(#iconGrad)"/>
+    <!-- Arcos concéntricos de broadcast -->
+    <path d="M18 33 Q24 24 30 33" stroke="url(#iconGrad)" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M12 30 Q24 16 36 30" stroke="url(#iconGrad)" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M6 27 Q24 8 42 27" stroke="url(#iconGrad)" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+</svg>

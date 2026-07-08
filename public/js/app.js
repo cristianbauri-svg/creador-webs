@@ -33,9 +33,11 @@
     if (!els.cartBar) return;
     if (cartItems.length === 0) {
       els.cartBar.classList.add('hidden');
+      document.body.classList.remove('has-cart-bar');
       return;
     }
     els.cartBar.classList.remove('hidden');
+    document.body.classList.add('has-cart-bar');
 
     // Construir tags con el texto adecuado y botón de eliminar
     var tagsHtml = cartItems.map(function(item, index) {
@@ -444,6 +446,7 @@
     'pantallas led y video': 'Pantalla Led.svg',
     'producción técnica': 'Producción técnica.svg',
     'soporte para eventos corporativos': 'Soporte para eventos.svg',
+    'streaming y circuito cerrado de tv': 'streaming-cctv.svg',
   };
 
   function getServiceIconPath(title) {
@@ -948,52 +951,134 @@
           var price = priceMatch ? parseInt(priceMatch[0].replace(/,/g, '')) : 0;
 
           return `
-            <article class="package-card ${pkg.featured === 1 ? 'featured' : ''} animate-in">
-              <h3 class="package-name">${escapeHtml(pkg.name)}</h3>
-              <p class="package-description">${escapeHtml(pkg.description || '')}</p>
-              ${pkg.price_range ? `<div class="package-price">${escapeHtml(pkg.price_range)}</div>` : ''}
-              <ul class="package-includes">
-                ${includes.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
-              </ul>
-              <button data-add-to-cart="${JSON.stringify({type:'package',id:pkg.id,name:pkg.name,image:'',price:price}).replace(/"/g,'&quot;')}" class="btn btn-primary">Añadir a cotización</button>
-            </article>
+            <div class="package-sticky-wrapper" style="--i:${i}">
+              <article class="package-card ${pkg.featured === 1 ? 'featured' : ''} animate-in" style="top:calc(var(--sticky-top-base, 4.5rem) + ${i} * var(--stack-offset, 2.5rem));z-index:${10 + i}">
+                <h3 class="package-name">${escapeHtml(pkg.name)}</h3>
+                <p class="package-description">${escapeHtml(pkg.description || '')}</p>
+                ${pkg.price_range ? `<div class="package-price">${escapeHtml(pkg.price_range)}</div>` : ''}
+                <ul class="package-includes">
+                  ${includes.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+                </ul>
+                <button data-add-to-cart="${JSON.stringify({type:'package',id:pkg.id,name:pkg.name,image:'',price:price}).replace(/"/g,'&quot;')}" class="btn btn-primary">Añadir a cotización</button>
+              </article>
+            </div>
           `;
         }).join('');
       }
 
       // Paquete a la medida
+      var customIndex = packages ? packages.length : 0;
       html += `
-        <article class="package-card package-custom animate-in">
-          <div class="package-custom-icon">✦</div>
-          <h3 class="package-name">Paquete a la medida</h3>
-          <p class="package-description">
-            ¿No encuentras lo que buscas? Creamos un paquete personalizado
-            para las necesidades específicas de tu evento.
-          </p>
-          <button data-add-to-cart='{"type":"package","id":"custom","name":"Paquete a la medida","image":"","price":0}' class="btn btn-outline" style="border-color: var(--color-gold); color: var(--color-gold);">
-            Añadir a cotización
-          </button>
-        </article>
+        <div class="package-sticky-wrapper" style="--i:${customIndex}">
+          <article class="package-card package-custom animate-in" style="top:calc(var(--sticky-top-base, 4.5rem) + ${customIndex} * var(--stack-offset, 2.5rem));z-index:${10 + customIndex}">
+            <div class="package-custom-icon">✦</div>
+            <h3 class="package-name">Paquete a la medida</h3>
+            <p class="package-description">
+              ¿No encuentras lo que buscas? Creamos un paquete personalizado
+              para las necesidades específicas de tu evento.
+            </p>
+            <button data-add-to-cart='{"type":"package","id":"custom","name":"Paquete a la medida","image":"","price":0}' class="btn btn-outline" style="border-color: var(--color-gold); color: var(--color-gold);">
+              Añadir a cotización
+            </button>
+          </article>
+        </div>
       `;
 
       container.innerHTML = html;
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column';
       initAnimations();
+      initStickyCoverFallback();
+      initLaserBackground();
     } catch (err) {
       console.error('Error cargando paquetes:', err);
       container.innerHTML = `
-        <article class="package-card package-custom animate-in">
-          <div class="package-custom-icon">✦</div>
-          <h3 class="package-name">Paquete a la medida</h3>
-          <p class="package-description">
-            Cuéntanos sobre tu evento y crearemos un paquete personalizado
-            para tus necesidades específicas.
-          </p>
-          <button data-add-to-cart='{"type":"package","id":"custom","name":"Paquete a la medida","image":"","price":0}' class="btn btn-outline" style="border-color: var(--color-gold); color: var(--color-gold);">
-            Añadir a cotización
-          </button>
-        </article>
+        <div class="package-sticky-wrapper" style="--i:0">
+          <article class="package-card package-custom animate-in" style="top:calc(var(--sticky-top-base, 4.5rem) + 0 * var(--stack-offset, 2.5rem));z-index:10">
+            <div class="package-custom-icon">✦</div>
+            <h3 class="package-name">Paquete a la medida</h3>
+            <p class="package-description">
+              Cuéntanos sobre tu evento y crearemos un paquete personalizado
+              para tus necesidades específicas.
+            </p>
+            <button data-add-to-cart='{"type":"package","id":"custom","name":"Paquete a la medida","image":"","price":0}' class="btn btn-outline" style="border-color: var(--color-gold); color: var(--color-gold);">
+              Añadir a cotización
+            </button>
+          </article>
+        </div>
       `;
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column';
+      initStickyCoverFallback();
+      initLaserBackground();
     }
+  }
+
+  // IntersectionObserver fallback para cover effect (solo Firefox/escritorio)
+  function initStickyCoverFallback() {
+    if (CSS.supports('animation-timeline: view()')) return;
+    if (window.innerWidth <= 640) return;
+
+    var wrappers = document.querySelectorAll('#packagesContainer .package-sticky-wrapper');
+    if (!wrappers.length) return;
+
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        var card = entry.target.querySelector('.package-card');
+        if (!card) return;
+        // Cuando el top del wrapper está cerca del top del viewport,
+        // la siguiente card empieza a cubrir esta
+        card.classList.toggle('is-covered', entry.boundingClientRect.top < 80);
+      });
+    }, { threshold: [0, 0.5, 1] });
+
+    wrappers.forEach(function(w) { observer.observe(w); });
+  }
+
+  // ===== Fondo láser estroboscópico =====
+  function initLaserBackground() {
+    var section = document.getElementById('paquetes');
+    if (!section) return;
+
+    var root = document.documentElement;
+    var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
+    var ticking = false;
+
+    function updateLasers() {
+      var rect = section.getBoundingClientRect();
+      var sectionHeight = section.scrollHeight;
+      var viewportHeight = window.innerHeight;
+      var maxScroll = sectionHeight - viewportHeight;
+      if (maxScroll <= 0) return;
+
+      var scrollInSection = -rect.top;
+      var progress = Math.min(1, Math.max(0, scrollInSection / maxScroll));
+
+      var a1 = progress * 360;                    // horario
+      var a2 = 360 - progress * 360;              // antihorario
+      var a3 = 45 * Math.sin(progress * 2 * Math.PI); // oscilación
+      var a4 = 90 + progress * 360;               // horario desfasado
+
+      root.style.setProperty('--beam1-angle', a1 + 'deg');
+      root.style.setProperty('--beam2-angle', a2 + 'deg');
+      root.style.setProperty('--beam3-angle', a3 + 'deg');
+      root.style.setProperty('--beam4-angle', a4 + 'deg');
+    }
+
+    function onScroll() {
+      if (!ticking) {
+        window.requestAnimationFrame(function() {
+          updateLasers();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    updateLasers();
   }
 
   // Variable en clausura para evitar múltiples registros (IIFE scope)
