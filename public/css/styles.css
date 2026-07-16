@@ -364,6 +364,7 @@ ul { list-style: none; }
   position: absolute;
   inset: 0;
   z-index: 0;
+  background-color: #0a0f0a;
 }
 
 .hero-bg video,

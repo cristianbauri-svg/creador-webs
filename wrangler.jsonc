@@ -18,13 +18,13 @@
     {
       "binding": "STRATON_DB",
       "database_name": "straton-db",
-      "database_id": "PLACEHOLDER_D1_ID"
+      "database_id": "9cd6a924-c4ec-4fe3-84d8-63aeec1b69b9"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "STRATON_KV",
-      "id": "PLACEHOLDER_KV_ID"
+      "id": "427e7f161e08458fa8ee22a41ccb0d0a"
     }
   ],
   "r2_buckets": [
