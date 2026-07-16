@@ -87,8 +87,6 @@
   --max-width: 1200px;
   --nav-height: 72px;
 
-  --sticky-top-base: 4.5rem;
-  --stack-offset: 2.5rem;
 }
 
 /* ----- Reset ----- */
@@ -599,7 +597,7 @@ ul { list-style: none; }
 
 .packages-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-6);
   position: relative;
   z-index: 1;
@@ -697,71 +695,6 @@ ul { list-style: none; }
   font-size: var(--text-5xl);
   margin-bottom: var(--space-4);
   color: var(--color-gold);
-}
-
-/* ----- Sticky Stacking: estructura base ----- */
-.package-sticky-wrapper {
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  position: relative;
-  z-index: 1;
-}
-
-.package-sticky-wrapper .package-card {
-  position: sticky;
-  /* top y z-index se asignan inline desde JS, no los sobrescribas aquí */
-  width: min(580px, 92vw);
-  transition: transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1), filter 0.45s ease;
-  will-change: transform;
-}
-
-/* ----- Cover effect: scroll-driven animation (Chromium) ----- */
-@supports (animation-timeline: view()) {
-  .package-sticky-wrapper .package-card {
-    animation: card-cover-effect linear both;
-    animation-timeline: view();
-    animation-range: cover 55% cover 100%;
-  }
-
-  @keyframes card-cover-effect {
-    0% { transform: none; filter: brightness(1); }
-    100% { transform: scale(.96) translateY(-6px); filter: brightness(.82); }
-  }
-}
-
-/* ----- Cover effect: IntersectionObserver fallback class ----- */
-.package-sticky-wrapper .package-card.is-covered {
-  transform: scale(.96) translateY(-6px);
-  filter: brightness(.82);
-}
-
-/* ----- Mobile: sticky stacking reducido, sin cover effect ----- */
-@media (max-width: 640px) {
-  :root {
-    --sticky-top-base: 2rem;
-    --stack-offset: 0.8rem;
-  }
-
-  .package-sticky-wrapper {
-    height: 100vh;
-  }
-
-  .package-sticky-wrapper .package-card.is-covered,
-  .package-sticky-wrapper .package-card {
-    transform: none;
-    filter: none;
-  }
-}
-
-/* ----- Reduced motion: desactivar animaciones decorativas ----- */
-@media (prefers-reduced-motion: reduce) {
-  .package-sticky-wrapper .package-card {
-    animation: none !important;
-    transform: none !important;
-    filter: none !important;
-  }
 }
 
 .package-custom .package-name {
