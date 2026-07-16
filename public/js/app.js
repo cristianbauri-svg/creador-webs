@@ -755,35 +755,55 @@
     var realCount = realCards.length;
     if (realCount === 0) return;
 
-    // Si hay pocas cards, ocultar botones y salir
+    // Si hay pocas cards, duplicarlas para llenar la pista sin huecos
     function getVisibleSlots() {
       var w = container.clientWidth;
       if (w > 1024) return 3;
       if (w > 768) return 2;
       return 1;
     }
-    if (realCount <= getVisibleSlots()) {
-      prevBtn.classList.add('hidden');
-      nextBtn.classList.add('hidden');
-      return;
-    }
+    var visibleSlots = getVisibleSlots();
+    var needsExtraClones = realCount <= visibleSlots;
 
     // --- 1. Clonar extremos para bucle infinito ---
     var cloneTail = realCards.map(function(c) { var n = c.cloneNode(true); n.dataset.clone = 'true'; return n; });
     var cloneHead = realCards.map(function(c) { var n = c.cloneNode(true); n.dataset.clone = 'true'; return n; });
 
     // Limpiar IDs y marcar clones como decorativos
-    cloneTail.concat(cloneHead).forEach(function(n) {
+    function sanitizeClone(n) {
       n.removeAttribute('id');
       n.setAttribute('aria-hidden', 'true');
       var focusable = n.querySelectorAll('a, button, input, select, textarea, [tabindex]');
       focusable.forEach(function(el) { el.tabIndex = -1; });
-    });
+    }
+
+    cloneTail.forEach(sanitizeClone);
+    cloneHead.forEach(sanitizeClone);
 
     cloneTail.forEach(function(c) { container.appendChild(c); });
     cloneHead.reverse().forEach(function(c) { container.insertBefore(c, container.firstChild); });
 
-    var currentIndex = realCount; // arranca en la primera card real
+    // Si hay pocas cards, duplicar más veces para llenar sin huecos
+    var totalSets = 1; // ya tenemos 1 set extra a cada lado (3 sets total)
+    if (needsExtraClones) {
+      // Calcular cuántos sets extra se necesitan para que el total de cards
+      // sea al menos 2× visibleSlots + 2 (margen para loop sin vacíos)
+      var minSets = Math.ceil((visibleSlots * 2 + 2) / realCount);
+      while (totalSets < minSets) {
+        var extraTail = realCards.map(function(c) { var n = c.cloneNode(true); n.dataset.clone = 'true'; sanitizeClone(n); return n; });
+        var extraHead = realCards.map(function(c) { var n = c.cloneNode(true); n.dataset.clone = 'true'; sanitizeClone(n); return n; });
+        extraTail.forEach(function(c) { container.appendChild(c); });
+        extraHead.reverse().forEach(function(c) { container.insertBefore(c, container.firstChild); });
+        totalSets++;
+      }
+    }
+
+    var totalCards = realCount * (1 + 2 * totalSets);
+    // cloneHead ocupa índices [0, realCount*totalSets - 1]
+    // realCards ocupan índices [realCount*totalSets, realCount*(totalSets+1) - 1]
+    // cloneTail ocupa índices [realCount*(totalSets+1), totalCards - 1]
+    var realStartIndex = realCount * totalSets;
+    var currentIndex = realStartIndex; // arranca en la primera card real
 
     // Posicionar en la primera card real (sin animación)
     container.scrollLeft = getCardScrollLeft(container.children[currentIndex]);
@@ -795,12 +815,11 @@
     }
 
     function getScrollDistance() {
-      var card = container.querySelector('.service-card');
-      if (!card) return 300;
-      var cardWidth = card.offsetWidth;
-      var containerStyle = window.getComputedStyle(container);
-      var gap = parseFloat(containerStyle.gap || 0) || parseFloat(containerStyle.columnGap || 0) || 24;
-      return cardWidth + gap;
+      // Calcular la distancia exacta entre dos cards consecutivas usando posiciones reales
+      var first = container.children[realStartIndex];
+      var second = container.children[realStartIndex + 1];
+      if (!first || !second) return 300;
+      return getCardScrollLeft(second) - getCardScrollLeft(first);
     }
 
     function getNearestIndex() {
@@ -815,12 +834,72 @@
       return nearest;
     }
 
-    // --- 2. Navegación con scrollBy nativo ---
-    function goToNext() {
-      container.scrollBy({ left: getScrollDistance(), behavior: 'smooth' });
+    // --- 2. Navegación con posiciones exactas + pre-emptive loop ---
+    var stepDistance = getScrollDistance();
+
+    // Encuentra la card cuyo borde izquierdo está más cerca del borde izquierdo del contenedor
+    function getLeftEdgeIndex() {
+      var containerLeft = container.scrollLeft;
+      var nearest = 0;
+      var minDist = Infinity;
+      Array.from(container.children).forEach(function(card, i) {
+        var cardLeft = getCardScrollLeft(card);
+        var dist = Math.abs(cardLeft - containerLeft);
+        if (dist < minDist) { minDist = dist; nearest = i; }
+      });
+      return nearest;
     }
+
+    function goToNext() {
+      if (currentIndex + 1 >= realStartIndex + realCount) {
+        // --- Bucle: saltar al set equivalente en cloneHead y hacer smooth scroll a la siguiente card ---
+        // Usamos la card del borde IZQUIERDO (no el centro) para calcular el salto exacto.
+        // Así el salto es invisible: saltamos de [3,4,1c] a [3c,4c,1], visualmente idéntico.
+        var leftIndex = getLeftEdgeIndex();
+        var equivLeftIndex = leftIndex - realCount;
+        var targetIndex = equivLeftIndex + 1;
+
+        var jumpPos = getCardScrollLeft(container.children[equivLeftIndex]);
+        var targetPos = getCardScrollLeft(container.children[targetIndex]);
+
+        currentIndex = targetIndex;
+
+        // Fase 1: salto instantáneo con snap desactivado
+        container.setAttribute('data-jumping', 'true');
+        container.scrollLeft = jumpPos;
+
+        // Fase 2: en el siguiente frame, smooth scroll al destino con snap reactivado
+        requestAnimationFrame(function() {
+          container.removeAttribute('data-jumping');
+          container.scrollTo({ left: targetPos, behavior: 'smooth' });
+        });
+      } else {
+        container.scrollBy({ left: stepDistance, behavior: 'smooth' });
+      }
+    }
+
     function goToPrev() {
-      container.scrollBy({ left: -getScrollDistance(), behavior: 'smooth' });
+      if (currentIndex - 1 < realStartIndex) {
+        // --- Bucle inverso: saltar al set equivalente en cloneTail ---
+        var leftIndex = getLeftEdgeIndex();
+        var equivLeftIndex = leftIndex + realCount;
+        var targetIndex = equivLeftIndex - 1;
+
+        var jumpPos = getCardScrollLeft(container.children[equivLeftIndex]);
+        var targetPos = getCardScrollLeft(container.children[targetIndex]);
+
+        currentIndex = targetIndex;
+
+        container.setAttribute('data-jumping', 'true');
+        container.scrollLeft = jumpPos;
+
+        requestAnimationFrame(function() {
+          container.removeAttribute('data-jumping');
+          container.scrollTo({ left: targetPos, behavior: 'smooth' });
+        });
+      } else {
+        container.scrollBy({ left: -stepDistance, behavior: 'smooth' });
+      }
     }
 
     prevBtn.addEventListener('click', goToPrev);
@@ -841,7 +920,7 @@
       dot.setAttribute('aria-label', 'Ir al producto ' + (di + 1));
       (function(idx) {
         dot.addEventListener('click', function() {
-          currentIndex = realCount + idx;
+          currentIndex = realStartIndex + idx;
           var card = container.children[currentIndex];
           if (card) {
             container.scrollTo({ left: getCardScrollLeft(card), behavior: 'smooth' });
@@ -878,18 +957,41 @@
     }
 
     // --- 4. Detección de borde para loop infinito ---
+    // Red de seguridad para scroll manual/swipe. El autoplay usa pre-emptive jump
+    // en goToNext/goToPrev, así que esta función solo se activa con scroll táctil.
     function checkLoopBoundary() {
       var nearest = getNearestIndex();
+      var needsJump = false;
 
-      if (nearest >= realCount * 2) {
+      if (nearest >= realStartIndex + realCount) {
+        // Entramos en cloneTail → saltar atrás
         currentIndex = nearest - realCount;
-      } else if (nearest < realCount) {
+        needsJump = true;
+      } else if (nearest < realStartIndex) {
+        // Entramos en cloneHead → saltar adelante
         currentIndex = nearest + realCount;
+        needsJump = true;
       } else {
         currentIndex = nearest;
       }
 
-      updateActiveCard(nearest);
+      if (needsJump) {
+        // Usar posición exacta de la card destino, no stepDistance * N
+        // para eliminar errores acumulativos de redondeo
+        var targetCard = container.children[currentIndex];
+        var targetPos = getCardScrollLeft(targetCard);
+        container.setAttribute('data-jumping', 'true');
+        container.scrollLeft = targetPos;
+        // Doble rAF: Frame 1 pinta el jump sin snap,
+        // Frame 2 reactiva snap con la posición ya corregida
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            container.removeAttribute('data-jumping');
+          });
+        });
+      }
+
+      updateActiveCard(currentIndex);
       updateDots();
     }
 
