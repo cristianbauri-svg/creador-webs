@@ -486,7 +486,7 @@ ul { list-style: none; }
 }
 
 .service-card::before {
-  content: '\2714';
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
@@ -817,7 +817,7 @@ ul { list-style: none; }
 }
 
 .testimonial-card::before {
-  content: '\2714';
+  content: '"';
   position: absolute;
   top: var(--space-4);
   left: var(--space-6);
@@ -1279,7 +1279,7 @@ a.whatsapp-float {
 }
 
 .loading-state::after {
-  content: '\2714';
+  content: '';
   display: block;
   width: 32px;
   height: 32px;
@@ -2072,7 +2072,7 @@ a.whatsapp-float {
 
 /* Brillo sutil en la base de las barras */
 .eq-console-bars::after {
-  content: '\2714';
+  content: '';
   position: absolute;
   bottom: 0;
   left: 0;
@@ -2167,7 +2167,7 @@ a.whatsapp-float {
 
 @media (max-width: 768px) {
   .bio-card:not(.expanded)::after {
-    content: '\2714';
+    content: '';
     position: absolute;
     inset: 0;
     border-radius: 16px;
