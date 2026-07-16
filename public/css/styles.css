@@ -2205,7 +2205,7 @@ a.whatsapp-float {
   scroll-behavior: auto !important;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
-  touch-action: pan-x;
+  touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;          /* Firefox */
   -ms-overflow-style: none;       /* IE/Edge */
