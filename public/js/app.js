@@ -442,7 +442,9 @@
   // Mapeo de títulos de servicio → archivo SVG
   const SERVICE_ICON_MAP = {
     'audio profesional': 'sonido.svg',
+    'iluminación': 'Iluminación.svg',
     'iluminación escénica': 'Iluminación.svg',
+    'pantallas led': 'Pantalla Led.svg',
     'pantallas led y video': 'Pantalla Led.svg',
     'producción técnica': 'Producción técnica.svg',
     'soporte para eventos corporativos': 'Soporte para eventos.svg',
