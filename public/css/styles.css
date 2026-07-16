@@ -1617,18 +1617,7 @@ a.whatsapp-float {
 #contacto {
   position: relative;
   padding-bottom: 100px;
-  background-image: url('/images/imagen_ciudad_bg.webp');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-#contacto::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  z-index: 1;
+  background: linear-gradient(180deg, #0a1e14 0%, #000000 100%);
 }
 
 #contacto .container {
