@@ -1,5 +1,5 @@
 /* =========================================================
-   Straton Audio â€” Sistema de DiseÃ±o
+   Straton Audio ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Sistema de DiseÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â±o
    =========================================================
    Paleta:
      Fondo:       #0A0A0A
@@ -8,8 +8,8 @@
      Bordes:      #2A2A2A
      Texto:       #FFFFFF
      Acento:      #1DB954 (verde vibrante)
-     Premium:     #C9A96E (dorado, â‰¤10% de superficies)
-   TipografÃ­a:   Inter (auto-hospedada) / system-ui
+     Premium:     #C9A96E (dorado, ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°Ãƒâ€šÃ‚Â¤10% de superficies)
+   TipografÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a:   Inter (auto-hospedada) / system-ui
    ========================================================= */
 
 /* ----- Fuentes del sistema (fallback sin archivos externos) ----- */
@@ -258,7 +258,7 @@ ul { list-style: none; }
   border-radius: var(--radius-md);
 }
 
-/* ----- NavegaciÃ³n ----- */
+/* ----- NavegaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n ----- */
 .nav {
   position: fixed;
   top: 0;
@@ -469,7 +469,7 @@ ul { list-style: none; }
   color: var(--color-text-muted);
 }
 
-/* ----- SecciÃ³n Servicios ----- */
+/* ----- SecciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n Servicios ----- */
 .services-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -545,7 +545,7 @@ ul { list-style: none; }
   line-height: var(--leading-relaxed);
 }
 
-/* ----- SecciÃ³n Paquetes ----- */
+/* ----- SecciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n Paquetes ----- */
 
 /* Glowing effect background */
 #paquetes {
@@ -626,7 +626,7 @@ ul { list-style: none; }
 }
 
 .package-card.featured::before {
-  content: '\2714';
+  content: 'MÁS SOLICITADO';
   position: absolute;
   top: var(--space-4);
   right: var(--space-4);
@@ -801,7 +801,7 @@ ul { list-style: none; }
   font-weight: 500;
 }
 
-/* ----- SecciÃ³n Testimonios ----- */
+/* ----- SecciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n Testimonios ----- */
 .testimonials-carousel {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
@@ -867,7 +867,7 @@ ul { list-style: none; }
   color: var(--color-text-muted);
 }
 
-/* ----- SecciÃ³n Contacto ----- */
+/* ----- SecciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n Contacto ----- */
 .contact-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1467,7 +1467,7 @@ a.whatsapp-float {
   }
 }
 
-/* ----- Sticky CotizaciÃ³n Bar ----- */
+/* ----- Sticky CotizaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n Bar ----- */
 .cart-bar {
   position: fixed;
   bottom: 0;
@@ -1670,16 +1670,16 @@ a.whatsapp-float {
 }
 
 /* =============================================
-   SECCIÃ“N SERVICIOS â€” BIOLUMINESCENT GRID
+   SECCIÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œN SERVICIOS ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â BIOLUMINESCENT GRID
    ============================================= */
 
-/* Fondo de la secciÃ³n */
+/* Fondo de la secciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n */
 .services-bioluminescent {
   background: var(--color-bg);
   padding: 6rem 0;
 }
 
-/* Grid asimÃ©trico */
+/* Grid asimÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©trico */
 .bio-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1765,7 +1765,7 @@ a.whatsapp-float {
   line-height: 1;
 }
 
-/* TÃ­tulo y descripciÃ³n */
+/* TÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­tulo y descripciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n */
 .service-card-title {
   font-size: 1.05rem;
   font-weight: 600;
@@ -1788,7 +1788,7 @@ a.whatsapp-float {
   margin-top: auto;
 }
 
-/* Spans asimÃ©tricos */
+/* Spans asimÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tricos */
 .bio-card.col-span-2 {
   grid-column: span 2;
 }
@@ -1902,7 +1902,7 @@ a.whatsapp-float {
   box-shadow: 0 8px 24px var(--color-accent-glow);
 }
 
-/* BotÃ³n cerrar en la card expandida */
+/* BotÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n cerrar en la card expandida */
 .bio-card-expanded-close {
   position: absolute;
   top: 1rem;
@@ -2038,7 +2038,7 @@ a.whatsapp-float {
   background: transparent;
 }
 
-/* Grid de fondo: patrÃ³n de puntos */
+/* Grid de fondo: patrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de puntos */
 .eq-console-grid {
   position: absolute;
   inset: 0;
@@ -2047,7 +2047,7 @@ a.whatsapp-float {
   pointer-events: none;
 }
 
-/* LÃ­neas de mediciÃ³n horizontales (grilla de referencia) */
+/* LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­neas de mediciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n horizontales (grilla de referencia) */
 .eq-console-measure {
   position: absolute;
   inset: 0;
@@ -2104,7 +2104,7 @@ a.whatsapp-float {
   opacity: 0.45;
 }
 
-/* --- Keyframes: 4 ondas distintas para variedad orgÃ¡nica --- */
+/* --- Keyframes: 4 ondas distintas para variedad orgÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡nica --- */
 
 @keyframes eq-wave-a {
   0%, 100% { height: 12%; }
@@ -2134,7 +2134,7 @@ a.whatsapp-float {
   85%       { height: 18%; }
 }
 
-/* --- Responsive: mÃ³vil --- */
+/* --- Responsive: mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³vil --- */
 @media (max-width: 768px) {
   .eq-console {
     height: 55px;
@@ -2156,7 +2156,7 @@ a.whatsapp-float {
 }
 
 /* =============================================
-   Efecto lumÃ­nico automÃ¡tico en mÃ³viles
+   Efecto lumÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nico automÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡tico en mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³viles
    ============================================= */
 
 @keyframes mobileGlow {
@@ -2217,7 +2217,7 @@ a.whatsapp-float {
   display: none;                  /* Chrome/Safari */
 }
 
-/* Permitir desactivar snap durante saltos instantÃ¡neos (scroll infinito) */
+/* Permitir desactivar snap durante saltos instantÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡neos (scroll infinito) */
 .products-carousel[data-jumping="true"] {
   scroll-snap-type: none;
 }
@@ -2236,7 +2236,7 @@ a.whatsapp-float {
   box-shadow: 0 0 10px var(--color-accent-dim);
 }
 
-/* Estado vacÃ­o / carga dentro del carrusel */
+/* Estado vacÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­o / carga dentro del carrusel */
 .products-carousel > .loading-state,
 .products-carousel > .empty-state,
 .products-carousel > .error-state {
@@ -2244,7 +2244,7 @@ a.whatsapp-float {
   scroll-snap-align: center;
 }
 
-/* Botones de navegaciÃ³n */
+/* Botones de navegaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n */
 .carousel-btn {
   flex-shrink: 0;
   width: 44px;
@@ -2281,7 +2281,7 @@ a.whatsapp-float {
   margin-left: var(--space-3);
 }
 
-/* --- PaginaciÃ³n: dots --- */
+/* --- PaginaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n: dots --- */
 .carousel-dots {
   display: flex;
   justify-content: center;
@@ -2325,7 +2325,7 @@ a.whatsapp-float {
   }
 }
 
-/* --- Responsive: mÃ³vil --- */
+/* --- Responsive: mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³vil --- */
 @media (max-width: 768px) {
   .products-carousel-wrapper {
     margin: 0 calc(-1 * var(--space-4));
@@ -2334,7 +2334,7 @@ a.whatsapp-float {
   .carousel-btn {
     width: 36px;
     height: 36px;
-    font-size: 0.9rem;           /* Botones mÃ¡s chicos, pero visibles */
+    font-size: 0.9rem;           /* Botones mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡s chicos, pero visibles */
   }
 
   .products-carousel {
