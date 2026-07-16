@@ -596,52 +596,6 @@ ul { list-style: none; }
   100% { transform: translate(-10%, 10%); opacity: 0.9; }
 }
 
-/* ===== Fondo láser estroboscópico ===== */
-.laser-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.laser-beam {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 400%;
-  height: 400%;
-  transform: translate(-50%, -50%) rotate(var(--angle, 0deg));
-  clip-path: polygon(50% 50%, 100% 48%, 100% 52%);
-  filter: blur(5px);
-  opacity: var(--beam-opacity, 0.3);
-  will-change: transform;
-}
-
-.laser-beam-1 { background: #1DB954; --angle: var(--beam1-angle, 20deg); --beam-opacity: 0.25; }
-.laser-beam-2 { background: #0A5C2E; --angle: var(--beam2-angle, 120deg); --beam-opacity: 0.20; }
-.laser-beam-3 { background: #FFFFFF; --angle: var(--beam3-angle, -30deg); --beam-opacity: 0.30; }
-.laser-beam-4 { background: #F0F4FF; --angle: var(--beam4-angle, 200deg); --beam-opacity: 0.17; }
-
-@media (max-width: 768px) {
-  .laser-beam {
-    opacity: 0.1;
-    filter: blur(3px);
-  }
-  .laser-beam-4 { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .laser-beam {
-    opacity: 0.06 !important;
-    filter: blur(2px) !important;
-  }
-  .laser-beam-4 { display: none !important; }
-}
-
 .packages-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

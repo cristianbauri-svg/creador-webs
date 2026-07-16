@@ -989,7 +989,6 @@
       container.style.flexDirection = 'column';
       initAnimations();
       initStickyCoverFallback();
-      initLaserBackground();
     } catch (err) {
       console.error('Error cargando paquetes:', err);
       container.innerHTML = `
@@ -1010,7 +1009,6 @@
       container.style.display = 'flex';
       container.style.flexDirection = 'column';
       initStickyCoverFallback();
-      initLaserBackground();
     }
   }
 
@@ -1033,52 +1031,6 @@
     }, { threshold: [0, 0.5, 1] });
 
     wrappers.forEach(function(w) { observer.observe(w); });
-  }
-
-  // ===== Fondo láser estroboscópico =====
-  function initLaserBackground() {
-    var section = document.getElementById('paquetes');
-    if (!section) return;
-
-    var root = document.documentElement;
-    var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) return;
-
-    var ticking = false;
-
-    function updateLasers() {
-      var rect = section.getBoundingClientRect();
-      var sectionHeight = section.scrollHeight;
-      var viewportHeight = window.innerHeight;
-      var maxScroll = sectionHeight - viewportHeight;
-      if (maxScroll <= 0) return;
-
-      var scrollInSection = -rect.top;
-      var progress = Math.min(1, Math.max(0, scrollInSection / maxScroll));
-
-      var a1 = progress * 360;                    // horario
-      var a2 = 360 - progress * 360;              // antihorario
-      var a3 = 45 * Math.sin(progress * 2 * Math.PI); // oscilación
-      var a4 = 90 + progress * 360;               // horario desfasado
-
-      root.style.setProperty('--beam1-angle', a1 + 'deg');
-      root.style.setProperty('--beam2-angle', a2 + 'deg');
-      root.style.setProperty('--beam3-angle', a3 + 'deg');
-      root.style.setProperty('--beam4-angle', a4 + 'deg');
-    }
-
-    function onScroll() {
-      if (!ticking) {
-        window.requestAnimationFrame(function() {
-          updateLasers();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    updateLasers();
   }
 
   // Variable en clausura para evitar múltiples registros (IIFE scope)
