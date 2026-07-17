@@ -778,13 +778,23 @@
     if (container.dataset.carouselInit === 'true') return;
     container.dataset.carouselInit = 'true';
 
+    // Cache de clientWidth para evitar reflows en scroll (PageSpeed)
+    var cachedClientWidth = container.clientWidth;
+    var resizeTimeout;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(function() {
+        cachedClientWidth = container.clientWidth;
+      }, 150);
+    });
+
     var realCards = Array.from(container.children);
     var realCount = realCards.length;
     if (realCount === 0) return;
 
     // Si hay pocas cards, duplicarlas para llenar la pista sin huecos
     function getVisibleSlots() {
-      var w = container.clientWidth;
+      var w = cachedClientWidth;
       if (w > 1024) return 3;
       if (w > 768) return 2;
       return 1;
@@ -836,9 +846,10 @@
     container.scrollLeft = getCardScrollLeft(container.children[currentIndex]);
 
     function getCardScrollLeft(card) {
-      var cRect = container.getBoundingClientRect();
-      var kRect = card.getBoundingClientRect();
-      return kRect.left - cRect.left + container.scrollLeft;
+      // offsetLeft es relativo al offsetParent (el wrapper con position:relative).
+      // Restamos container.offsetLeft para obtener la posición dentro del carrusel
+      // y sumamos scrollLeft para la coordenada absoluta de scroll.
+      return card.offsetLeft - container.offsetLeft + container.scrollLeft;
     }
 
     function getScrollDistance() {
@@ -850,7 +861,7 @@
     }
 
     function getNearestIndex() {
-      var containerCenter = container.scrollLeft + container.clientWidth / 2;
+      var containerCenter = container.scrollLeft + cachedClientWidth / 2;
       var nearest = 0;
       var minDist = Infinity;
       Array.from(container.children).forEach(function(card, i) {
