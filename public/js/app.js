@@ -544,18 +544,45 @@
     });
   }
 
-  // --- Animación stagger con GSAP ---
+  // --- Animación stagger vanilla (reemplaza GSAP) ---
   function animateCardsIn() {
-    if (typeof gsap !== 'undefined') {
-      gsap.from('.bio-card', {
-        opacity: 0,
-        y: 24,
-        duration: 0.5,
-        stagger: 0.08,
-        ease: 'power2.out',
+    const cards = document.querySelectorAll('.bio-card');
+    if (!cards.length) return;
+
+    // Respetar preferencia de movimiento reducido
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const DURATION = 0.5;   // segundos por tarjeta
+    const STAGGER = 0.08;   // retraso entre tarjetas
+
+    // Estado inicial
+    cards.forEach(card => {
+      card.style.opacity = '0';
+      card.style.transform = 'scale(0.9)';
+      card.style.transition = `opacity ${DURATION}s ease-out, transform ${DURATION}s ease-out`;
+    });
+
+    // Animar con stagger
+    requestAnimationFrame(() => {
+      cards.forEach((card, i) => {
+        card.style.transitionDelay = `${i * STAGGER}s`;
+        card.style.opacity = '1';
+        card.style.transform = 'scale(1)';
       });
-    }
-    // Fallback sin GSAP: las tarjetas se muestran directamente (ya están en el DOM)
+
+      // Limpiar estilos inline al terminar la animación para restaurar
+      // las transiciones hover definidas en CSS (.bio-card)
+      const lastDelay = (cards.length - 1) * STAGGER;
+      const cleanupMs = (lastDelay + DURATION) * 1000 + 50;
+      setTimeout(() => {
+        cards.forEach(card => {
+          card.style.opacity = '';
+          card.style.transform = '';
+          card.style.transition = '';
+          card.style.transitionDelay = '';
+        });
+      }, cleanupMs);
+    });
   }
 
   // --- Expansión inline de la card ---
