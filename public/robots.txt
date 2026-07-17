@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://stratonaudio.com.co/sitemap.xml
