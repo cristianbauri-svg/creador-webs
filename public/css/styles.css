@@ -2290,21 +2290,35 @@ a.whatsapp-float {
 }
 
 .carousel-dot {
-  width: 8px;
-  height: 8px;
+  min-width: 48px;
+  min-height: 48px;
   border-radius: 50%;
-  background: var(--color-border);
   border: none;
   cursor: pointer;
   transition: all var(--transition-base);
   padding: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
 }
 
-.carousel-dot:hover {
+.carousel-dot::after {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border);
+  transition: all var(--transition-base);
+}
+
+.carousel-dot:hover::after {
   background: var(--color-text-muted);
 }
 
-.carousel-dot.active {
+.carousel-dot.active::after {
   width: 24px;
   border-radius: 4px;
   background: var(--color-accent);
