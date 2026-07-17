@@ -1311,7 +1311,10 @@ ${ev.before_media_url && ev.after_media_url ? `
 
     // Cargar datos en paralelo
     const promises = [
-      loadMeta(),
+      // loadMeta() deshabilitado: no existe página "home" en D1,
+      // lo que genera 404 innecesario en consola.
+      // Re-activar cuando se cree la página desde el panel admin.
+      // loadMeta(),
       loadSettings(),
       loadServices(),
       loadProducts(),
