@@ -846,10 +846,9 @@
     container.scrollLeft = getCardScrollLeft(container.children[currentIndex]);
 
     function getCardScrollLeft(card) {
-      // offsetLeft es relativo al offsetParent (el wrapper con position:relative).
-      // Restamos container.offsetLeft para obtener la posición dentro del carrusel
-      // y sumamos scrollLeft para la coordenada absoluta de scroll.
-      return card.offsetLeft - container.offsetLeft + container.scrollLeft;
+      var cRect = container.getBoundingClientRect();
+      var kRect = card.getBoundingClientRect();
+      return kRect.left - cRect.left + container.scrollLeft;
     }
 
     function getScrollDistance() {
