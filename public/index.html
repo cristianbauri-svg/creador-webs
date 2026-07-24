@@ -91,9 +91,8 @@ h3{font-size:clamp(1.25rem,3vw,1.75rem)}
   </style>
   <!-- Fonts CSS -->
   <link rel="stylesheet" href="/fonts/fonts.css"/>
-  <!-- Main Stylesheet (async, non-render-blocking) -->
-  <link rel="stylesheet" href="/css/style.css" media="print" onload="this.media='all'"/>
-  <noscript><link rel="stylesheet" href="/css/style.css"/></noscript>
+  <!-- Main Stylesheet (carga síncrona con CSS critico inline previo) -->
+  <link rel="stylesheet" href="/css/style.css"/>
 
   <!-- Favicons -->
   <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
