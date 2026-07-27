@@ -120,8 +120,16 @@ async function createQuotation(request: Request, env: Env): Promise<Response> {
 async function sendTelegramNotification(quotation: Record<string, unknown>, env: Env): Promise<void> {
   try {
     const token = env.TELEGRAM_BOT_TOKEN;
-    const chatId = env.TELEGRAM_CHAT_ID;
-    if (!token || !chatId) return;
+    const rawChatIds = env.TELEGRAM_CHAT_ID;
+    if (!token || !rawChatIds) return;
+
+    // Dividir por comas, limpiar espacios y filtrar vacíos
+    const chatIds = rawChatIds
+      .split(',')
+      .map((id: string) => id.trim())
+      .filter((id: string) => id.length > 0);
+
+    if (chatIds.length === 0) return;
 
     // Escapar caracteres reservados de Markdown
     const esc = (str: string) => str.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
@@ -160,18 +168,25 @@ async function sendTelegramNotification(quotation: Record<string, unknown>, env:
       `📦 *Productos solicitados:*\n${productsText}\n` +
       `💬 *Comentarios:* ${notes}`;
 
-    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
-        parse_mode: 'Markdown',
-      }),
-    });
+    // Enviar a cada chat ID de forma independiente
+    for (const chatId of chatIds) {
+      try {
+        const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: message,
+            parse_mode: 'Markdown',
+          }),
+        });
 
-    if (!response.ok) {
-      console.error('Telegram notification failed');
+        if (!response.ok) {
+          console.error(`Telegram notification failed for chat ID ${chatId}`);
+        }
+      } catch (err) {
+        console.error(`Telegram notification error for chat ID ${chatId}:`, err);
+      }
     }
   } catch (err) {
     console.error('Telegram notification error:', err);

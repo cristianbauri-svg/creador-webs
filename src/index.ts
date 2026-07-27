@@ -15,8 +15,10 @@ import { handlePages } from "./routes/pages";
 import { handleSettings } from "./routes/settings";
 import { handleUpload } from "./routes/upload";
 import { handleMedia } from "./routes/media";
+import { injectJsonLd } from "./seo/jsonld";
 
 export interface Env {
+  ASSETS: { fetch(request: Request): Promise<Response> };
   STRATON_DB: D1Database;
   STRATON_KV: KVNamespace;
   STRATON_BUCKET: R2Bucket;
@@ -34,60 +36,19 @@ export default {
       return handleApi(request, env, pathname);
     }
 
-    // Assets estáticos (sitio público + admin dashboard)
-    // Usar fetch directo en vez de env.ASSETS.fetch() por confiabilidad
-    const assetResponse = await fetch(request, {
-      cf: {
-        rocket_loader: false,
-        minify: false,
-      },
-    });
+    // Assets estáticos (sitio público + admin dashboard).
+    // Con run_worker_first, env.ASSETS.fetch() obtiene el asset del CDN
+    // de forma confiable, y el Worker siempre se ejecuta primero en HTML.
+    const assetResponse = await env.ASSETS.fetch(request);
+    const contentType = assetResponse.headers.get("Content-Type") || "";
 
-    // Agregar charset=utf-8 según extensión para evitar mojibake
-    const contentType = getContentType(pathname);
-    if (contentType) {
-      const headers = new Headers(assetResponse.headers);
-      if (!headers.has("Content-Type") || !headers.get("Content-Type")!.includes("charset")) {
-        headers.set("Content-Type", contentType);
-      }
-      return new Response(assetResponse.body, {
-        status: assetResponse.status,
-        statusText: assetResponse.statusText,
-        headers,
-      });
+    if (contentType.includes("text/html")) {
+      return injectJsonLd(assetResponse);
     }
 
     return assetResponse;
   },
 };
-
-/**
- * Devuelve el Content-Type con charset=utf-8 según la extensión del archivo.
- * Retorna null si la extensión no necesita charset explícito (imágenes, fuentes, etc.).
- */
-function getContentType(pathname: string): string | null {
-  const ext = pathname.split(".").pop()?.toLowerCase();
-  switch (ext) {
-    case "html":
-    case "htm":
-      return "text/html; charset=utf-8";
-    case "css":
-      return "text/css; charset=utf-8";
-    case "js":
-    case "mjs":
-      return "application/javascript; charset=utf-8";
-    case "json":
-      return "application/json; charset=utf-8";
-    case "xml":
-      return "application/xml; charset=utf-8";
-    case "svg":
-      return "image/svg+xml; charset=utf-8";
-    case "txt":
-      return "text/plain; charset=utf-8";
-    default:
-      return null;
-  }
-}
 
 async function handleApi(request: Request, env: Env, pathname: string): Promise<Response> {
   const method = request.method;
