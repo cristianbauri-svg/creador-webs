@@ -17,8 +17,42 @@
   <link rel="stylesheet" href="/css/styles.css?v=20260628" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔊</text></svg>" />
 
-  <!-- Estilos del carrito de cotización -->
+  <!-- Estilos del carrito de cotización y página dinámica -->
   <style>
+    /* ====== Página dinámica ====== */
+    .dynamic-page {
+      max-width: 960px;
+      margin: 120px auto 80px;
+      padding: 0 20px;
+      min-height: 60vh;
+    }
+    .dynamic-block {
+      margin-bottom: 2.5rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .dynamic-block:last-child { border-bottom: none; }
+    .dynamic-block-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-accent, #1db954);
+      margin-bottom: 0.75rem;
+    }
+    .dynamic-block-content {
+      font-size: 1rem;
+      line-height: 1.75;
+      color: var(--color-text-secondary, #b0b0b0);
+      white-space: pre-wrap;
+    }
+    .dynamic-empty {
+      text-align: center;
+      padding: 4rem 1rem;
+      color: var(--color-text-muted, #666);
+    }
+    @media (max-width: 768px) {
+      .dynamic-page { margin-top: 100px; }
+      .dynamic-block-title { font-size: 1.25rem; }
+    }
     .cart-panel {
       position: fixed;
       top: 0;
@@ -222,6 +256,9 @@
   </style>
 </head>
 <body>
+
+  <!-- Contenedor para páginas dinámicas (slugs del dashboard). Oculto por defecto. -->
+  <div id="dynamic-page" class="dynamic-page" style="display:none;"></div>
 
   <!-- ============================================= -->
   <!-- Navegación -->

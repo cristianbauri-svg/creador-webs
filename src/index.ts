@@ -15,7 +15,7 @@ import { handlePages } from "./routes/pages";
 import { handleSettings } from "./routes/settings";
 import { handleUpload } from "./routes/upload";
 import { handleMedia } from "./routes/media";
-import { injectJsonLd } from "./seo/jsonld";
+import { injectJsonLd, jsonLdScriptTag } from "./seo/jsonld";
 
 export interface Env {
   ASSETS: { fetch(request: Request): Promise<Response> };
@@ -36,6 +36,19 @@ export default {
       return handleApi(request, env, pathname);
     }
 
+    // Páginas dinámicas: buscar slug en D1 antes de servir assets
+    const slug = pathname.replace(/^\/+/, "").trim();
+    let page: Record<string, unknown> | null = null;
+    if (slug) {
+      try {
+        page = await env.STRATON_DB.prepare(
+          "SELECT * FROM pages WHERE slug = ? AND status = 'published'"
+        ).bind(slug).first();
+      } catch (e) {
+        console.error("Error buscando página:", e);
+      }
+    }
+
     // Assets estáticos (sitio público + admin dashboard).
     // Con run_worker_first, env.ASSETS.fetch() obtiene el asset del CDN
     // de forma confiable, y el Worker siempre se ejecuta primero en HTML.
@@ -43,12 +56,56 @@ export default {
     const contentType = assetResponse.headers.get("Content-Type") || "";
 
     if (contentType.includes("text/html")) {
+      if (page) {
+        return injectDynamicPage(assetResponse, page);
+      }
       return injectJsonLd(assetResponse);
     }
 
     return assetResponse;
   },
 };
+
+/**
+ * Inyecta window.__PAGE__ con los datos de la página dinámica y el JSON-LD
+ * SEO en el <head> del HTML. Usa HTMLRewriter para no consumir el stream
+ * innecesariamente.
+ */
+function injectDynamicPage(response: Response, page: Record<string, unknown>): Response {
+  let contentJson: Record<string, unknown> = {};
+  if (page.content_json && typeof page.content_json === "string") {
+    try {
+      contentJson = JSON.parse(page.content_json);
+    } catch { /* JSON inválido — se usa objeto vacío */ }
+  }
+
+  const pageData = {
+    title: page.title || null,
+    meta_title: page.meta_title || null,
+    meta_description: page.meta_description || null,
+    content_json: contentJson,
+  };
+
+  // Escapar </ para que no rompa el <script> tag
+  const safeJson = JSON.stringify(pageData).replace(/<\//g, "<\\/");
+  const pageScript = `<script>window.__PAGE__ = ${safeJson};</script>`;
+  const ldJson = jsonLdScriptTag();
+
+  class HeadHandler {
+    element(element: Element) {
+      element.append(ldJson, { html: true });
+      element.append(pageScript, { html: true });
+    }
+  }
+
+  // Clonar headers de la respuesta original pero asegurar Content-Type
+  const headers = new Headers(response.headers);
+  headers.set("Content-Type", "text/html; charset=utf-8");
+
+  return new HTMLRewriter()
+    .on("head", new HeadHandler())
+    .transform(new Response(response.body, { headers, status: response.status }));
+}
 
 async function handleApi(request: Request, env: Env, pathname: string): Promise<Response> {
   const method = request.method;

@@ -1333,9 +1333,79 @@ ${ev.before_media_url && ev.after_media_url ? `
   }
 
   // =========================================================
+  // Página dinámica (slugs desde el dashboard)
+  // =========================================================
+  function renderDynamicPage(data) {
+    // 1. Actualizar meta tags
+    document.title = data.meta_title || data.title || "Straton Audio";
+
+    var metaDesc = document.getElementById('meta-description');
+    var ogDesc = document.getElementById('meta-og-desc');
+    var ogTitle = document.getElementById('meta-og-title');
+    if (data.meta_description) {
+      if (metaDesc) metaDesc.setAttribute('content', data.meta_description);
+      if (ogDesc) ogDesc.setAttribute('content', data.meta_description);
+    }
+    if (data.title && ogTitle) ogTitle.setAttribute('content', data.title);
+
+    // 2. Ocultar secciones de la landing
+    var landingIds = ['hero', 'statsBanner', 'servicios', 'productos', 'paquetes', 'portafolio', 'testimonios', 'contacto'];
+    for (var i = 0; i < landingIds.length; i++) {
+      var el = document.getElementById(landingIds[i]);
+      if (el) el.style.display = 'none';
+    }
+
+    // Ocultar elementos decorativos y flotantes
+    var extras = document.querySelectorAll('.logo-marquee, .eq-console, .cart-toggle, .whatsapp-float');
+    for (var j = 0; j < extras.length; j++) {
+      extras[j].style.display = 'none';
+    }
+
+    // Ocultar barra de cotización si existe
+    var cartBar = document.getElementById('cart-bar');
+    if (cartBar) cartBar.style.display = 'none';
+
+    // 3. Mostrar contenedor dinámico
+    var container = document.getElementById('dynamic-page');
+    if (!container) return;
+    container.style.display = '';
+
+    // 4. Renderizar bloques de contenido desde content_json
+    var contentJson = data.content_json || {};
+    var entries = Object.entries(contentJson);
+    if (entries.length === 0) {
+      container.innerHTML = '<div class="dynamic-empty"><p>Esta página no tiene contenido aún.</p></div>';
+      return;
+    }
+
+    var html = '';
+    for (var k = 0; k < entries.length; k++) {
+      var key = entries[k][0];
+      var value = entries[k][1];
+      // Formatear clave: snake_case o kebab-case → título legible
+      var label = key
+        .replace(/[_-]/g, ' ')
+        .replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+
+      html += '<section class="dynamic-block">';
+      html += '<h2 class="dynamic-block-title">' + escapeHtml(label) + '</h2>';
+      html += '<div class="dynamic-block-content">' + escapeHtml(String(value || '')) + '</div>';
+      html += '</section>';
+    }
+    container.innerHTML = html;
+  }
+
+  // =========================================================
   // Inicialización
   // =========================================================
   async function init() {
+    // Si hay página dinámica inyectada por el Worker, renderizarla y salir
+    if (window.__PAGE__) {
+      renderDynamicPage(window.__PAGE__);
+      initNav();
+      return;
+    }
+
     initNav();
     initCounters();
     initStatsBanner();
