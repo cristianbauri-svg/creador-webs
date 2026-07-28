@@ -40,8 +40,7 @@
       </div>
       <div class="form-group-admin">
         <label class="form-label-admin" for="productCategory">Categoría</label>
-        <input class="form-input-admin" type="text" id="productCategory" list="category-list" autocomplete="off" placeholder="Ej: Audio, Iluminación..." />
-        <datalist id="category-list"></datalist>
+        <select class="form-select-admin" id="productCategory"></select>
       </div>
     </div>
     <div class="form-row-admin">
@@ -109,6 +108,7 @@
   var existingImageUrl = '';       // URL existente (al editar)
   var galleryFiles = [];           // Array de Files para galería
   var existingGalleryUrls = [];    // URLs existentes de galería
+  var lastValidCategory = '';      // Última categoría válida seleccionada (para restaurar si se cancela "+ Crear nueva")
 
   var els = {
     toolbar: document.getElementById('productsToolbar'),
@@ -120,7 +120,6 @@
     prodId: document.getElementById('prodId'),
     prodTitle: document.getElementById('prodTitle'),
     prodCategory: document.getElementById('productCategory'),
-    categoryList: document.getElementById('category-list'),
     prodServiceType: document.getElementById('prodServiceType'),
     prodStatus: document.getElementById('prodStatus'),
     prodDescription: document.getElementById('prodDescription'),
@@ -141,13 +140,22 @@
 
   // Iniciar: cargar lista
   loadProducts();
-  loadCategorySuggestions();
+  populateCategorySelect();
 
   // Eventos
   els.btnAdd.addEventListener('click', function () { showForm(); });
   els.btnCancel.addEventListener('click', function () { hideForm(); });
   els.btnAddFeature.addEventListener('click', function () { addFeatureInput(''); });
   els.form.addEventListener('submit', function (e) { e.preventDefault(); saveProduct(); });
+
+  // Categoría: detectar "+ Crear nueva categoría"
+  els.prodCategory.addEventListener('change', function () {
+    if (this.value === '__new__') {
+      promptForNewCategory(this);
+    } else {
+      lastValidCategory = this.value;
+    }
+  });
 
   // Drag & drop — Imagen principal
   initDropZone(els.prodImageDrop, els.prodImageFile, function (file) {
@@ -187,17 +195,58 @@
       });
   }
 
-  function loadCategorySuggestions() {
+  // Llena el <select> de categorías con las existentes en D1 + la opción
+  // "+ Crear nueva categoría". Si selectedValue no está en la lista (categoría
+  // nueva de un producto existente), se agrega y se selecciona igual.
+  function populateCategorySelect(selectedValue) {
     fetch('/api/products?per_page=100')
       .then(function (r) { return r.json(); })
       .then(function (products) {
         var items = Array.isArray(products) ? products : (products.products || []);
         var categories = Array.from(new Set(items.map(function (p) { return p.category; }).filter(Boolean))).sort();
-        if (els.categoryList) {
-          els.categoryList.innerHTML = categories.map(function (c) { return '<option value="' + esc(c) + '">'; }).join('');
+        var select = els.prodCategory;
+        var currentValue = selectedValue || select.value;
+
+        select.innerHTML = categories.map(function (c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('');
+        select.innerHTML += '<option value="__new__">+ Crear nueva categoría</option>';
+
+        if (currentValue && currentValue !== '__new__') {
+          var exists = Array.from(select.options).some(function (o) { return o.value === currentValue; });
+          if (!exists) {
+            var opt = document.createElement('option');
+            opt.value = currentValue;
+            opt.textContent = currentValue;
+            select.insertBefore(opt, select.lastElementChild);
+          }
+          select.value = currentValue;
+        }
+
+        // Si no quedaron categorías previas (primer producto del sitio), el
+        // select solo tiene la opción "+ Crear nueva categoría": disparar el
+        // prompt de una vez para que no quede una opción inalcanzable por clic.
+        if (select.value === '__new__' && categories.length === 0) {
+          promptForNewCategory(select);
+        } else {
+          lastValidCategory = select.value !== '__new__' ? select.value : '';
         }
       })
-      .catch(function () { /* sugerencias opcionales: el input sigue funcionando sin ellas */ });
+      .catch(function () { /* si falla, el select queda con solo "+ Crear nueva categoría" */ });
+  }
+
+  // Maneja la creación de una categoría nueva al vuelo desde el select.
+  function promptForNewCategory(select) {
+    var newCat = prompt('Nombre de la nueva categoría:');
+    if (newCat && newCat.trim()) {
+      var trimmed = newCat.trim();
+      var opt = document.createElement('option');
+      opt.value = trimmed;
+      opt.textContent = trimmed;
+      select.insertBefore(opt, select.lastElementChild);
+      select.value = trimmed;
+      lastValidCategory = trimmed;
+    } else {
+      select.value = lastValidCategory || (select.options[0] ? select.options[0].value : '');
+    }
   }
 
   function renderTable(rows) {
@@ -250,7 +299,6 @@
     els.formTitle.textContent = product ? 'Editar Producto' : 'Nuevo Producto';
     els.prodId.value = product ? product.id : '';
     els.prodTitle.value = product ? (product.title || '') : '';
-    els.prodCategory.value = product ? (product.category || 'Audio') : 'Audio';
     els.prodServiceType.value = product ? (product.service_type || 'Venta') : 'Venta';
     els.prodStatus.value = product ? (product.status || 'draft') : 'draft';
     els.prodDescription.value = product ? (product.description || '') : '';
@@ -282,6 +330,10 @@
 
     // Mostrar previews de galería existente
     renderGalleryPreviews();
+
+    // Poblar el select de categorías; si es edición, seleccionar (y agregar
+    // si hace falta) la categoría actual del producto.
+    populateCategorySelect(product ? product.category : undefined);
   }
 
   function hideForm() {
@@ -305,8 +357,8 @@
       alert('El nombre del producto es obligatorio.');
       return;
     }
-    if (!category) {
-      alert('La categoría es obligatoria.');
+    if (!category || category === '__new__') {
+      alert('Selecciona una categoría válida.');
       return;
     }
 
