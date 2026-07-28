@@ -1,343 +1,516 @@
-<!-- Pages Module — CRUD completo -->
-<div class="card" id="pagesToolbar">
-  <div class="card-header">
-    <h3 class="card-title">📄 Páginas</h3>
-    <button class="btn-admin btn-primary-admin" id="btnAddPage">+ Agregar Página</button>
-  </div>
-</div>
+<!-- ============================================================
+  admin/modules/pages.html — Editor visual de bloques para páginas dinámicas
+  Reemplaza la versión anterior de pares clave-valor genéricos
+============================================================ -->
+<style>
+  /* === Miniaturas wireframe de bloques === */
+  .block-thumb {
+    width: 200px; height: 120px; border-radius: 8px; background: #1e1e2e;
+    display: flex; flex-direction: column; gap: 6px; padding: 12px;
+    box-sizing: border-box; position: relative; overflow: hidden;
+    border: 1px solid #2a2a3a; flex-shrink: 0;
+  }
+  .block-thumb .line { background: #3a3a4a; border-radius: 4px; }
+  .block-thumb .line.wide { width: 70%; height: 10px; }
+  .block-thumb .line.medium { width: 50%; height: 8px; }
+  .block-thumb .line.short { width: 30%; height: 8px; }
+  .block-thumb .btn-fake { width: 40%; height: 18px; background: #ff6b35; border-radius: 4px; margin-top: auto; }
+  .block-thumb .img-fake { width: 100%; height: 50px; background: #2a2a3a; border-radius: 4px; }
+  .block-thumb .card-grid { display: flex; gap: 6px; flex: 1; }
+  .block-thumb .card-fake { flex: 1; background: #2a2a3a; border-radius: 4px; display: flex; flex-direction: column; padding: 6px; gap: 4px; }
+  .block-thumb .card-fake .line { background: #3a3a4a; height: 6px; }
+  .block-thumb .grid-2x2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; flex: 1; }
+  .block-thumb .grid-2x2 div { background: #2a2a3a; border-radius: 3px; }
+  .block-thumb .video-bar { width: 100%; height: 40px; background: #2a2a3a; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+  .block-thumb .play-triangle { width: 0; height: 0; border-left: 16px solid #3a3a4a; border-top: 10px solid transparent; border-bottom: 10px solid transparent; }
+  .block-thumb .carousel-single { width: 60%; height: 50px; background: #2a2a3a; border-radius: 6px; margin: 0 auto; display: flex; flex-direction: column; padding: 6px; gap: 4px; }
+  .block-thumb .package-col { display: flex; gap: 4px; flex: 1; }
+  .block-thumb .package-col div { flex: 1; background: #2a2a3a; border-radius: 4px; }
+  .block-thumb .testimonial-bar { display: flex; gap: 4px; align-items: center; flex: 1; }
+  .block-thumb .avatar { width: 24px; height: 24px; border-radius: 50%; background: #3a3a4a; flex-shrink: 0; }
+  .block-thumb .form-lines { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .block-thumb .form-lines .line { height: 8px; width: 100%; }
+  .block-thumb .cta-bg { background: #ff6b35; opacity: 0.2; position: absolute; inset: 0; }
+  .block-thumb .spacer-bar { width: 100%; height: 8px; background: repeating-linear-gradient(90deg, #3a3a4a 0px, #3a3a4a 8px, transparent 8px, transparent 12px); border-radius: 4px; margin: auto 0; }
+  .block-thumb .icon-circle { width: 20px; height: 20px; border-radius: 50%; background: #3a3a4a; }
 
-<div class="card" id="pagesTableCard">
-  <div class="table-wrapper">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Slug</th>
-          <th>Título</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="pagesTbody">
-        <tr><td colspan="4"><div class="loading-admin">Cargando páginas...</div></td></tr>
-      </tbody>
+  /* === Panel de selección de bloques === */
+  #blockPalette {
+    display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0;
+    max-height: 400px; overflow-y: auto; padding: 8px;
+    background: #16162a; border-radius: 10px; border: 1px solid #2a2a3a;
+  }
+  #blockPalette .palette-item {
+    cursor: pointer; border-radius: 10px; padding: 8px;
+    background: #1e1e2e; border: 1px solid #2a2a3a;
+    transition: border-color 0.2s, transform 0.15s;
+    text-align: center; width: 216px;
+  }
+  #blockPalette .palette-item:hover {
+    border-color: #ff6b35; transform: translateY(-2px);
+  }
+  #blockPalette .palette-label {
+    font-size: 12px; color: #ccc; margin-top: 6px; font-weight: 600;
+  }
+  #blockPalette .palette-desc {
+    font-size: 10px; color: #888; margin-top: 2px; line-height: 1.3;
+  }
+
+  /* === Lista de bloques en el editor === */
+  #blockList { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+  .editor-block {
+    background: #1e1e2e; border: 1px solid #2a2a3a; border-radius: 10px;
+    overflow: hidden;
+  }
+  .editor-block .block-header {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    cursor: pointer; user-select: none; background: #1e1e2e;
+    transition: background 0.15s;
+  }
+  .editor-block .block-header:hover { background: #252538; }
+  .editor-block .block-header .block-type-icon { font-size: 20px; flex-shrink: 0; }
+  .editor-block .block-header .block-type-name { font-weight: 600; color: #ddd; flex: 1; }
+  .editor-block .block-header .block-summary { font-size: 11px; color: #888; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .editor-block .block-header .block-actions { display: flex; gap: 4px; }
+  .editor-block .block-header .block-actions button {
+    background: none; border: 1px solid #3a3a4a; color: #aaa; border-radius: 6px;
+    padding: 4px 8px; cursor: pointer; font-size: 14px; transition: all 0.15s;
+  }
+  .editor-block .block-header .block-actions button:hover {
+    background: #2a2a3a; color: #fff;
+  }
+  .editor-block .block-header .block-actions button.delete:hover {
+    background: #3a1a1a; border-color: #ff4444; color: #ff4444;
+  }
+  .editor-block .block-body {
+    display: none; padding: 14px; border-top: 1px solid #2a2a3a;
+    background: #16162a;
+  }
+  .editor-block.expanded .block-body { display: block; }
+  .editor-block .block-body label {
+    display: block; font-size: 11px; color: #888; margin: 8px 0 3px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .editor-block .block-body input,
+  .editor-block .block-body textarea,
+  .editor-block .block-body select {
+    width: 100%; padding: 8px 10px; border-radius: 6px;
+    background: #1e1e2e; border: 1px solid #2a2a3a; color: #ddd;
+    font-size: 13px; box-sizing: border-box;
+  }
+  .editor-block .block-body textarea { min-height: 70px; resize: vertical; }
+  .editor-block .block-body .field-row { display: flex; gap: 8px; }
+  .editor-block .block-body .field-row > * { flex: 1; }
+
+  /* === Vista previa (pestaña aparte) === */
+  #previewFrame { display: none; }
+
+  /* === General del formulario de metadatos === */
+  #pageMetaForm { margin-top: 16px; }
+  #pageMetaForm label { display: block; font-size: 11px; color: #888; margin: 8px 0 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+  #pageMetaForm input, #pageMetaForm textarea, #pageMetaForm select {
+    width: 100%; padding: 8px 10px; border-radius: 6px;
+    background: #1e1e2e; border: 1px solid #2a2a3a; color: #ddd;
+    font-size: 13px; box-sizing: border-box;
+  }
+  #pageMetaForm textarea { min-height: 50px; resize: vertical; }
+
+  .empty-state { text-align: center; color: #666; padding: 30px; font-size: 13px; }
+</style>
+
+<!-- ==================== HTML ==================== -->
+<div id="pagesModule">
+  <!-- Toolbar -->
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+    <button id="btnNewPage" style="background:#ff6b35;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600;">+ Nueva Página</button>
+    <span style="color:#888;font-size:12px;" id="pageCount"></span>
+  </div>
+
+  <!-- Tabla de páginas existentes -->
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;" id="pagesTable">
+      <thead><tr style="text-align:left;border-bottom:1px solid #2a2a3a;"><th style="padding:8px;">Slug</th><th style="padding:8px;">Título</th><th style="padding:8px;">Estado</th><th style="padding:8px;">Acciones</th></tr></thead>
+      <tbody id="pagesTableBody"></tbody>
     </table>
   </div>
-</div>
 
-<div class="card" id="pagesFormCard" style="display:none;">
-  <div class="card-header">
-    <h3 class="card-title" id="pagesFormTitle">Nueva Página</h3>
+  <!-- Formulario de edición/creación (oculto por defecto) -->
+  <div id="pageEditor" style="display:none;margin-top:20px;">
+    <h3 style="margin:0 0 12px;color:#ddd;" id="editorTitle">Nueva Página</h3>
+
+    <!-- Metadatos -->
+    <div id="pageMetaForm">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <label>Slug</label>
+          <input id="pageSlug" placeholder="mi-pagina" />
+        </div>
+        <div style="flex:1;min-width:200px;">
+          <label>Título</label>
+          <input id="pageTitle" placeholder="Título de la página" />
+        </div>
+        <div style="flex:0 0 140px;">
+          <label>Estado</label>
+          <select id="pageStatus"><option value="draft">Borrador</option><option value="published">Publicado</option></select>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <label>Meta Title</label>
+          <input id="pageMetaTitle" placeholder="Título SEO" />
+        </div>
+        <div style="flex:1;min-width:200px;">
+          <label>Meta Description</label>
+          <textarea id="pageMetaDescription" placeholder="Descripción SEO"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paleta de bloques -->
+    <div style="margin-top:16px;">
+      <h4 style="color:#ccc;margin:0 0 8px;">Añadir bloque</h4>
+      <div id="blockPalette"></div>
+    </div>
+
+    <!-- Lista de bloques -->
+    <h4 style="color:#ccc;margin:16px 0 8px;">Bloques de la página (<span id="blockCount">0</span>)</h4>
+    <div id="blockList">
+      <div class="empty-state" id="emptyBlocks">No hay bloques. Selecciona uno de la paleta superior.</div>
+    </div>
+
+    <!-- Botones de acción -->
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+      <button id="btnSave" style="background:#ff6b35;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;">💾 Guardar</button>
+      <button id="btnPreview" style="background:#2a2a3a;color:#ddd;border:1px solid #3a3a4a;padding:10px 20px;border-radius:6px;cursor:pointer;">👁 Previsualizar</button>
+      <button id="btnCancel" style="background:none;color:#aaa;border:1px solid #3a3a4a;padding:10px 20px;border-radius:6px;cursor:pointer;">Cancelar</button>
+    </div>
   </div>
-  <form id="pagesForm" autocomplete="off">
-    <input type="hidden" id="pageId" />
-    <div class="form-row-admin">
-      <div class="form-group-admin">
-        <label class="form-label-admin" for="pageSlug">Slug *</label>
-        <input class="form-input-admin" id="pageSlug" required maxlength="100" placeholder="Ej: acerca-de" />
-        <small style="color:var(--color-text-muted);font-size:0.7rem;">Identificador único de la página. Solo editable al crear.</small>
-      </div>
-      <div class="form-group-admin">
-        <label class="form-label-admin" for="pageTitle">Título</label>
-        <input class="form-input-admin" id="pageTitle" maxlength="200" placeholder="Ej: Acerca de Nosotros" />
-      </div>
-    </div>
-    <div class="form-group-admin">
-      <label class="form-label-admin">Contenido</label>
-      <div id="pageContentFields"></div>
-      <button type="button" class="btn-admin btn-ghost-admin" id="btnAddField" style="margin-top:0.5rem;font-size:0.75rem;">+ Agregar campo</button>
-      <small style="color:var(--color-text-muted);font-size:0.7rem;">Define los bloques de contenido como pares clave-valor.</small>
-    </div>
-    <div class="form-row-admin">
-      <div class="form-group-admin">
-        <label class="form-label-admin" for="pageMetaTitle">Meta título (SEO)</label>
-        <input class="form-input-admin" id="pageMetaTitle" maxlength="200" placeholder="Título para buscadores" />
-      </div>
-      <div class="form-group-admin">
-        <label class="form-label-admin" for="pageStatus">Estado</label>
-        <select class="form-select-admin" id="pageStatus">
-          <option value="draft">Borrador</option>
-          <option value="published">Publicado</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group-admin">
-      <label class="form-label-admin" for="pageMetaDescription">Meta descripción (SEO)</label>
-      <textarea class="form-textarea-admin" id="pageMetaDescription" rows="2" placeholder="Descripción para buscadores (máx. 160 caracteres)"></textarea>
-    </div>
-    <div class="form-actions">
-      <button type="button" class="btn-admin btn-ghost-admin" id="btnCancelPage">Cancelar</button>
-      <button type="submit" class="btn-admin btn-primary-admin">Guardar</button>
-    </div>
-  </form>
 </div>
 
+<!-- ==================== SCRIPT ==================== -->
 <script>
-(function () {
-  'use strict';
-
+(function() {
+  var mod = document.getElementById('pagesModule');
   var currentId = null;
+  var blocks = []; // Array de bloques actuales
 
+  // Referencias DOM
   var els = {
-    tbody: document.getElementById('pagesTbody'),
-    formCard: document.getElementById('pagesFormCard'),
-    formTitle: document.getElementById('pagesFormTitle'),
-    form: document.getElementById('pagesForm'),
-    pageId: document.getElementById('pageId'),
-    pageSlug: document.getElementById('pageSlug'),
-    pageTitle: document.getElementById('pageTitle'),
-    pageContentFields: document.getElementById('pageContentFields'),
-    btnAddField: document.getElementById('btnAddField'),
-    pageMetaTitle: document.getElementById('pageMetaTitle'),
-    pageMetaDescription: document.getElementById('pageMetaDescription'),
-    pageStatus: document.getElementById('pageStatus'),
-    btnAdd: document.getElementById('btnAddPage'),
-    btnCancel: document.getElementById('btnCancelPage'),
+    btnNew: mod.querySelector('#btnNewPage'),
+    pageCount: mod.querySelector('#pageCount'),
+    tbody: mod.querySelector('#pagesTableBody'),
+    editor: mod.querySelector('#pageEditor'),
+    editorTitle: mod.querySelector('#editorTitle'),
+    pageSlug: mod.querySelector('#pageSlug'),
+    pageTitle: mod.querySelector('#pageTitle'),
+    pageStatus: mod.querySelector('#pageStatus'),
+    pageMetaTitle: mod.querySelector('#pageMetaTitle'),
+    pageMetaDescription: mod.querySelector('#pageMetaDescription'),
+    palette: mod.querySelector('#blockPalette'),
+    blockList: mod.querySelector('#blockList'),
+    emptyBlocks: mod.querySelector('#emptyBlocks'),
+    blockCount: mod.querySelector('#blockCount'),
+    btnSave: mod.querySelector('#btnSave'),
+    btnPreview: mod.querySelector('#btnPreview'),
+    btnCancel: mod.querySelector('#btnCancel')
   };
 
-  loadPages();
+  // Definición de tipos de bloques
+  var BLOCK_TYPES = [
+    { type: 'hero', icon: '🦸', label: 'Hero', desc: 'Fondo con título, subtítulo y botón', thumb: '<div class="line wide"></div><div class="line medium"></div><div class="line short"></div><div class="btn-fake"></div>', props: ['bg_type','bg_url','title','subtitle','button_text','button_link'] },
+    { type: 'text', icon: '📝', label: 'Texto', desc: 'Título y contenido enriquecido', thumb: '<div class="line wide"></div><div class="line medium"></div><div class="line medium"></div><div class="line short"></div>', props: ['title','content'] },
+    { type: 'cards', icon: '🃏', label: 'Cards', desc: '2-4 tarjetas con imagen y texto', thumb: '<div class="line wide" style="width:40%"></div><div class="card-grid"><div class="card-fake"><div class="line"></div><div class="line"></div></div><div class="card-fake"><div class="line"></div><div class="line"></div></div><div class="card-fake"><div class="line"></div><div class="line"></div></div></div>', props: ['section_title','cards'] },
+    { type: 'image', icon: '🖼️', label: 'Imagen', desc: 'Imagen a ancho completo con pie', thumb: '<div class="img-fake"></div><div class="line short" style="margin-top:4px"></div>', props: ['url','alt','caption'] },
+    { type: 'gallery', icon: '🖼️', label: 'Galería', desc: 'Galería de imágenes en grilla', thumb: '<div class="grid-2x2"><div></div><div></div><div></div><div></div></div>', props: ['section_title','images'] },
+    { type: 'video', icon: '🎬', label: 'Video', desc: 'Video de YouTube o Vimeo', thumb: '<div class="video-bar"><div class="play-triangle"></div></div>', props: ['url','title'] },
+    { type: 'product-carousel', icon: '🎵', label: 'Carrusel Productos', desc: '1 card, autoplay, textos grandes', thumb: '<div class="carousel-single"><div class="line" style="width:60%"></div><div class="line" style="width:80%"></div></div>', props: ['section_title','max_items'] },
+    { type: 'packages', icon: '📦', label: 'Paquetes', desc: 'Parrilla de paquetes con precios', thumb: '<div class="line wide" style="width:30%"></div><div class="package-col"><div></div><div style="border:1px solid #ff6b35"></div><div></div></div>', props: ['section_title'] },
+    { type: 'testimonials', icon: '💬', label: 'Testimonios', desc: 'Carrusel de testimonios', thumb: '<div class="line wide" style="width:30%"></div><div class="testimonial-bar"><div class="avatar"></div><div class="form-lines"><div class="line"></div><div class="line"></div></div></div>', props: ['section_title','testimonials'] },
+    { type: 'contact-form', icon: '📬', label: 'Formulario', desc: 'Formulario de contacto', thumb: '<div class="line wide" style="width:40%"></div><div class="form-lines"><div class="line" style="width:90%"></div><div class="line" style="width:70%"></div><div class="line" style="width:50%"></div></div>', props: ['title','description'] },
+    { type: 'cta', icon: '📢', label: 'CTA', desc: 'Llamado a la acción con fondo', thumb: '<div style="position:relative;flex:1"><div class="cta-bg"></div><div style="position:relative;z-index:1;display:flex;flex-direction:column;gap:4px;padding:8px"><div class="line wide" style="background:#fff3"></div><div class="btn-fake"></div></div></div>', props: ['bg_color','title','subtitle','button_text','button_link'] },
+    { type: 'spacer', icon: '↕️', label: 'Espaciador', desc: 'Separador vertical ajustable', thumb: '<div class="spacer-bar"></div>', props: ['height'] },
+    { type: 'section-header', icon: '🏷️', label: 'Encabezado', desc: 'Título de sección con ícono', thumb: '<div style="display:flex;align-items:center;gap:8px"><div class="icon-circle"></div><div class="line wide"></div></div>', props: ['title','icon'] }
+  ];
 
-  els.btnAdd.addEventListener('click', function () { showForm(); });
-  els.btnCancel.addEventListener('click', function () { hideForm(); });
-  els.form.addEventListener('submit', function (e) { e.preventDefault(); savePage(); });
-  els.btnAddField.addEventListener('click', function () { addContentField('', ''); });
-
-  function loadPages() {
-    fetch('/api/pages')
-      .then(function (r) { return r.json(); })
-      .then(renderTable)
-      .catch(function (err) {
-        console.error('Error cargando páginas:', err);
-        els.tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state-admin"><p>Error al cargar páginas</p></div></td></tr>';
-      });
+  // Construir paleta de bloques
+  function buildPalette() {
+    els.palette.innerHTML = '';
+    BLOCK_TYPES.forEach(function(bt) {
+      var item = document.createElement('div');
+      item.className = 'palette-item';
+      item.innerHTML = '<div class="block-thumb">' + bt.thumb + '</div><div class="palette-label">' + bt.icon + ' ' + bt.label + '</div><div class="palette-desc">' + bt.desc + '</div>';
+      item.addEventListener('click', function() { addBlock(bt.type); });
+      els.palette.appendChild(item);
+    });
   }
 
-  function renderTable(rows) {
-    if (!Array.isArray(rows) || rows.length === 0) {
-      els.tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state-admin"><div class="empty-state-admin-icon">📄</div><p>No hay páginas registradas</p></div></td></tr>';
+  // Añadir bloque al array
+  function addBlock(type) {
+    var def = BLOCK_TYPES.find(function(b) { return b.type === type; });
+    if (!def) return;
+    var newBlock = { type: type, props: {} };
+    def.props.forEach(function(p) { newBlock.props[p] = ''; });
+    if (type === 'cards') newBlock.props.cards = [];
+    if (type === 'gallery') newBlock.props.images = [];
+    if (type === 'testimonials') newBlock.props.testimonials = [];
+    blocks.push(newBlock);
+    renderBlocks();
+    expandBlock(blocks.length - 1); // auto-expandir el recién añadido
+  }
+
+  // Eliminar bloque
+  function removeBlock(index) {
+    blocks.splice(index, 1);
+    renderBlocks();
+  }
+
+  // Mover bloque
+  function moveBlock(index, dir) {
+    var newIdx = index + dir;
+    if (newIdx < 0 || newIdx >= blocks.length) return;
+    var temp = blocks[index];
+    blocks[index] = blocks[newIdx];
+    blocks[newIdx] = temp;
+    renderBlocks();
+  }
+
+  // Expandir/colapsar bloque
+  function toggleBlock(index) {
+    var blockEls = els.blockList.querySelectorAll('.editor-block');
+    if (blockEls[index]) blockEls[index].classList.toggle('expanded');
+  }
+
+  function expandBlock(index) {
+    var blockEls = els.blockList.querySelectorAll('.editor-block');
+    if (blockEls[index]) blockEls[index].classList.add('expanded');
+  }
+
+  // Renderizar lista de bloques
+  function renderBlocks() {
+    els.blockList.innerHTML = '';
+    els.blockCount.textContent = blocks.length;
+    if (blocks.length === 0) {
+      els.blockList.innerHTML = '<div class="empty-state" id="emptyBlocks">No hay bloques. Selecciona uno de la paleta superior.</div>';
       return;
     }
+    blocks.forEach(function(block, i) {
+      var def = BLOCK_TYPES.find(function(b) { return b.type === block.type; });
+      var icon = def ? def.icon : '❓';
+      var label = def ? def.label : block.type;
+      var summary = getBlockSummary(block);
 
-    els.tbody.innerHTML = rows.map(function (p) {
-      var badgeClass = p.status === 'published' ? 'published' : 'draft';
-      var badgeText = p.status === 'published' ? 'Publicado' : 'Borrador';
+      var div = document.createElement('div');
+      div.className = 'editor-block';
+      div.innerHTML = '<div class="block-header">' +
+        '<span class="block-type-icon">' + icon + '</span>' +
+        '<span class="block-type-name">' + label + '</span>' +
+        '<span class="block-summary">' + escapeHtml(summary) + '</span>' +
+        '<span class="block-actions">' +
+          '<button class="move-up" title="Subir">↑</button>' +
+          '<button class="move-down" title="Bajar">↓</button>' +
+          '<button class="delete" title="Eliminar">✕</button>' +
+        '</span>' +
+      '</div>' +
+      '<div class="block-body"></div>';
 
-      return '<tr>' +
-        '<td><code style="background:var(--color-surface);padding:0.15rem 0.4rem;border-radius:3px;font-size:0.75rem;">/' + esc(p.slug) + '</code></td>' +
-        '<td><strong>' + esc(p.title || '—') + '</strong></td>' +
-        '<td><span class="status-badge ' + badgeClass + '">' + badgeText + '</span></td>' +
-        '<td>' +
-          '<button class="btn-admin btn-ghost-admin btnEditPage" data-id="' + p.id + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">✏️</button> ' +
-          '<button class="btn-admin btn-danger-admin btnDelPage" data-id="' + p.id + '" style="padding:0.25rem 0.5rem;font-size:0.75rem;">🗑️</button>' +
-        '</td>' +
-        '</tr>';
-    }).join('');
+      // Llenar body con campos de props
+      var body = div.querySelector('.block-body');
+      if (def && def.props) {
+        def.props.forEach(function(prop) {
+          var labelEl = document.createElement('label');
+          labelEl.textContent = formatPropLabel(prop);
+          body.appendChild(labelEl);
 
-    bindClicks('.btnEditPage', editPage);
-    bindClicks('.btnDelPage', deletePage);
+          if (prop === 'content' || prop === 'description') {
+            var ta = document.createElement('textarea');
+            ta.value = block.props[prop] || '';
+            ta.addEventListener('input', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
+            body.appendChild(ta);
+          } else {
+            var input = document.createElement('input');
+            input.value = block.props[prop] || '';
+            input.addEventListener('input', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
+            body.appendChild(input);
+          }
+        });
+      }
+
+      // Eventos de la cabecera
+      var header = div.querySelector('.block-header');
+      header.addEventListener('click', function(e) {
+        if (e.target.closest('button')) return; // no toggle si click en botón
+        toggleBlock(i);
+      });
+      div.querySelector('.move-up').addEventListener('click', function(e) { e.stopPropagation(); moveBlock(i, -1); });
+      div.querySelector('.move-down').addEventListener('click', function(e) { e.stopPropagation(); moveBlock(i, 1); });
+      div.querySelector('.delete').addEventListener('click', function(e) { e.stopPropagation(); removeBlock(i); });
+
+      els.blockList.appendChild(div);
+    });
   }
 
-  function showForm(page) {
-    currentId = page ? page.id : null;
-    var isEditing = !!page;
-
-    els.formTitle.textContent = isEditing ? 'Editar Página' : 'Nueva Página';
-    els.pageId.value = page ? page.id : '';
-    els.pageSlug.value = page ? (page.slug || '') : '';
-    els.pageTitle.value = page ? (page.title || '') : '';
-    populateContentFields(page ? page.content_json : null);
-    els.pageMetaTitle.value = page ? (page.meta_title || '') : '';
-    els.pageMetaDescription.value = page ? (page.meta_description || '') : '';
-    els.pageStatus.value = page ? (page.status || 'draft') : 'draft';
-
-    // Slug es solo lectura en edición
-    els.pageSlug.readOnly = isEditing;
-    if (isEditing) {
-      els.pageSlug.style.opacity = '0.6';
-    } else {
-      els.pageSlug.style.opacity = '';
-    }
-
-    els.formCard.style.display = '';
+  function getBlockSummary(block) {
+    var def = BLOCK_TYPES.find(function(b) { return b.type === block.type; });
+    if (!def || !def.props) return '';
+    var firstProp = def.props[0];
+    var val = block.props[firstProp];
+    return val ? String(val).substring(0, 50) : '(sin configurar)';
   }
 
-  function hideForm() {
-    els.formCard.style.display = 'none';
-    els.form.reset();
-    els.pageSlug.readOnly = false;
-    els.pageSlug.style.opacity = '';
-    currentId = null;
+  function formatPropLabel(prop) {
+    return prop.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+  }
+
+  // ========== Guardar ==========
+  function collectContentJson() {
+    if (blocks.length === 0) return null;
+    return JSON.stringify(blocks);
   }
 
   function savePage() {
-    var contentJson = collectContentJson();
-
     var body = {
       slug: els.pageSlug.value.trim(),
       title: els.pageTitle.value.trim() || null,
-      content_json: contentJson,
+      content_json: collectContentJson(),
       meta_title: els.pageMetaTitle.value.trim() || null,
       meta_description: els.pageMetaDescription.value.trim() || null,
-      status: els.pageStatus.value,
+      status: els.pageStatus.value
     };
-
-    if (!body.slug) {
-      alert('El slug es obligatorio.');
-      return;
-    }
-
     var url = currentId ? '/api/pages/' + currentId : '/api/pages';
     var method = currentId ? 'PUT' : 'POST';
-
     fetch(url, {
       method: method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-      .then(function (r) {
-        if (!r.ok) return r.json().then(function (err) { throw new Error(err.error || 'Error del servidor'); });
-        return r.json();
-      })
-      .then(function () { hideForm(); loadPages(); })
-      .catch(function (err) { alert('Error: ' + err.message); });
+      body: JSON.stringify(body)
+    }).then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
+      return r.json();
+    }).then(function() {
+      hideForm();
+      loadPages();
+    }).catch(function(err) {
+      alert('Error al guardar: ' + err.message);
+    });
+  }
+
+  // ========== Cargar / Editar ==========
+  function loadPages() {
+    fetch('/api/pages?status=all')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var pages = data.pages || data;
+        els.pageCount.textContent = '(' + pages.length + ' páginas)';
+        renderTable(pages);
+      });
+  }
+
+  function renderTable(pages) {
+    els.tbody.innerHTML = '';
+    pages.forEach(function(p) {
+      var tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid #1e1e2e';
+      tr.innerHTML =
+        '<td style="padding:8px;"><code>' + escapeHtml(p.slug) + '</code></td>' +
+        '<td style="padding:8px;">' + escapeHtml(p.title || '') + '</td>' +
+        '<td style="padding:8px;"><span style="background:' + (p.status === 'published' ? '#1a3a1a' : '#3a3a1a') + ';color:' + (p.status === 'published' ? '#4caf50' : '#ffc107') + ';padding:2px 8px;border-radius:10px;font-size:11px;">' + escapeHtml(p.status) + '</span></td>' +
+        '<td style="padding:8px;"><button class="btn-edit" data-id="' + p.id + '" style="background:none;border:1px solid #3a3a4a;color:#aaa;border-radius:4px;padding:4px 8px;cursor:pointer;margin-right:4px;">✏️</button><button class="btn-delete" data-id="' + p.id + '" style="background:none;border:1px solid #3a3a4a;color:#aaa;border-radius:4px;padding:4px 8px;cursor:pointer;">🗑️</button></td>';
+      els.tbody.appendChild(tr);
+    });
+
+    mod.querySelectorAll('.btn-edit').forEach(function(btn) {
+      btn.addEventListener('click', function() { editPage(this.dataset.id); });
+    });
+    mod.querySelectorAll('.btn-delete').forEach(function(btn) {
+      btn.addEventListener('click', function() { deletePage(this.dataset.id); });
+    });
   }
 
   function editPage(id) {
     fetch('/api/pages/' + id)
-      .then(function (r) { return r.json(); })
-      .then(function (page) { showForm(page); })
-      .catch(function (err) { alert('Error al cargar página: ' + err.message); });
+      .then(function(r) { return r.json(); })
+      .then(function(page) {
+        currentId = page.id;
+        els.editorTitle.textContent = 'Editar: ' + (page.title || page.slug);
+        els.pageSlug.value = page.slug || '';
+        els.pageSlug.readOnly = true;
+        els.pageTitle.value = page.title || '';
+        els.pageMetaTitle.value = page.meta_title || '';
+        els.pageMetaDescription.value = page.meta_description || '';
+        els.pageStatus.value = page.status || 'draft';
+
+        // Parsear content_json
+        parseContentJson(page.content_json);
+        els.editor.style.display = 'block';
+        renderBlocks();
+      });
+  }
+
+  function parseContentJson(raw) {
+    blocks = [];
+    if (!raw) return;
+    try {
+      var parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        // Nuevo formato: array de bloques
+        blocks = parsed;
+      } else if (typeof parsed === 'object') {
+        // Formato antiguo: objeto clave-valor → convertir a bloques text
+        Object.keys(parsed).forEach(function(key) {
+          blocks.push({ type: 'text', props: { title: key, content: parsed[key] } });
+        });
+      }
+    } catch(e) {
+      blocks = [];
+    }
   }
 
   function deletePage(id) {
-    if (!confirm('¿Eliminar esta página? Esta acción no se puede deshacer.')) return;
+    if (!confirm('¿Eliminar esta página?')) return;
     fetch('/api/pages/' + id, { method: 'DELETE' })
-      .then(function (r) {
-        if (!r.ok) throw new Error('Error del servidor');
-        return r.json();
-      })
-      .then(function () { loadPages(); })
-      .catch(function (err) { alert('Error: ' + err.message); });
+      .then(function() { loadPages(); });
   }
 
-  function bindClicks(selector, handler) {
-    var btns = document.querySelectorAll(selector);
-    for (var i = 0; i < btns.length; i++) {
-      btns[i].addEventListener('click', function () { handler(parseInt(this.dataset.id, 10)); });
-    }
+  function showNewForm() {
+    currentId = null;
+    els.editorTitle.textContent = 'Nueva Página';
+    els.pageSlug.value = '';
+    els.pageSlug.readOnly = false;
+    els.pageTitle.value = '';
+    els.pageMetaTitle.value = '';
+    els.pageMetaDescription.value = '';
+    els.pageStatus.value = 'draft';
+    blocks = [];
+    els.editor.style.display = 'block';
+    renderBlocks();
   }
 
-  /** Llena el contenedor de campos clave-valor desde un JSON string. */
-  function populateContentFields(contentJson) {
-    els.pageContentFields.innerHTML = '';
-    var pairs = [];
-    if (contentJson) {
-      try {
-        var obj = JSON.parse(contentJson);
-        if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
-          var keys = Object.keys(obj);
-          for (var i = 0; i < keys.length; i++) {
-            pairs.push({ key: keys[i], value: obj[keys[i]] !== null && obj[keys[i]] !== undefined ? String(obj[keys[i]]) : '' });
-          }
-        }
-      } catch (e) { /* JSON inválido — se muestra vacío */ }
-    }
-    if (pairs.length === 0) {
-      addContentField('', '');
-    } else {
-      for (var j = 0; j < pairs.length; j++) {
-        addContentField(pairs[j].key, pairs[j].value);
-      }
-    }
+  function hideForm() {
+    els.editor.style.display = 'none';
+    currentId = null;
+    blocks = [];
   }
 
-  /** Agrega una fila con inputs de clave, valor y botón de eliminar. */
-  function addContentField(key, value) {
-    var row = document.createElement('div');
-    row.className = 'content-field-row';
-    row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;';
-
-    var bullet = document.createElement('span');
-    bullet.style.cssText = 'display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--color-accent);flex-shrink:0;align-self:center;';
-
-    var keyInput = document.createElement('input');
-    keyInput.type = 'text';
-    keyInput.className = 'form-input-admin';
-    keyInput.placeholder = 'Ej: hero_title';
-    keyInput.value = key || '';
-    keyInput.style.cssText = 'flex:1;';
-
-    var valueInput = document.createElement('input');
-    valueInput.type = 'text';
-    valueInput.className = 'form-input-admin';
-    valueInput.placeholder = 'Ej: Bienvenidos a Straton Audio';
-    valueInput.value = value || '';
-    valueInput.style.cssText = 'flex:2;';
-
-    var delBtn = document.createElement('button');
-    delBtn.type = 'button';
-    delBtn.textContent = '✕';
-    delBtn.style.cssText = 'flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:none;background:transparent;color:var(--color-text-muted);cursor:pointer;font-size:0.875rem;transition:all 200ms ease;';
-    delBtn.addEventListener('mouseenter', function () { delBtn.style.color = 'var(--color-danger)'; delBtn.style.background = 'rgba(229,62,62,0.1)'; });
-    delBtn.addEventListener('mouseleave', function () { delBtn.style.color = 'var(--color-text-muted)'; delBtn.style.background = 'transparent'; });
-    delBtn.addEventListener('click', function () { removeContentField(row); });
-
-    row.appendChild(bullet);
-    row.appendChild(keyInput);
-    row.appendChild(valueInput);
-    row.appendChild(delBtn);
-    els.pageContentFields.appendChild(row);
-
-    updateContentFieldButtons();
+  // Previsualizar
+  function previewPage() {
+    var slug = els.pageSlug.value.trim();
+    if (!slug) { alert('Define un slug primero'); return; }
+    window.open('/' + slug, '_blank');
   }
 
-  /** Elimina una fila. Si es la última, la vacía en vez de eliminarla. */
-  function removeContentField(row) {
-    var rows = els.pageContentFields.querySelectorAll('.content-field-row');
-    if (rows.length <= 1) {
-      // Vaciar los inputs en vez de eliminar
-      var inputs = row.querySelectorAll('input');
-      if (inputs[0]) inputs[0].value = '';
-      if (inputs[1]) inputs[1].value = '';
-      return;
-    }
-    row.remove();
-    updateContentFieldButtons();
-  }
+  // Eventos
+  els.btnNew.addEventListener('click', showNewForm);
+  els.btnSave.addEventListener('click', savePage);
+  els.btnCancel.addEventListener('click', hideForm);
+  els.btnPreview.addEventListener('click', previewPage);
 
-  /** Oculta los botones ✕ si solo queda una fila. */
-  function updateContentFieldButtons() {
-    var rows = els.pageContentFields.querySelectorAll('.content-field-row');
-    for (var i = 0; i < rows.length; i++) {
-      var btn = rows[i].querySelector('button');
-      if (rows.length === 1) {
-        btn.style.display = 'none';
-      } else {
-        btn.style.display = '';
-      }
-    }
-  }
-
-  /** Recolecta todos los pares clave-valor y los convierte en un JSON string. */
-  function collectContentJson() {
-    var rows = els.pageContentFields.querySelectorAll('.content-field-row');
-    var obj = {};
-    for (var i = 0; i < rows.length; i++) {
-      var inputs = rows[i].querySelectorAll('input');
-      var key = inputs[0] ? inputs[0].value.trim() : '';
-      var value = inputs[1] ? inputs[1].value.trim() : '';
-      if (key) {
-        obj[key] = value;
-      }
-    }
-    if (Object.keys(obj).length === 0) return null;
-    return JSON.stringify(obj);
-  }
-
-  function esc(str) {
+  // Util
+  function escapeHtml(str) {
     if (!str) return '';
-    var div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+
+  // Iniciar
+  buildPalette();
+  loadPages();
 })();
 </script>
