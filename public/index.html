@@ -150,6 +150,10 @@
       transition: background 0.2s;
     }
     .contact-form-dynamic button:hover { background: var(--color-accent-hover, #1ed760); }
+    .contact-form-dynamic button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .contact-form-status { font-size: 0.9rem; min-height: 1.2em; }
+    .contact-form-status.success { color: var(--color-accent, #1db954); }
+    .contact-form-status.error { color: #ff4444; }
 
     /* --- CTA --- */
     .block-cta .cta-inner {

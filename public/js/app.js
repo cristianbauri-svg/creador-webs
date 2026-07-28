@@ -1490,7 +1490,7 @@ ${ev.before_media_url && ev.after_media_url ? `
   function renderProductCarouselBlock(props) {
     var sec = sectionWrapper('product-carousel', '<h2 class="block-section-title">' + esc(props.section_title || 'Productos') + '</h2><div class="product-carousel-new"></div>');
     setTimeout(function() {
-      initDynamicProductCarousel(sec.querySelector('.product-carousel-new'), props.max_items);
+      initDynamicProductCarousel(sec.querySelector('.product-carousel-new'), props.max_items, props.category);
     }, 0);
     return sec;
   }
@@ -1515,7 +1515,65 @@ ${ev.before_media_url && ev.after_media_url ? `
   function renderContactForm(props) {
     var title = props.title ? '<h2 class="block-section-title">' + esc(props.title) + '</h2>' : '';
     var desc = props.description ? '<p>' + esc(props.description) + '</p>' : '';
-    return sectionWrapper('contact-form', title + desc + '<form class="contact-form-dynamic"><input type="text" placeholder="Nombre" required><input type="email" placeholder="Correo" required><textarea placeholder="Mensaje"></textarea><button type="submit">Enviar</button></form>');
+    var formHtml = '<form class="contact-form-dynamic">' +
+      '<input type="text" name="customer_name" placeholder="Nombre" required>' +
+      '<input type="email" name="email" placeholder="Correo" required>' +
+      '<input type="tel" name="phone" placeholder="Teléfono">' +
+      '<textarea name="notes" placeholder="Mensaje" required></textarea>' +
+      '<button type="submit">Enviar</button>' +
+      '<div class="contact-form-status"></div>' +
+      '</form>';
+    var sec = sectionWrapper('contact-form', title + desc + formHtml);
+    initDynamicContactForm(sec.querySelector('.contact-form-dynamic'));
+    return sec;
+  }
+
+  function initDynamicContactForm(form) {
+    if (!form) return;
+    var statusEl = form.querySelector('.contact-form-status');
+    var submitBtn = form.querySelector('button[type="submit"]');
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      var customerName = form.querySelector('[name="customer_name"]').value.trim();
+      var email = form.querySelector('[name="email"]').value.trim();
+      var phone = form.querySelector('[name="phone"]').value.trim();
+      var notes = form.querySelector('[name="notes"]').value.trim();
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Enviando...';
+      statusEl.className = 'contact-form-status';
+      statusEl.textContent = '';
+
+      fetch('/api/quotations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_name: customerName,
+          email: email,
+          phone: phone,
+          notes: notes
+        })
+      })
+        .then(function(r) {
+          if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || 'Error del servidor'); });
+          return r.json();
+        })
+        .then(function() {
+          statusEl.className = 'contact-form-status success';
+          statusEl.textContent = 'Mensaje enviado. ¡Gracias!';
+          form.reset();
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Enviar';
+        })
+        .catch(function(err) {
+          statusEl.className = 'contact-form-status error';
+          statusEl.textContent = err.message || 'Error al enviar. Intenta de nuevo.';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Enviar';
+        });
+    });
   }
 
   function renderCTA(props) {
@@ -1543,8 +1601,10 @@ ${ev.before_media_url && ev.after_media_url ? `
   }
 
   // ========== Carrusel dinámico de productos ==========
-  function initDynamicProductCarousel(container, maxItems) {
-    fetch('/api/products?per_page=20&status=published')
+  function initDynamicProductCarousel(container, maxItems, category) {
+    var fetchUrl = '/api/products?per_page=20&status=published';
+    if (category) fetchUrl += '&category=' + encodeURIComponent(category);
+    fetch(fetchUrl)
       .then(function(r) { return r.json(); })
       .then(function(products) {
         var items = Array.isArray(products) ? products : (products.products || []);
