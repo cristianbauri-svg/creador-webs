@@ -38,7 +38,7 @@ async function listPages(request: Request, env: Env): Promise<Response> {
 
     let whereClause = "WHERE 1=1";
     const params: unknown[] = [];
-    if (status) {
+    if (status && status !== "all") {
       whereClause += " AND status = ?";
       params.push(status);
     }
