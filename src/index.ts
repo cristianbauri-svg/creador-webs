@@ -36,10 +36,13 @@ export default {
       return handleApi(request, env, pathname);
     }
 
-    // Páginas dinámicas: buscar slug en D1 antes de servir assets
+    // Páginas dinámicas: buscar slug en D1 antes de servir assets.
+    // Solo para requests HTML — evita una consulta D1 en cada asset estático.
+    const accept = request.headers.get("Accept") || "";
+    const isHTMLRequest = accept.includes("text/html") || pathname === "/" || !pathname.includes(".");
     const slug = pathname.replace(/^\/+/, "").trim();
     let page: Record<string, unknown> | null = null;
-    if (slug) {
+    if (slug && isHTMLRequest) {
       try {
         page = await env.STRATON_DB.prepare(
           "SELECT * FROM pages WHERE slug = ? AND status = 'published'"

@@ -1443,7 +1443,7 @@ ${ev.before_media_url && ev.after_media_url ? `
   function renderText(props) {
     return sectionWrapper('text',
       '<h2 class="block-text-title">' + esc(props.title) + '</h2>' +
-      '<div class="block-text-content">' + (props.content || '') + '</div>'
+      '<div class="block-text-content">' + esc(props.content || '') + '</div>'
     );
   }
 
@@ -1544,7 +1544,7 @@ ${ev.before_media_url && ev.after_media_url ? `
 
   // ========== Carrusel dinámico de productos ==========
   function initDynamicProductCarousel(container, maxItems) {
-    fetch('/api/products?limit=20')
+    fetch('/api/products?per_page=20&status=published')
       .then(function(r) { return r.json(); })
       .then(function(products) {
         var items = Array.isArray(products) ? products : (products.products || []);
@@ -1556,8 +1556,8 @@ ${ev.before_media_url && ev.after_media_url ? `
         items.forEach(function(prod) {
           var card = document.createElement('div');
           card.className = 'pc-card';
-          card.innerHTML = '<img src="' + escapeAttr(prod.image_url || '') + '" alt="' + esc(prod.name) + '">' +
-            '<div class="pc-info"><h3>' + esc(prod.name) + '</h3><p>' + esc(prod.description || '') + '</p></div>';
+          card.innerHTML = '<img src="' + escapeAttr(prod.image_url || '') + '" alt="' + esc(prod.title) + '">' +
+            '<div class="pc-info"><h3>' + esc(prod.title) + '</h3><p>' + esc(prod.description || '') + '</p></div>';
           track.appendChild(card);
         });
         container.innerHTML = '';
@@ -1590,10 +1590,12 @@ ${ev.before_media_url && ev.after_media_url ? `
         if (pkgs.length === 0) { container.innerHTML = '<p class="empty-text">No hay paquetes disponibles.</p>'; return; }
         var html = '';
         pkgs.forEach(function(pkg) {
+          var includes = [];
+          try { includes = JSON.parse(pkg.includes_json || '[]'); } catch(e) {}
           html += '<div class="package-card-dynamic">' +
             '<h3>' + esc(pkg.name) + '</h3>' +
-            '<div class="package-price">' + esc(pkg.price) + '</div>' +
-            '<ul>' + (pkg.features || []).map(function(f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ul>' +
+            '<div class="package-price">' + esc(pkg.price_range || '') + '</div>' +
+            '<ul>' + includes.map(function(f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ul>' +
             '<button class="btn-package-quote">Cotizar</button>' +
             '</div>';
         });
@@ -1609,7 +1611,9 @@ ${ev.before_media_url && ev.after_media_url ? `
   }
   function escapeAttr(str) {
     if (!str) return '';
-    return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var s = String(str).trim();
+    if (/^(javascript|data):/i.test(s)) return '#';
+    return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   // =========================================================
