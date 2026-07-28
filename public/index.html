@@ -19,7 +19,7 @@
 
   <!-- Estilos del carrito de cotización y página dinámica -->
   <style>
-    /* ====== Página dinámica ====== */
+    /* ====== Página dinámica (paleta Straton Audio) ====== */
     .dynamic-page {
       max-width: 960px;
       margin: 120px auto 80px;
@@ -48,10 +48,10 @@
     .block-hero .hero-content h1 { font-size: 2.8rem; font-weight: 800; margin-bottom: 0.5rem; }
     .block-hero .hero-content p { font-size: 1.2rem; margin-bottom: 1.5rem; opacity: 0.9; }
     .btn-hero {
-      display: inline-block; background: #ff6b35; color: #fff; padding: 12px 28px; border-radius: 6px;
+      display: inline-block; background: var(--color-accent, #1db954); color: #fff; padding: 12px 28px; border-radius: 6px;
       text-decoration: none; font-weight: 600; transition: background 0.2s;
     }
-    .btn-hero:hover { background: #e55a2b; }
+    .btn-hero:hover { background: var(--color-accent-hover, #1ed760); }
 
     /* --- Texto --- */
     .block-text .block-text-title {
@@ -66,17 +66,18 @@
       display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-top: 1rem;
     }
     .card-item {
-      background: #16162a; border-radius: 10px; overflow: hidden; padding: 20px; text-align: center;
-      border: 1px solid #2a2a3a;
+      background: var(--color-card, #161616); border-radius: 10px; overflow: hidden; padding: 20px; text-align: center;
+      border: 1px solid var(--color-border, #2a2a2a);
     }
     .card-item img { width: 100%; height: 180px; object-fit: cover; border-radius: 6px; margin-bottom: 1rem; }
-    .card-item h3 { font-size: 1.2rem; color: #fff; margin-bottom: 0.5rem; }
-    .card-item p { font-size: 0.9rem; color: #b0b0b0; margin-bottom: 1rem; }
-    .card-link { color: #ff6b35; text-decoration: none; font-weight: 600; }
+    .card-item h3 { font-size: 1.2rem; color: var(--color-text, #fff); margin-bottom: 0.5rem; }
+    .card-item p { font-size: 0.9rem; color: var(--color-text-secondary, #b0b0b0); margin-bottom: 1rem; }
+    .card-link { color: var(--color-accent, #1db954); text-decoration: none; font-weight: 600; }
+    .card-link:hover { color: var(--color-accent-hover, #1ed760); }
 
     /* --- Imagen --- */
     .block-full-image { width: 100%; border-radius: 10px; }
-    .block-image-caption { text-align: center; color: #888; font-size: 0.9rem; margin-top: 0.5rem; }
+    .block-image-caption { text-align: center; color: var(--color-text-muted, #888); font-size: 0.9rem; margin-top: 0.5rem; }
 
     /* --- Galería --- */
     .gallery-grid {
@@ -101,33 +102,36 @@
       display: flex; flex-direction: column; align-items: center; text-align: center;
     }
     .pc-card img {
-      width: 100%; max-height: 400px; object-fit: contain; border-radius: 12px; margin-bottom: 1.5rem;
+      width: 100%; height: 300px; object-fit: contain; border-radius: 12px; margin-bottom: 1.5rem;
+      background: var(--color-bg-alt, #0a0a0a);
     }
-    .pc-info h3 { font-size: 1.8rem; color: #fff; margin-bottom: 0.5rem; }
-    .pc-info p { font-size: 1.1rem; color: #ccc; line-height: 1.6; }
+    .pc-info h3 { font-size: 1.8rem; color: var(--color-text, #fff); margin-bottom: 0.5rem; font-family: var(--font-primary, system-ui, sans-serif); }
+    .pc-info p { font-size: 1.1rem; color: var(--color-text-secondary, #ccc); line-height: 1.6; }
 
     /* --- Paquetes --- */
     .packages-grid-dynamic {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin-top: 1rem;
     }
     .package-card-dynamic {
-      background: #16162a; border: 1px solid #2a2a3a; border-radius: 10px; padding: 20px; text-align: center;
+      background: var(--color-card, #161616); border: 1px solid var(--color-border, #2a2a2a); border-radius: 10px; padding: 20px; text-align: center;
     }
-    .package-card-dynamic h3 { font-size: 1.3rem; color: #fff; }
-    .package-price { font-size: 1.8rem; font-weight: 700; color: #ff6b35; margin: 0.5rem 0; }
-    .package-card-dynamic ul { list-style: none; padding: 0; color: #ccc; margin: 1rem 0; }
+    .package-card-dynamic h3 { font-size: 1.3rem; color: var(--color-text, #fff); }
+    .package-price { font-size: 1.8rem; font-weight: 700; color: var(--color-gold, #c9a96e); margin: 0.5rem 0; }
+    .package-card-dynamic ul { list-style: none; padding: 0; color: var(--color-text-secondary, #ccc); margin: 1rem 0; }
     .package-card-dynamic ul li { padding: 4px 0; }
-    .btn-package-quote { background: #ff6b35; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+    .btn-package-quote { background: var(--color-accent, #1db954); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+    .btn-package-quote:hover { background: var(--color-accent-hover, #1ed760); }
 
     /* --- Testimonios --- */
     .testimonials-slider {
       display: flex; gap: 1rem; overflow-x: auto; padding: 1rem 0;
     }
     .testimonial-item {
-      background: #1e1e2e; border-radius: 10px; padding: 20px; min-width: 280px; flex-shrink: 0;
+      background: var(--color-card, #1a1a1a); border-radius: 10px; padding: 20px; min-width: 280px; flex-shrink: 0;
+      border: 1px solid var(--color-border, #2a2a2a);
     }
-    .testimonial-item p { font-style: italic; color: #ccc; }
-    .testimonial-item span { display: block; margin-top: 0.5rem; color: #888; }
+    .testimonial-item p { font-style: italic; color: var(--color-text-secondary, #ccc); }
+    .testimonial-item span { display: block; margin-top: 0.5rem; color: var(--color-text-muted, #888); }
 
     /* --- Formulario de contacto --- */
     .contact-form-dynamic {
@@ -135,22 +139,26 @@
     }
     .contact-form-dynamic input,
     .contact-form-dynamic textarea {
-      background: #1e1e2e; border: 1px solid #2a2a3a; color: #ddd; padding: 10px; border-radius: 6px;
+      background: var(--color-bg-alt, #0a0a0a); border: 1px solid var(--color-border, #2a2a2a); color: var(--color-text, #ddd); padding: 10px; border-radius: 6px;
+      font-family: var(--font-primary, system-ui, sans-serif);
     }
     .contact-form-dynamic button {
-      background: #ff6b35; color: #fff; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600;
+      background: var(--color-accent, #1db954); color: #fff; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600;
+      transition: background 0.2s;
     }
+    .contact-form-dynamic button:hover { background: var(--color-accent-hover, #1ed760); }
 
     /* --- CTA --- */
     .block-cta .cta-inner {
-      text-align: center; padding: 3rem 2rem; border-radius: 12px; color: #fff;
+      text-align: center; padding: 3rem 2rem; border-radius: 12px; color: var(--color-text, #fff);
     }
     .block-cta .cta-inner h2 { font-size: 2rem; margin-bottom: 0.5rem; }
     .block-cta .cta-inner p { font-size: 1.1rem; margin-bottom: 1.5rem; }
     .btn-cta {
-      display: inline-block; background: #ff6b35; color: #fff; padding: 12px 28px; border-radius: 6px;
-      text-decoration: none; font-weight: 600;
+      display: inline-block; background: var(--color-accent, #1db954); color: #fff; padding: 12px 28px; border-radius: 6px;
+      text-decoration: none; font-weight: 600; transition: background 0.2s;
     }
+    .btn-cta:hover { background: var(--color-accent-hover, #1ed760); }
 
     /* --- Espaciador --- */
     .dynamic-spacer { width: 100%; }
@@ -160,20 +168,22 @@
       text-align: center; margin-bottom: 2rem;
     }
     .block-section-header h2 {
-      font-size: 2rem; color: #fff; display: flex; align-items: center; justify-content: center; gap: 10px;
+      font-size: 2rem; color: var(--color-text, #fff); display: flex; align-items: center; justify-content: center; gap: 10px;
     }
     .section-header-icon { font-size: 2rem; }
 
     /* Título de sección genérico */
     .block-section-title {
       font-size: 2rem; font-weight: 700; color: var(--color-accent, #1db954); margin-bottom: 1.5rem; text-align: center;
+      font-family: var(--font-primary, system-ui, sans-serif);
     }
 
-    .empty-text { color: #666; text-align: center; padding: 20px; }
+    .empty-text { color: var(--color-text-muted, #666); text-align: center; padding: 20px; }
 
     @media (max-width: 768px) {
       .dynamic-page { margin-top: 100px; }
       .block-hero .hero-content h1 { font-size: 2rem; }
+      .pc-card img { height: 200px; }
       .pc-info h3 { font-size: 1.4rem; }
       .pc-info p { font-size: 1rem; }
     }
