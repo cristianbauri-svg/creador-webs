@@ -2370,3 +2370,8 @@ a.whatsapp-float {
     min-width: 260px;
   }
 }
+
+/* ====== Scroll anchor offset (compensa navbar fija) ====== */
+section[id] {
+  scroll-margin-top: var(--nav-height, 72px);
+}
