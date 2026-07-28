@@ -1336,9 +1336,9 @@ ${ev.before_media_url && ev.after_media_url ? `
   // Página dinámica (slugs desde el dashboard)
   // =========================================================
   function renderDynamicPage(data) {
-    // 1. Actualizar meta tags
-    document.title = data.meta_title || data.title || "Straton Audio";
+    document.title = data.meta_title || data.title || 'Straton Audio';
 
+    // Actualizar meta description y og tags
     var metaDesc = document.getElementById('meta-description');
     var ogDesc = document.getElementById('meta-og-desc');
     var ogTitle = document.getElementById('meta-og-title');
@@ -1348,51 +1348,268 @@ ${ev.before_media_url && ev.after_media_url ? `
     }
     if (data.title && ogTitle) ogTitle.setAttribute('content', data.title);
 
-    // 2. Ocultar secciones de la landing
-    var landingIds = ['hero', 'statsBanner', 'servicios', 'productos', 'paquetes', 'portafolio', 'testimonios', 'contacto'];
-    for (var i = 0; i < landingIds.length; i++) {
-      var el = document.getElementById(landingIds[i]);
+    // Ocultar secciones de la landing
+    var landingIds = ['hero','statsBanner','servicios','productos','paquetes','portafolio','testimonios','contacto'];
+    landingIds.forEach(function(id) {
+      var el = document.getElementById(id);
       if (el) el.style.display = 'none';
-    }
+    });
+    var extras = document.querySelectorAll('.logo-marquee, .eq-console, .cart-toggle, .whatsapp-float, #cart-bar');
+    extras.forEach(function(el) { el.style.display = 'none'; });
 
-    // Ocultar elementos decorativos y flotantes
-    var extras = document.querySelectorAll('.logo-marquee, .eq-console, .cart-toggle, .whatsapp-float');
-    for (var j = 0; j < extras.length; j++) {
-      extras[j].style.display = 'none';
-    }
-
-    // Ocultar barra de cotización si existe
-    var cartBar = document.getElementById('cart-bar');
-    if (cartBar) cartBar.style.display = 'none';
-
-    // 3. Mostrar contenedor dinámico
+    // Mostrar contenedor dinámico
     var container = document.getElementById('dynamic-page');
     if (!container) return;
     container.style.display = '';
+    container.innerHTML = '';
 
-    // 4. Renderizar bloques de contenido desde content_json
-    var contentJson = data.content_json || {};
-    var entries = Object.entries(contentJson);
-    if (entries.length === 0) {
-      container.innerHTML = '<div class="dynamic-empty"><p>Esta página no tiene contenido aún.</p></div>';
+    // Detectar formato de content_json
+    var blocks;
+    if (Array.isArray(data.content_json)) {
+      // Nuevo formato: array de bloques [{type, props}, ...]
+      blocks = data.content_json;
+    } else if (typeof data.content_json === 'object' && data.content_json !== null) {
+      // Formato antiguo: objeto clave-valor → convertir a bloques text
+      blocks = [];
+      Object.keys(data.content_json).forEach(function(key) {
+        blocks.push({ type: 'text', props: { title: key, content: String(data.content_json[key] || '') } });
+      });
+    } else {
+      blocks = [];
+    }
+
+    if (blocks.length === 0) {
+      container.innerHTML = '<div class="dynamic-empty">Página sin contenido configurado.</div>';
       return;
     }
 
-    var html = '';
-    for (var k = 0; k < entries.length; k++) {
-      var key = entries[k][0];
-      var value = entries[k][1];
-      // Formatear clave: snake_case o kebab-case → título legible
-      var label = key
-        .replace(/[_-]/g, ' ')
-        .replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+    blocks.forEach(function(block) {
+      var el = renderBlock(block);
+      if (el) container.appendChild(el);
+    });
+  }
 
-      html += '<section class="dynamic-block">';
-      html += '<h2 class="dynamic-block-title">' + escapeHtml(label) + '</h2>';
-      html += '<div class="dynamic-block-content">' + escapeHtml(String(value || '')) + '</div>';
-      html += '</section>';
+  // =========================================================
+  // Renderizador de bloques dinámicos
+  // =========================================================
+
+  function renderBlock(block) {
+    if (!block || !block.type) return null;
+    switch (block.type) {
+      case 'hero': return renderHero(block.props);
+      case 'text': return renderText(block.props);
+      case 'cards': return renderCards(block.props);
+      case 'image': return renderImage(block.props);
+      case 'gallery': return renderGallery(block.props);
+      case 'video': return renderVideo(block.props);
+      case 'product-carousel': return renderProductCarouselBlock(block.props);
+      case 'packages': return renderPackages(block.props);
+      case 'testimonials': return renderTestimonials(block.props);
+      case 'contact-form': return renderContactForm(block.props);
+      case 'cta': return renderCTA(block.props);
+      case 'spacer': return renderSpacer(block.props);
+      case 'section-header': return renderSectionHeader(block.props);
+      default: return null;
     }
-    container.innerHTML = html;
+  }
+
+  function sectionWrapper(className, inner) {
+    var sec = document.createElement('section');
+    sec.className = 'dynamic-block block-' + className;
+    sec.innerHTML = inner;
+    return sec;
+  }
+
+  function renderHero(props) {
+    var style = props.bg_url ? 'background-image:url(' + escapeAttr(props.bg_url) + ');' : '';
+    if (props.bg_type === 'video' && props.bg_url) {
+      return sectionWrapper('hero',
+        '<video class="hero-bg-video" autoplay muted loop playsinline><source src="' + escapeAttr(props.bg_url) + '" type="video/mp4"></video>' +
+        '<div class="hero-overlay"></div>' +
+        '<div class="hero-content"><h1>' + esc(props.title) + '</h1><p>' + esc(props.subtitle) + '</p>' +
+        (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '" class="btn-hero">' + esc(props.button_text) + '</a>' : '') +
+        '</div>'
+      );
+    }
+    return sectionWrapper('hero',
+      '<div class="hero-bg-img" style="' + style + '"></div>' +
+      '<div class="hero-overlay"></div>' +
+      '<div class="hero-content"><h1>' + esc(props.title) + '</h1><p>' + esc(props.subtitle) + '</p>' +
+      (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '" class="btn-hero">' + esc(props.button_text) + '</a>' : '') +
+      '</div>'
+    );
+  }
+
+  function renderText(props) {
+    return sectionWrapper('text',
+      '<h2 class="block-text-title">' + esc(props.title) + '</h2>' +
+      '<div class="block-text-content">' + (props.content || '') + '</div>'
+    );
+  }
+
+  function renderCards(props) {
+    var title = props.section_title ? '<h2 class="block-section-title">' + esc(props.section_title) + '</h2>' : '';
+    var cardsHtml = '';
+    var cards = Array.isArray(props.cards) ? props.cards : [];
+    cards.forEach(function(card) {
+      cardsHtml += '<div class="card-item">' +
+        (card.image ? '<img src="' + escapeAttr(card.image) + '" alt="' + esc(card.title) + '" class="card-img">' : '') +
+        '<h3>' + esc(card.title) + '</h3>' +
+        '<p>' + esc(card.description) + '</p>' +
+        (card.link ? '<a href="' + escapeAttr(card.link) + '" class="card-link">Ver más</a>' : '') +
+        '</div>';
+    });
+    return sectionWrapper('cards', title + '<div class="cards-grid">' + cardsHtml + '</div>');
+  }
+
+  function renderImage(props) {
+    var img = '<img src="' + escapeAttr(props.url) + '" alt="' + esc(props.alt || '') + '" class="block-full-image">';
+    var caption = props.caption ? '<p class="block-image-caption">' + esc(props.caption) + '</p>' : '';
+    return sectionWrapper('image', img + caption);
+  }
+
+  function renderGallery(props) {
+    var title = props.section_title ? '<h2 class="block-section-title">' + esc(props.section_title) + '</h2>' : '';
+    var imagesHtml = '';
+    var images = Array.isArray(props.images) ? props.images : [];
+    images.forEach(function(img) {
+      imagesHtml += '<div class="gallery-item"><img src="' + escapeAttr(img.url) + '" alt="' + esc(img.alt || '') + '"></div>';
+    });
+    return sectionWrapper('gallery', title + '<div class="gallery-grid">' + imagesHtml + '</div>');
+  }
+
+  function renderVideo(props) {
+    var embed = '';
+    if (props.url) {
+      embed = '<div class="video-container"><iframe src="' + escapeAttr(props.url) + '" frameborder="0" allowfullscreen></iframe></div>';
+    }
+    var title = props.title ? '<h2 class="block-section-title">' + esc(props.title) + '</h2>' : '';
+    return sectionWrapper('video', title + embed);
+  }
+
+  function renderProductCarouselBlock(props) {
+    var sec = sectionWrapper('product-carousel', '<h2 class="block-section-title">' + esc(props.section_title || 'Productos') + '</h2><div class="product-carousel-new"></div>');
+    setTimeout(function() {
+      initDynamicProductCarousel(sec.querySelector('.product-carousel-new'), props.max_items);
+    }, 0);
+    return sec;
+  }
+
+  function renderPackages(props) {
+    var title = props.section_title ? '<h2 class="block-section-title">' + esc(props.section_title) + '</h2>' : '';
+    var sec = sectionWrapper('packages', title + '<div class="packages-grid-dynamic"></div>');
+    fetchPackagesForDynamic(sec.querySelector('.packages-grid-dynamic'));
+    return sec;
+  }
+
+  function renderTestimonials(props) {
+    var title = props.section_title ? '<h2 class="block-section-title">' + esc(props.section_title) + '</h2>' : '';
+    var testimonials = Array.isArray(props.testimonials) ? props.testimonials : [];
+    var html = '';
+    testimonials.forEach(function(t) {
+      html += '<div class="testimonial-item"><p>' + esc(t.text) + '</p><span>' + esc(t.author) + '</span></div>';
+    });
+    return sectionWrapper('testimonials', title + '<div class="testimonials-slider">' + html + '</div>');
+  }
+
+  function renderContactForm(props) {
+    var title = props.title ? '<h2 class="block-section-title">' + esc(props.title) + '</h2>' : '';
+    var desc = props.description ? '<p>' + esc(props.description) + '</p>' : '';
+    return sectionWrapper('contact-form', title + desc + '<form class="contact-form-dynamic"><input type="text" placeholder="Nombre" required><input type="email" placeholder="Correo" required><textarea placeholder="Mensaje"></textarea><button type="submit">Enviar</button></form>');
+  }
+
+  function renderCTA(props) {
+    var bg = props.bg_color ? 'background-color:' + escapeAttr(props.bg_color) + ';' : '';
+    return sectionWrapper('cta',
+      '<div class="cta-inner" style="' + bg + '">' +
+      '<h2>' + esc(props.title) + '</h2>' +
+      '<p>' + esc(props.subtitle) + '</p>' +
+      (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '" class="btn-cta">' + esc(props.button_text) + '</a>' : '') +
+      '</div>'
+    );
+  }
+
+  function renderSpacer(props) {
+    var h = parseInt(props.height) || 40;
+    var div = document.createElement('div');
+    div.className = 'dynamic-spacer';
+    div.style.height = h + 'px';
+    return div;
+  }
+
+  function renderSectionHeader(props) {
+    var icon = props.icon ? '<span class="section-header-icon">' + esc(props.icon) + '</span>' : '';
+    return sectionWrapper('section-header', icon + '<h2>' + esc(props.title) + '</h2>');
+  }
+
+  // ========== Carrusel dinámico de productos ==========
+  function initDynamicProductCarousel(container, maxItems) {
+    fetch('/api/products?limit=20')
+      .then(function(r) { return r.json(); })
+      .then(function(products) {
+        var items = Array.isArray(products) ? products : (products.products || []);
+        if (maxItems && items.length > maxItems) items = items.slice(0, maxItems);
+        if (items.length === 0) { container.innerHTML = '<p class="empty-text">No hay productos disponibles.</p>'; return; }
+
+        var track = document.createElement('div');
+        track.className = 'pc-track';
+        items.forEach(function(prod) {
+          var card = document.createElement('div');
+          card.className = 'pc-card';
+          card.innerHTML = '<img src="' + escapeAttr(prod.image_url || '') + '" alt="' + esc(prod.name) + '">' +
+            '<div class="pc-info"><h3>' + esc(prod.name) + '</h3><p>' + esc(prod.description || '') + '</p></div>';
+          track.appendChild(card);
+        });
+        container.innerHTML = '';
+        container.appendChild(track);
+
+        var cards = track.querySelectorAll('.pc-card');
+        var idx = 0;
+        var total = cards.length;
+        if (total === 0) return;
+        function show(i) {
+          track.style.transform = 'translateX(-' + (i * 100) + '%)';
+        }
+        show(0);
+        setInterval(function() {
+          idx = (idx + 1) % total;
+          show(idx);
+        }, 3500);
+      })
+      .catch(function() {
+        container.innerHTML = '<p class="empty-text">Error al cargar productos.</p>';
+      });
+  }
+
+  // ========== Fetch paquetes para bloque dinámico ==========
+  function fetchPackagesForDynamic(container) {
+    fetch('/api/packages')
+      .then(function(r) { return r.json(); })
+      .then(function(packages) {
+        var pkgs = Array.isArray(packages) ? packages : (packages.packages || []);
+        if (pkgs.length === 0) { container.innerHTML = '<p class="empty-text">No hay paquetes disponibles.</p>'; return; }
+        var html = '';
+        pkgs.forEach(function(pkg) {
+          html += '<div class="package-card-dynamic">' +
+            '<h3>' + esc(pkg.name) + '</h3>' +
+            '<div class="package-price">' + esc(pkg.price) + '</div>' +
+            '<ul>' + (pkg.features || []).map(function(f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ul>' +
+            '<button class="btn-package-quote">Cotizar</button>' +
+            '</div>';
+        });
+        container.innerHTML = html;
+      })
+      .catch(function() { container.innerHTML = '<p class="empty-text">Error al cargar paquetes.</p>'; });
+  }
+
+  // Utilidades para el renderizador de bloques
+  function esc(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escapeAttr(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   // =========================================================
