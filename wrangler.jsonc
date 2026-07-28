@@ -8,12 +8,8 @@
   ],
   "vars": {
     "ENVIRONMENT": "production",
-    // TODO antes de desplegar: reemplazar con los valores reales de la app
-    // de Cloudflare Access que protege /admin/* (Zero Trust > Access >
-    // Applications > stratonaudio.com.co). No pude obtenerlos por API: el
-    // token de Vault no tiene permiso "Access: Apps and Policies Read".
-    "CF_ACCESS_TEAM_DOMAIN": "REEMPLAZAR_TEAM_DOMAIN",
-    "CF_ACCESS_AUD": "REEMPLAZAR_AUD"
+    "CF_ACCESS_TEAM_DOMAIN": "divine-band-3e2f",
+    "CF_ACCESS_AUD": "1ea2c0985c3902126727928ac8bf39356f04b64a07958836b2592075decbfbf1"
   },
   "assets": {
     "directory": "./public",
