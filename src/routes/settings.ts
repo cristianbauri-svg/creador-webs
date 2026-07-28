@@ -3,6 +3,22 @@
 import { json, error } from "../utils/response";
 import type { Env } from "../index";
 
+// Lista de claves de configuración permitidas (GET y PUT)
+const KNOWN_KEYS = [
+  "site_name",
+  "site_description",
+  "contact_email",
+  "contact_phone",
+  "contact_address",
+  "social_instagram",
+  "social_facebook",
+  "social_tiktok",
+  "whatsapp_number",
+  "business_hours",
+  "hero_title",
+  "hero_subtitle",
+];
+
 /**
  * GET /api/settings — devuelve todas las configuraciones como JSON
  * PUT /api/settings — actualiza configuraciones (body: { key: value, ... })
@@ -18,24 +34,8 @@ export async function handleSettings(request: Request, env: Env, _pathname: stri
 
 async function getSettings(env: Env): Promise<Response> {
   try {
-    // Lista de claves de configuración conocidas
-    const knownKeys = [
-      "site_name",
-      "site_description",
-      "contact_email",
-      "contact_phone",
-      "contact_address",
-      "social_instagram",
-      "social_facebook",
-      "social_tiktok",
-      "whatsapp_number",
-      "business_hours",
-      "hero_title",
-      "hero_subtitle",
-    ];
-
     const settings: Record<string, string> = {};
-    for (const key of knownKeys) {
+    for (const key of KNOWN_KEYS) {
       const value = await env.STRATON_KV.get(key);
       if (value !== null) {
         settings[key] = value;
@@ -52,6 +52,11 @@ async function getSettings(env: Env): Promise<Response> {
 async function updateSettings(request: Request, env: Env): Promise<Response> {
   try {
     const body = await request.json() as Record<string, unknown>;
+
+    const invalidKeys = Object.keys(body).filter((key) => !KNOWN_KEYS.includes(key));
+    if (invalidKeys.length > 0) {
+      return error(`Claves no permitidas: ${invalidKeys.join(", ")}`, 400);
+    }
 
     const ops: Promise<void>[] = [];
     for (const [key, value] of Object.entries(body)) {

@@ -165,3 +165,20 @@ dist
 .env*
 !.env.example
 .wrangler/
+
+# Backups y archivos sueltos de trabajo (no deben versionarse)
+
+*.zip
+backup-full-*/
+diff.txt
+pantallas-led.html
+.claude/sdd-cache/
+
+# JSON sueltos de datos de trabajo — excepto config real del proyecto
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!test/tsconfig.json
+!.vscode/settings.json
+!.mcp.json

@@ -57,7 +57,7 @@ async function listQuotations(request: Request, env: Env): Promise<Response> {
       },
     });
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -67,7 +67,7 @@ async function getQuotation(env: Env, id: number): Promise<Response> {
     if (!row) return error("Quotation not found", 404);
     return json(row);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -113,7 +113,7 @@ async function createQuotation(request: Request, env: Env): Promise<Response> {
 
     return json(inserted, 201);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -213,6 +213,6 @@ async function updateQuotationStatus(request: Request, env: Env, id: number): Pr
     const updated = await queryOne(env.STRATON_DB, "SELECT * FROM quotations WHERE id = ?", [id]);
     return json(updated);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }

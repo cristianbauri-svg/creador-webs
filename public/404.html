@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="robots" content="noindex" />
+  <title>Página no encontrada — Straton Audio</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔊</text></svg>" />
+  <style>
+    :root {
+      --color-bg: #0A0A0A;
+      --color-card: #121212;
+      --color-border: #2A2A2A;
+      --color-text: #FFFFFF;
+      --color-text-secondary: #A0A0A0;
+      --color-accent: #1DB954;
+      --color-accent-hover: #22D95E;
+      --color-gold: #C9A96E;
+      --font-primary: system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: var(--color-bg); color: var(--color-text);
+      font-family: var(--font-primary);
+    }
+    body {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 20px; text-align: center;
+    }
+    .error-card {
+      max-width: 480px;
+    }
+    .error-code {
+      font-size: 6rem; font-weight: 800; line-height: 1;
+      color: var(--color-accent); margin-bottom: 0.5rem;
+    }
+    .error-title {
+      font-size: 1.5rem; font-weight: 700; margin: 0 0 0.75rem;
+    }
+    .error-desc {
+      color: var(--color-text-secondary); font-size: 1rem; line-height: 1.6;
+      margin: 0 0 2rem;
+    }
+    .error-actions {
+      display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-block; padding: 12px 28px; border-radius: 6px;
+      text-decoration: none; font-weight: 600; font-size: 0.95rem;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-primary {
+      background: var(--color-accent); color: #fff; border: none;
+    }
+    .btn-primary:hover { background: var(--color-accent-hover); }
+    .btn-outline {
+      background: transparent; color: var(--color-gold);
+      border: 1px solid var(--color-gold);
+    }
+    .btn-outline:hover { background: rgba(201, 169, 110, 0.1); }
+  </style>
+</head>
+<body>
+  <div class="error-card">
+    <div class="error-code">404</div>
+    <h1 class="error-title">Esta página no existe</h1>
+    <p class="error-desc">
+      El enlace que seguiste puede estar roto, o la página fue movida o eliminada.
+    </p>
+    <div class="error-actions">
+      <a href="/" class="btn btn-primary">Volver al inicio</a>
+      <a href="/#contacto" class="btn btn-outline">Contactar</a>
+    </div>
+  </div>
+</body>
+</html>

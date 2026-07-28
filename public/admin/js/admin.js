@@ -27,34 +27,49 @@
   let currentModule = 'dashboard';
 
   // =========================================================
-  // Login (placeholder — Cloudflare Access)
+  // Login (Cloudflare Access real en producción; placeholder en local)
   // =========================================================
   function initLogin() {
-    // En producción, Cloudflare Access intercepta /admin*
-    // y redirige al login corporativo. Este placeholder
-    // simula el flujo para desarrollo local.
-    const loginBtn = $('#loginBtn');
+    // window.__ADMIN_EMAIL__ lo inyecta el Worker leyendo el header
+    // Cf-Access-Authenticated-User-Email — no falsificable por un cliente
+    // externo, Cloudflare lo sobrescribe en el edge. Si viene con un email
+    // real, Access ya autenticó esta request antes de que llegara aquí.
+    const accessEmail = window.__ADMIN_EMAIL__;
+    if (accessEmail) {
+      showDashboard(accessEmail);
+      return;
+    }
 
-    // Verificar si ya hay sesión simulada
+    // Sin email de Access (desarrollo local con wrangler dev, donde
+    // Miniflare no simula Access; o producción con la política mal
+    // configurada). Mantenemos el placeholder de sessionStorage solo para
+    // no romper las pruebas locales — la protección real de escritura ya
+    // no depende de esto: la API valida el JWT de Access por su cuenta.
+    const loginBtn = $('#loginBtn');
     const token = sessionStorage.getItem('sa_admin_token');
     if (token === 'authenticated') {
-      showDashboard();
+      showDashboard(null);
       return;
     }
 
     loginBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      // Simular autenticación — en producción Cloudflare Access
-      // redirige a su propio login y establece JWTs en los headers.
       sessionStorage.setItem('sa_admin_token', 'authenticated');
-      showDashboard();
+      showDashboard(null);
     });
   }
 
-  function showDashboard() {
+  function showDashboard(accessEmail) {
     $('#loginScreen').style.display = 'none';
     const dashboard = $('#dashboard');
     dashboard.style.display = 'flex';
+
+    const userEl = $('#sidebarUser');
+    if (userEl) {
+      userEl.textContent = accessEmail
+        ? accessEmail
+        : 'Modo desarrollo local (sin Cloudflare Access)';
+    }
 
     // Cargar módulo inicial
     loadModule('dashboard');

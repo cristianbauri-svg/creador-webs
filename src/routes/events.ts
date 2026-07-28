@@ -55,7 +55,7 @@ async function listEvents(request: Request, env: Env): Promise<Response> {
       },
     });
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -65,7 +65,7 @@ async function getEvent(env: Env, id: number): Promise<Response> {
     if (!row) return error("Event not found", 404);
     return json(row);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -89,7 +89,7 @@ async function createEvent(request: Request, env: Env): Promise<Response> {
     const inserted = await queryOne(env.STRATON_DB, "SELECT * FROM events WHERE id = ?", [result.meta.last_row_id]);
     return json(inserted, 201);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -114,7 +114,7 @@ async function updateEvent(request: Request, env: Env, id: number): Promise<Resp
     const updated = await queryOne(env.STRATON_DB, "SELECT * FROM events WHERE id = ?", [id]);
     return json(updated);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -125,6 +125,6 @@ async function deleteEvent(env: Env, id: number): Promise<Response> {
     await execute(env.STRATON_DB, "DELETE FROM events WHERE id = ?", [id]);
     return json({ success: true });
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }

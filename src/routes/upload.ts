@@ -71,8 +71,9 @@ export async function handleUpload(request: Request, env: Env): Promise<Response
       },
     });
 
-    // URL pública absoluta — en producción se configura un dominio personalizado para el bucket
-    const url = new URL(`/api/media/${key}`, request.url).href;
+    // Ruta relativa: se resuelve contra el origen actual (local o producción),
+    // así nunca queda un host/puerto de desarrollo grabado permanentemente en D1.
+    const url = `/api/media/${key}`;
 
     return json({ url, key, content_type: file.type, size: file.size }, 201);
   } catch (e) {

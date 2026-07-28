@@ -58,7 +58,7 @@ async function listPages(request: Request, env: Env): Promise<Response> {
       },
     });
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -68,7 +68,7 @@ async function getPage(env: Env, id: number): Promise<Response> {
     if (!row) return error("Page not found", 404);
     return json(row);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -78,7 +78,7 @@ async function getPageBySlug(env: Env, slug: string): Promise<Response> {
     if (!row) return error("Page not found", 404);
     return json(row);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -97,7 +97,7 @@ async function createPage(request: Request, env: Env): Promise<Response> {
     const inserted = await queryOne(env.STRATON_DB, "SELECT * FROM pages WHERE id = ?", [result.meta.last_row_id]);
     return json(inserted, 201);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -123,7 +123,7 @@ async function updatePage(request: Request, env: Env, id: number): Promise<Respo
     const updated = await queryOne(env.STRATON_DB, "SELECT * FROM pages WHERE id = ?", [id]);
     return json(updated);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -134,6 +134,6 @@ async function deletePage(env: Env, id: number): Promise<Response> {
     await execute(env.STRATON_DB, "DELETE FROM pages WHERE id = ?", [id]);
     return json({ success: true });
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }

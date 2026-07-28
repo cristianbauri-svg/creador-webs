@@ -1,5 +1,6 @@
 // Helper para queries D1 con manejo de errores
 import { error } from "./response";
+import type { Env } from "../index";
 
 type Row = Record<string, unknown>;
 
@@ -47,8 +48,9 @@ export async function execute(
   }
 }
 
-export function handleDbError(e: unknown): Response {
+export function handleDbError(e: unknown, env?: Env): Response {
   const message = e instanceof Error ? e.message : "Database error";
   console.error("Database error:", message);
-  return error(message, 500);
+  const isDev = env?.ENVIRONMENT === "development";
+  return error(isDev ? message : "Internal server error", 500);
 }

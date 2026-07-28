@@ -6,10 +6,19 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "vars": {
+    "ENVIRONMENT": "production",
+    // TODO antes de desplegar: reemplazar con los valores reales de la app
+    // de Cloudflare Access que protege /admin/* (Zero Trust > Access >
+    // Applications > stratonaudio.com.co). No pude obtenerlos por API: el
+    // token de Vault no tiene permiso "Access: Apps and Policies Read".
+    "CF_ACCESS_TEAM_DOMAIN": "REEMPLAZAR_TEAM_DOMAIN",
+    "CF_ACCESS_AUD": "REEMPLAZAR_AUD"
+  },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application",
+    "not_found_handling": "404-page",
     "run_worker_first": ["/*"]
   },
   "observability": {

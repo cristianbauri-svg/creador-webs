@@ -55,7 +55,7 @@ async function listTestimonials(request: Request, env: Env): Promise<Response> {
       },
     });
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -65,7 +65,7 @@ async function getTestimonial(env: Env, id: number): Promise<Response> {
     if (!row) return error("Testimonial not found", 404);
     return json(row);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -85,7 +85,7 @@ async function createTestimonial(request: Request, env: Env): Promise<Response> 
     const inserted = await queryOne(env.STRATON_DB, "SELECT * FROM testimonials WHERE id = ?", [result.meta.last_row_id]);
     return json(inserted, 201);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -110,7 +110,7 @@ async function updateTestimonial(request: Request, env: Env, id: number): Promis
     const updated = await queryOne(env.STRATON_DB, "SELECT * FROM testimonials WHERE id = ?", [id]);
     return json(updated);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -121,6 +121,6 @@ async function deleteTestimonial(env: Env, id: number): Promise<Response> {
     await execute(env.STRATON_DB, "DELETE FROM testimonials WHERE id = ?", [id]);
     return json({ success: true });
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }

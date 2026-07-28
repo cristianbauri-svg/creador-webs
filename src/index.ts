@@ -24,6 +24,9 @@ export interface Env {
   STRATON_BUCKET: R2Bucket;
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_CHAT_ID: string;
+  ENVIRONMENT: string;
+  CF_ACCESS_TEAM_DOMAIN: string;
+  CF_ACCESS_AUD: string;
 }
 
 export default {
@@ -55,12 +58,23 @@ export default {
     // Assets estáticos (sitio público + admin dashboard).
     // Con run_worker_first, env.ASSETS.fetch() obtiene el asset del CDN
     // de forma confiable, y el Worker siempre se ejecuta primero en HTML.
-    const assetResponse = await env.ASSETS.fetch(request);
+    //
+    // Si hay página dinámica, pedimos explícitamente el shell de "/" (index.html,
+    // un archivo real) en vez de la ruta del slug — el slug nunca coincide con
+    // un archivo estático, y con not_found_handling: "404-page" eso devolvería
+    // 404.html en vez del shell necesario para inyectar window.__PAGE__.
+    const assetResponse = page
+      ? await env.ASSETS.fetch(new Request(new URL("/", request.url), request))
+      : await env.ASSETS.fetch(request);
     const contentType = assetResponse.headers.get("Content-Type") || "";
 
     if (contentType.includes("text/html")) {
       if (page) {
         return injectDynamicPage(assetResponse, page, url.origin);
+      }
+      if (pathname === "/admin/" || pathname === "/admin/index.html") {
+        const adminEmail = request.headers.get("Cf-Access-Authenticated-User-Email");
+        return injectAdminEmail(injectJsonLd(assetResponse, url.origin), adminEmail);
       }
       return injectJsonLd(assetResponse, url.origin);
     }
@@ -68,6 +82,26 @@ export default {
     return assetResponse;
   },
 };
+
+/**
+ * Inyecta window.__ADMIN_EMAIL__ con el email autenticado por Cloudflare
+ * Access (header Cf-Access-Authenticated-User-Email, no falsificable por un
+ * cliente externo — Cloudflare lo sobrescribe en el edge). null si el header
+ * no está presente (desarrollo local, o si Access no está configurado sobre
+ * la ruta).
+ */
+function injectAdminEmail(response: Response, email: string | null): Response {
+  const safeEmail = email ? JSON.stringify(email) : "null";
+  const script = `<script>window.__ADMIN_EMAIL__ = ${safeEmail};</script>`;
+
+  class HeadHandler {
+    element(element: Element) {
+      element.append(script, { html: true });
+    }
+  }
+
+  return new HTMLRewriter().on("head", new HeadHandler()).transform(response);
+}
 
 /**
  * Inyecta window.__PAGE__ con los datos de la página dinámica, el JSON-LD
@@ -114,14 +148,20 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
 
 async function handleApi(request: Request, env: Env, pathname: string): Promise<Response> {
   const method = request.method;
+  const isMutation = method === "POST" || method === "PUT" || method === "DELETE";
 
-  // Rutas públicas (no requieren Cloudflare Access)
-  const isPublic =
-    (method === "POST" && pathname === "/api/quotations") ||
-    (method === "GET" && pathname === "/api/settings") ||
-    (method === "GET" && pathname.startsWith("/api/media/"));
+  // Rutas protegidas: requieren autenticación real de Cloudflare Access.
+  // Todo lo demás mantiene su comportamiento actual (público).
+  const isProtected =
+    (isMutation && pathname.startsWith("/api/pages")) ||
+    (isMutation && pathname.startsWith("/api/products")) ||
+    (isMutation && pathname.startsWith("/api/services")) ||
+    (isMutation && pathname.startsWith("/api/packages")) ||
+    (isMutation && pathname.startsWith("/api/testimonials")) ||
+    (method === "GET" && pathname.startsWith("/api/quotations")) ||
+    (method === "PUT" && pathname === "/api/settings");
 
-  if (!isPublic && !validateAccess(request, env)) {
+  if (isProtected && !(await validateAccess(request, env))) {
     return error("Unauthorized", 401);
   }
 

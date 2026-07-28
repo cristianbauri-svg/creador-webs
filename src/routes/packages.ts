@@ -50,7 +50,7 @@ async function listPackages(request: Request, env: Env): Promise<Response> {
       },
     });
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -60,7 +60,7 @@ async function getPackage(env: Env, id: number): Promise<Response> {
     if (!row) return error("Package not found", 404);
     return json(row);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -79,7 +79,7 @@ async function createPackage(request: Request, env: Env): Promise<Response> {
     const inserted = await queryOne(env.STRATON_DB, "SELECT * FROM packages WHERE id = ?", [result.meta.last_row_id]);
     return json(inserted, 201);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -104,7 +104,7 @@ async function updatePackage(request: Request, env: Env, id: number): Promise<Re
     const updated = await queryOne(env.STRATON_DB, "SELECT * FROM packages WHERE id = ?", [id]);
     return json(updated);
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }
 
@@ -115,6 +115,6 @@ async function deletePackage(env: Env, id: number): Promise<Response> {
     await execute(env.STRATON_DB, "DELETE FROM packages WHERE id = ?", [id]);
     return json({ success: true });
   } catch (e) {
-    return handleDbError(e);
+    return handleDbError(e, env);
   }
 }

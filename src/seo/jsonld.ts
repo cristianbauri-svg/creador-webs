@@ -53,7 +53,7 @@ const SERVICIOS = [
     descripcion:
       "Ponemos a su disposición sistemas de audio e iluminación para que sus eventos sean del más alto nivel y crear experiencias inolvidables. Sistemas disponibles para audiencias de 50, 100 a 500, y 2000 a 5000 personas.",
     imagen:
-      "https://straton-audio.figueroagabrieloficial.workers.dev/api/media/products/e0828ed7-00f3-4b44-b323-d64ad97694b9.webp",
+      "https://stratonaudio.com.co/api/media/products/e0828ed7-00f3-4b44-b323-d64ad97694b9.webp",
   },
   {
     id: "servicio-pantallas-led",
@@ -61,7 +61,7 @@ const SERVICIOS = [
     descripcion:
       "Destaca tus eventos proyectando el contenido que impactará a tu audiencia. Pantallas HD de gran formato y pantallas 360°, en formatos 1:1, 4:3 y 16:9.",
     imagen:
-      "https://straton-audio.figueroagabrieloficial.workers.dev/api/media/products/b50dd781-95c8-45ed-bcdb-a1bbf0619914.webp",
+      "https://stratonaudio.com.co/api/media/products/b50dd781-95c8-45ed-bcdb-a1bbf0619914.webp",
   },
   {
     id: "servicio-iluminacion",
@@ -69,7 +69,7 @@ const SERVICIOS = [
     descripcion:
       "El factor más importante de un evento es la dinámica lumínica de un escenario. Disponibilidad de Par LED, cabezas móviles (Beam, Spots, Gobos), strobers, derbys, blinders, y luces cálidas y frías para escenarios.",
     imagen:
-      "https://straton-audio.figueroagabrieloficial.workers.dev/api/media/products/25bc6cb3-7230-4c3c-9697-67cfdcd80fb9.webp",
+      "https://stratonaudio.com.co/api/media/products/25bc6cb3-7230-4c3c-9697-67cfdcd80fb9.webp",
   },
   {
     id: "servicio-streaming-cctv",
@@ -77,7 +77,7 @@ const SERVICIOS = [
     descripcion:
       "Expertos en la transmisión vía internet de eventos corporativos a través de las plataformas de video más reconocidas. Transmisiones en vivo Full HD, con cámaras profesionales 4K y 1080p.",
     imagen:
-      "https://straton-audio.figueroagabrieloficial.workers.dev/api/media/products/f779e967-4f94-496d-ab53-4db5a2f421f3.webp",
+      "https://stratonaudio.com.co/api/media/products/f779e967-4f94-496d-ab53-4db5a2f421f3.webp",
   },
 ];
 
@@ -92,7 +92,7 @@ const PRODUCTOS = [
     descripcion:
       "Sistemas de audio Line Array para eventos de cualquier tamaño, proporcionando un sonido potente, uniforme y de alta fidelidad. Incluye consolas digitales, microfonía inalámbrica, subwoofers, monitores de escenario, ingeniero de sonido, pruebas de sonido, montaje y desmontaje. DB Technology, 2000W por caja, subwoofers dobles 4500W, estructura de colgado.",
     imagen:
-      "https://straton-audio.figueroagabrieloficial.workers.dev/api/media/products/6c5908f4-0d0a-4e1f-9e7b-5f29260d5b12.webp",
+      "https://stratonaudio.com.co/api/media/products/6c5908f4-0d0a-4e1f-9e7b-5f29260d5b12.webp",
   },
   {
     id: "producto-pantallas-led",
@@ -102,7 +102,7 @@ const PRODUCTOS = [
     descripcion:
       "Pantallas LED modulares de última generación, adaptables a cualquier evento. Incluye transporte, instalación, configuración, operación técnica y desmontaje. Pixel pitch desde P2.9, instalación indoor y outdoor, alto brillo superior a 5000 nits, compatible con HDMI, SDI e inalámbrico, resolución Full HD y 4K.",
     imagen:
-      "https://straton-audio.figueroagabrieloficial.workers.dev/api/media/products/38eb5d39-c4aa-415b-bda1-3597fc913a6d.webp",
+      "https://stratonaudio.com.co/api/media/products/38eb5d39-c4aa-415b-bda1-3597fc913a6d.webp",
   },
   {
     id: "producto-luces-robotizadas",
@@ -112,7 +112,7 @@ const PRODUCTOS = [
     descripcion:
       "Soluciones de iluminación profesional con equipos de última generación y control DMX. Incluye instalación, programación, operación y desmontaje. Control DMX profesional, luces robóticas y cabezas móviles, barras LED RGBW y luces Wash, efectos especiales (humo, láser, confeti), diseño de iluminación personalizado.",
     imagen:
-      "https://straton-audio.figueroagabrieloficial.workers.dev/api/media/products/66ab4fda-58bd-4f97-8aba-63e65e642abd.webp",
+      "https://stratonaudio.com.co/api/media/products/66ab4fda-58bd-4f97-8aba-63e65e642abd.webp",
   },
   {
     id: "producto-consola",
@@ -122,7 +122,7 @@ const PRODUCTOS = [
     descripcion:
       "Alquiler de consolas digitales profesionales (Behringer WING, X32, Midas M32, XR18) con configuración, instalación y soporte técnico incluidos. Desde 16 hasta 48 canales, medusas digitales, ingeniero de audio incluido.",
     imagen:
-      "https://straton-audio.figueroagabrieloficial.workers.dev/api/media/products/5ba89932-06c0-462a-b3b0-55348178ddd2.webp",
+      "https://stratonaudio.com.co/api/media/products/5ba89932-06c0-462a-b3b0-55348178ddd2.webp",
   },
 ];
 
