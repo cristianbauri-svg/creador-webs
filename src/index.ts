@@ -158,6 +158,7 @@ async function handleApi(request: Request, env: Env, pathname: string): Promise<
     (isMutation && pathname.startsWith("/api/services")) ||
     (isMutation && pathname.startsWith("/api/packages")) ||
     (isMutation && pathname.startsWith("/api/testimonials")) ||
+    (isMutation && pathname === "/api/upload") ||
     (method === "GET" && pathname.startsWith("/api/quotations")) ||
     (method === "PUT" && pathname === "/api/settings");
 
