@@ -39,14 +39,9 @@
         <input class="form-input-admin" id="prodTitle" required maxlength="200" placeholder="Ej: Line Array Meyer Sound LEO" />
       </div>
       <div class="form-group-admin">
-        <label class="form-label-admin" for="prodCategory">Categoría</label>
-        <select class="form-select-admin" id="prodCategory">
-          <option value="Audio">Audio</option>
-          <option value="Pantallas LED">Pantallas LED</option>
-          <option value="Proyectores">Proyectores</option>
-          <option value="Iluminación">Iluminación</option>
-          <option value="Otros">Otros</option>
-        </select>
+        <label class="form-label-admin" for="productCategory">Categoría</label>
+        <input class="form-input-admin" type="text" id="productCategory" list="category-list" autocomplete="off" placeholder="Ej: Audio, Iluminación..." />
+        <datalist id="category-list"></datalist>
       </div>
     </div>
     <div class="form-row-admin">
@@ -124,7 +119,8 @@
     form: document.getElementById('productsForm'),
     prodId: document.getElementById('prodId'),
     prodTitle: document.getElementById('prodTitle'),
-    prodCategory: document.getElementById('prodCategory'),
+    prodCategory: document.getElementById('productCategory'),
+    categoryList: document.getElementById('category-list'),
     prodServiceType: document.getElementById('prodServiceType'),
     prodStatus: document.getElementById('prodStatus'),
     prodDescription: document.getElementById('prodDescription'),
@@ -145,6 +141,7 @@
 
   // Iniciar: cargar lista
   loadProducts();
+  loadCategorySuggestions();
 
   // Eventos
   els.btnAdd.addEventListener('click', function () { showForm(); });
@@ -188,6 +185,19 @@
         console.error('Error cargando productos:', err);
         els.tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state-admin"><p>Error al cargar productos</p></div></td></tr>';
       });
+  }
+
+  function loadCategorySuggestions() {
+    fetch('/api/products?per_page=100')
+      .then(function (r) { return r.json(); })
+      .then(function (products) {
+        var items = Array.isArray(products) ? products : (products.products || []);
+        var categories = Array.from(new Set(items.map(function (p) { return p.category; }).filter(Boolean))).sort();
+        if (els.categoryList) {
+          els.categoryList.innerHTML = categories.map(function (c) { return '<option value="' + esc(c) + '">'; }).join('');
+        }
+      })
+      .catch(function () { /* sugerencias opcionales: el input sigue funcionando sin ellas */ });
   }
 
   function renderTable(rows) {
@@ -289,9 +299,14 @@
 
   function saveProduct() {
     var title = els.prodTitle.value.trim();
+    var category = els.prodCategory.value.trim();
 
     if (!title) {
       alert('El nombre del producto es obligatorio.');
+      return;
+    }
+    if (!category) {
+      alert('La categoría es obligatoria.');
       return;
     }
 
@@ -328,7 +343,7 @@
 
         var body = {
           title: title,
-          category: els.prodCategory.value,
+          category: category,
           service_type: els.prodServiceType.value,
           description: els.prodDescription.value.trim() || null,
           features: collectFeatures(),
