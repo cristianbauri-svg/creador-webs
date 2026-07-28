@@ -317,14 +317,23 @@ export function jsonLdScriptTag(): string {
 }
 
 /**
- * Inyección quirúrgica: añade el script justo antes de que cierre el <head>,
- * sin tocar ningún otro nodo del documento ni la lógica de renderizado
- * existente (loadServices/loadProducts/loadPackages siguen intactos).
+ * Genera un <script> que expone el origen actual de la solicitud para que
+ * el frontend pueda reescribir enlaces internos hardcodeados a producción.
  */
-export function injectJsonLd(response: Response): Response {
+export function siteUrlScript(origin: string): string {
+  return `<script>window.__SITE_URL__ = "${origin}";</script>`;
+}
+
+/**
+ * Inyección quirúrgica: añade el script JSON-LD y la URL del sitio
+ * justo antes de que cierre el <head>, sin tocar ningún otro nodo del
+ * documento ni la lógica de renderizado existente.
+ */
+export function injectJsonLd(response: Response, origin: string): Response {
   class HeadHandler {
     element(element: Element) {
       element.append(jsonLdScriptTag(), { html: true });
+      element.append(siteUrlScript(origin), { html: true });
     }
   }
   return new HTMLRewriter().on("head", new HeadHandler()).transform(response);

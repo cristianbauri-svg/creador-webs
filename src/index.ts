@@ -15,7 +15,7 @@ import { handlePages } from "./routes/pages";
 import { handleSettings } from "./routes/settings";
 import { handleUpload } from "./routes/upload";
 import { handleMedia } from "./routes/media";
-import { injectJsonLd, jsonLdScriptTag } from "./seo/jsonld";
+import { injectJsonLd, jsonLdScriptTag, siteUrlScript } from "./seo/jsonld";
 
 export interface Env {
   ASSETS: { fetch(request: Request): Promise<Response> };
@@ -57,9 +57,9 @@ export default {
 
     if (contentType.includes("text/html")) {
       if (page) {
-        return injectDynamicPage(assetResponse, page);
+        return injectDynamicPage(assetResponse, page, url.origin);
       }
-      return injectJsonLd(assetResponse);
+      return injectJsonLd(assetResponse, url.origin);
     }
 
     return assetResponse;
@@ -67,11 +67,11 @@ export default {
 };
 
 /**
- * Inyecta window.__PAGE__ con los datos de la página dinámica y el JSON-LD
- * SEO en el <head> del HTML. Usa HTMLRewriter para no consumir el stream
- * innecesariamente.
+ * Inyecta window.__PAGE__ con los datos de la página dinámica, el JSON-LD
+ * SEO y window.__SITE_URL__ en el <head> del HTML. Usa HTMLRewriter para
+ * no consumir el stream innecesariamente.
  */
-function injectDynamicPage(response: Response, page: Record<string, unknown>): Response {
+function injectDynamicPage(response: Response, page: Record<string, unknown>, origin: string): Response {
   let contentJson: Record<string, unknown> = {};
   if (page.content_json && typeof page.content_json === "string") {
     try {
@@ -90,11 +90,13 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>): R
   const safeJson = JSON.stringify(pageData).replace(/<\//g, "<\\/");
   const pageScript = `<script>window.__PAGE__ = ${safeJson};</script>`;
   const ldJson = jsonLdScriptTag();
+  const siteScript = siteUrlScript(origin);
 
   class HeadHandler {
     element(element: Element) {
       element.append(ldJson, { html: true });
       element.append(pageScript, { html: true });
+      element.append(siteScript, { html: true });
     }
   }
 

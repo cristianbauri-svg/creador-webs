@@ -1398,7 +1398,32 @@ ${ev.before_media_url && ev.after_media_url ? `
   // =========================================================
   // Inicialización
   // =========================================================
+
+  /**
+   * Corrige los enlaces internos hardcodeados a producción para que
+   * funcionen con el origen actual (local o producción). Usa
+   * window.__SITE_URL__ inyectado por el Worker como fuente de verdad.
+   */
+  function fixInternalLinks() {
+    var siteUrl = window.__SITE_URL__ || window.location.origin;
+    var PROD = 'https://stratonaudio.com.co';
+
+    // Si ya estamos en el dominio de producción, no hay nada que corregir
+    if (siteUrl === PROD) return;
+
+    var links = document.querySelectorAll('a');
+    for (var i = 0; i < links.length; i++) {
+      var rawHref = links[i].getAttribute('href');
+      if (rawHref && rawHref.indexOf(PROD) === 0) {
+        links[i].setAttribute('href', rawHref.replace(PROD, siteUrl));
+      }
+    }
+  }
+
   async function init() {
+    // Corregir enlaces internos antes de cualquier otra operación
+    fixInternalLinks();
+
     // Si hay página dinámica inyectada por el Worker, renderizarla y salir
     if (window.__PAGE__) {
       renderDynamicPage(window.__PAGE__);
@@ -1433,6 +1458,81 @@ ${ev.before_media_url && ev.after_media_url ? `
     await Promise.allSettled(promises);
 
     initContactForm();
+
+  }
+
+  /**
+   * Desplaza suavemente a un elemento por su id, compensando la altura del
+   * navbar fijo. Espera a que todas las imágenes dentro de la sección estén
+   * cargadas antes de calcular la posición final, para evitar que el cambio
+   * de altura post-carga desplace el destino.
+   */
+  async function scrollToHash(id) {
+    if (!id) return;
+
+    var target = document.getElementById(id);
+    if (!target) return;
+
+    // Esperar a que las imágenes de la sección estén completamente cargadas
+    await waitForImages(target, 1500);
+
+    // Doble requestAnimationFrame para asegurar que el navegador aplicó
+    // layout/paint tras la carga de imágenes
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        // Re-obtener el target por si el DOM cambió
+        var el = document.getElementById(id);
+        if (!el) return;
+
+        var navHeight = 72;
+        try {
+          var raw = getComputedStyle(document.documentElement).getPropertyValue('--nav-height').trim();
+          if (raw) {
+            var parsed = parseInt(raw, 10);
+            if (!isNaN(parsed)) navHeight = parsed;
+          }
+        } catch (e) { /* fallback a 72px */ }
+
+        var top = el.getBoundingClientRect().top + window.pageYOffset - navHeight;
+        window.scrollTo({ top: top, behavior: 'smooth' });
+      });
+    });
+  }
+
+  /**
+   * Devuelve una Promise que se resuelve cuando todas las imágenes dentro de
+   * `container` han terminado de cargar (éxito o error), o tras `timeoutMs`
+   * milisegundos, lo que ocurra primero.
+   */
+  function waitForImages(container, timeoutMs) {
+    var images = container.querySelectorAll('img');
+    if (images.length === 0) return Promise.resolve();
+
+    var pending = images.length;
+    var timer;
+
+    return new Promise(function (resolve) {
+      function onDone() {
+        pending--;
+        if (pending === 0) {
+          clearTimeout(timer);
+          resolve();
+        }
+      }
+
+      timer = setTimeout(resolve, timeoutMs);
+
+      for (var i = 0; i < images.length; i++) {
+        var img = images[i];
+        // Si ya está completa (caché del navegador), resolver inmediatamente
+        if (img.complete) {
+          onDone();
+        } else {
+          img.addEventListener('load', onDone, { once: true });
+          img.addEventListener('error', onDone, { once: true });
+        }
+      }
+    });
   }
 
   // Ejecutar cuando el DOM esté listo
@@ -1441,6 +1541,18 @@ ${ev.before_media_url && ev.after_media_url ? `
   } else {
     init();
   }
+
+  // Scroll al hash después de que la página haya terminado de cargar
+  // todos sus recursos (imágenes, CSS, etc.), cuando las alturas de las
+  // secciones ya son definitivas. El setTimeout de 200ms es una red de
+  // seguridad para ajustes de layout posteriores al evento load.
+  window.addEventListener('load', function() {
+    if (window.location.hash) {
+      setTimeout(function() {
+        scrollToHash(window.location.hash.substring(1));
+      }, 200);
+    }
+  });
 
   // =========================================================
   // Eventos del carrusel de galería (delegación)
