@@ -102,7 +102,7 @@
       display: flex; flex-direction: column; align-items: center; text-align: center;
     }
     .pc-card img {
-      width: 100%; height: 300px; object-fit: contain; border-radius: 12px; margin-bottom: 1.5rem;
+      width: 100%; height: 300px; object-fit: cover; border-radius: 12px; margin-bottom: 1.5rem;
       background: var(--color-bg-alt, #0a0a0a);
     }
     .pc-info h3 { font-size: 1.8rem; color: var(--color-text, #fff); margin-bottom: 0.5rem; font-family: var(--font-primary, system-ui, sans-serif); }
@@ -179,6 +179,15 @@
     }
 
     .empty-text { color: var(--color-text-muted, #666); text-align: center; padding: 20px; }
+
+    /* Ajuste de ancho solo en escritorio */
+    @media (min-width: 769px) {
+      .pc-card {
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
 
     @media (max-width: 768px) {
       .dynamic-page { margin-top: 100px; }
