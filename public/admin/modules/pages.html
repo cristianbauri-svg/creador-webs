@@ -239,6 +239,12 @@
   var mod = document.getElementById('pagesModule');
   var currentId = null;
   var blocks = []; // Array de bloques actuales
+  var _hasUnsavedChanges = false;
+
+  // Delegación: cualquier edición de un campo (metadatos o props de bloques,
+  // estos últimos creados dinámicamente) marca la página como modificada.
+  mod.addEventListener('input', function() { _hasUnsavedChanges = true; });
+  mod.addEventListener('change', function() { _hasUnsavedChanges = true; });
 
   // Referencias DOM
   var els = {
@@ -762,11 +768,18 @@
   // ========== Cargar / Editar ==========
   function loadPages() {
     fetch('/api/pages?status=all')
-      .then(function(r) { return r.json(); })
+      .then(function(r) {
+        if (!r.ok) throw new Error('Error del servidor (' + r.status + ')');
+        return r.json();
+      })
       .then(function(data) {
         var pages = data.pages || data;
         els.pageCount.textContent = '(' + pages.length + ' páginas)';
         renderTable(pages);
+      })
+      .catch(function(err) {
+        console.error('Error cargando páginas:', err);
+        alert('Error de conexión. Verifica tu red e inténtalo de nuevo.');
       });
   }
 
@@ -793,7 +806,10 @@
 
   function editPage(id) {
     fetch('/api/pages/' + id)
-      .then(function(r) { return r.json(); })
+      .then(function(r) {
+        if (!r.ok) throw new Error('Error del servidor (' + r.status + ')');
+        return r.json();
+      })
       .then(function(page) {
         currentId = page.id;
         els.editorTitle.textContent = 'Editar: ' + (page.title || page.slug);
@@ -807,7 +823,12 @@
         // Parsear content_json
         parseContentJson(page.content_json);
         els.editor.style.display = 'block';
+        _hasUnsavedChanges = false;
         renderBlocks();
+      })
+      .catch(function(err) {
+        console.error('Error cargando página:', err);
+        alert('Error de conexión. Verifica tu red e inténtalo de nuevo.');
       });
   }
 
@@ -833,7 +854,14 @@
   function deletePage(id) {
     if (!confirm('¿Eliminar esta página?')) return;
     fetch('/api/pages/' + id, { method: 'DELETE' })
-      .then(function() { loadPages(); });
+      .then(function(r) {
+        if (!r.ok) throw new Error('Error del servidor (' + r.status + ')');
+        loadPages();
+      })
+      .catch(function(err) {
+        console.error('Error eliminando página:', err);
+        alert('Error de conexión. Verifica tu red e inténtalo de nuevo.');
+      });
   }
 
   function showNewForm() {
@@ -847,6 +875,7 @@
     els.pageStatus.value = 'draft';
     blocks = [];
     els.editor.style.display = 'block';
+    _hasUnsavedChanges = false;
     renderBlocks();
   }
 
@@ -854,12 +883,16 @@
     els.editor.style.display = 'none';
     currentId = null;
     blocks = [];
+    _hasUnsavedChanges = false;
   }
 
   // Previsualizar
   function previewPage() {
     var slug = els.pageSlug.value.trim();
     if (!slug) { alert('Define un slug primero'); return; }
+    if (_hasUnsavedChanges) {
+      alert('Tienes cambios sin guardar. La previsualización mostrará la última versión guardada.');
+    }
     window.open('/' + slug, '_blank');
   }
 

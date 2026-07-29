@@ -5,7 +5,7 @@ import { json, error } from "../utils/response";
 import { queryAll, queryOne, execute, handleDbError } from "../utils/d1";
 import type { Env } from "../index";
 
-export async function handleQuotations(request: Request, env: Env, pathname: string): Promise<Response> {
+export async function handleQuotations(request: Request, env: Env, pathname: string, ctx: ExecutionContext): Promise<Response> {
   const method = request.method;
 
   // Rate limiting: máximo 5 cotizaciones por hora por IP
@@ -18,7 +18,14 @@ export async function handleQuotations(request: Request, env: Env, pathname: str
       return error("Demasiadas solicitudes. Intenta de nuevo en una hora.", 429);
     }
 
-    await env.STRATON_KV.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
+    // M11: escribir en KV en segundo plano (mejor que bloquear la respuesta,
+    // pero sigue sin ser atómico).
+    // TODO: read-then-write en KV no es atómico — dos requests concurrentes
+    // de la misma IP pueden leer el mismo currentCount y ambos pasar el
+    // rate limit. Un fix real requeriría Durable Objects (o un contador con
+    // locking), fuera de alcance ahora.
+    const newCount = currentCount + 1;
+    ctx.waitUntil(env.STRATON_KV.put(rateKey, String(newCount), { expirationTtl: 3600 }));
   }
 
   // GET /api/quotations/:id
@@ -31,7 +38,7 @@ export async function handleQuotations(request: Request, env: Env, pathname: str
   }
 
   if (method === "GET") return listQuotations(request, env);
-  if (method === "POST") return createQuotation(request, env);
+  if (method === "POST") return createQuotation(request, env, ctx);
   return error("Method not allowed", 405);
 }
 
@@ -71,7 +78,7 @@ async function getQuotation(env: Env, id: number): Promise<Response> {
   }
 }
 
-async function createQuotation(request: Request, env: Env): Promise<Response> {
+async function createQuotation(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   try {
     const body = await request.json() as Record<string, unknown>;
 
@@ -108,8 +115,8 @@ async function createQuotation(request: Request, env: Env): Promise<Response> {
 
     const inserted = await queryOne(env.STRATON_DB, "SELECT * FROM quotations WHERE id = ?", [result.meta.last_row_id]);
 
-    // Notificar por Telegram (no bloquea la respuesta si falla)
-    await sendTelegramNotification(inserted, env);
+    // M12: no bloquear la respuesta — enviar la notificación de Telegram en segundo plano
+    ctx.waitUntil(sendTelegramNotification(inserted as Record<string, unknown>, env));
 
     return json(inserted, 201);
   } catch (e) {

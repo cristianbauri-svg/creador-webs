@@ -31,13 +31,13 @@ export interface Env {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const pathname = url.pathname;
 
     // API routes
     if (pathname.startsWith("/api/")) {
-      return handleApi(request, env, pathname);
+      return handleApi(request, env, pathname, ctx);
     }
 
     // Sitemap XML dinámico — se resuelve con D1 en cada request, no es un
@@ -162,7 +162,7 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
     .transform(new Response(response.body, { headers, status: response.status }));
 }
 
-async function handleApi(request: Request, env: Env, pathname: string): Promise<Response> {
+async function handleApi(request: Request, env: Env, pathname: string, ctx: ExecutionContext): Promise<Response> {
   const method = request.method;
   const isMutation = method === "POST" || method === "PUT" || method === "DELETE";
 
@@ -189,7 +189,7 @@ async function handleApi(request: Request, env: Env, pathname: string): Promise<
     }
 
     if (pathname.startsWith("/api/quotations")) {
-      return await handleQuotations(request, env, pathname);
+      return await handleQuotations(request, env, pathname, ctx);
     }
 
     if (pathname.startsWith("/api/services")) {

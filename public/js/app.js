@@ -225,6 +225,25 @@
   const $$ = (sel, ctx) => [...(ctx || document).querySelectorAll(sel)];
   const API_BASE = '';
 
+  // Cache en memoria para deduplicar fetches repetidos (p.ej. varios bloques
+  // de carrusel/paquetes en la misma página dinámica pidiendo la misma URL).
+  // Se cachea la Promise (no la data ya resuelta) para que las llamadas
+  // concurrentes que llegan antes de que la primera responda compartan la
+  // misma petición en curso, en vez de disparar un fetch cada una.
+  var _fetchCache = {};
+  function cachedFetch(url) {
+    if (_fetchCache[url]) return _fetchCache[url];
+    var promise = fetch(url).then(function(r) {
+      if (!r.ok) throw new Error('Fetch failed');
+      return r.json();
+    }).catch(function(err) {
+      delete _fetchCache[url];
+      throw err;
+    });
+    _fetchCache[url] = promise;
+    return promise;
+  }
+
   async function apiFetch(path, options = {}) {
     const url = API_BASE + path;
     const res = await fetch(url, {
@@ -1610,10 +1629,12 @@ ${ev.before_media_url && ev.after_media_url ? `
 
   // ========== Carrusel dinámico de productos ==========
   function initDynamicProductCarousel(container, maxItems, category) {
+    var existingInterval = container._carouselInterval;
+    if (existingInterval) clearInterval(existingInterval);
+
     var fetchUrl = '/api/products?per_page=20&status=published';
     if (category) fetchUrl += '&category=' + encodeURIComponent(category);
-    fetch(fetchUrl)
-      .then(function(r) { return r.json(); })
+    cachedFetch(fetchUrl)
       .then(function(products) {
         var items = Array.isArray(products) ? products : (products.products || []);
         if (maxItems && items.length > maxItems) items = items.slice(0, maxItems);
@@ -1639,7 +1660,7 @@ ${ev.before_media_url && ev.after_media_url ? `
           track.style.transform = 'translateX(-' + (i * 100) + '%)';
         }
         show(0);
-        setInterval(function() {
+        container._carouselInterval = setInterval(function() {
           idx = (idx + 1) % total;
           show(idx);
         }, 3500);
@@ -1651,6 +1672,9 @@ ${ev.before_media_url && ev.after_media_url ? `
 
   // ========== Carrusel manual de productos (slides fijas del bloque) ==========
   function renderManualCarousel(container, slides) {
+    var existingInterval = container._carouselInterval;
+    if (existingInterval) clearInterval(existingInterval);
+
     if (!slides || slides.length === 0) {
       container.innerHTML = '<p class="empty-text">No hay slides configurados.</p>';
       return;
@@ -1680,7 +1704,7 @@ ${ev.before_media_url && ev.after_media_url ? `
       track.style.transform = 'translateX(-' + (i * 100) + '%)';
     }
     show(0);
-    setInterval(function() {
+    container._carouselInterval = setInterval(function() {
       idx = (idx + 1) % total;
       show(idx);
     }, 3500);
@@ -1688,8 +1712,7 @@ ${ev.before_media_url && ev.after_media_url ? `
 
   // ========== Fetch paquetes para bloque dinámico ==========
   function fetchPackagesForDynamic(container) {
-    fetch('/api/packages')
-      .then(function(r) { return r.json(); })
+    cachedFetch('/api/packages')
       .then(function(packages) {
         var pkgs = Array.isArray(packages) ? packages : (packages.packages || []);
         if (pkgs.length === 0) { container.innerHTML = '<p class="empty-text">No hay paquetes disponibles.</p>'; return; }
