@@ -141,6 +141,15 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
   const headers = new Headers(response.headers);
   headers.set("Content-Type", "text/html; charset=utf-8");
 
+  // Las páginas dinámicas no deben cachearse: el shell HTML es un asset
+  // estático (con su propio ETag/Cache-Control), pero el contenido inyectado
+  // aquí cambia por request según D1. Reusar el ETag del asset causaría que
+  // el navegador (o el edge de Cloudflare) sirva un body viejo en un 304
+  // aunque el content_json ya haya cambiado.
+  headers.set("Cache-Control", "no-cache, max-age=0, must-revalidate");
+  headers.delete("ETag");
+  headers.delete("If-None-Match");
+
   return new HTMLRewriter()
     .on("head", new HeadHandler())
     .transform(new Response(response.body, { headers, status: response.status }));
