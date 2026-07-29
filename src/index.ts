@@ -16,6 +16,7 @@ import { handleSettings } from "./routes/settings";
 import { handleUpload } from "./routes/upload";
 import { handleMedia } from "./routes/media";
 import { injectJsonLd, jsonLdScriptTag, siteUrlScript } from "./seo/jsonld";
+import { handleSitemap } from "./seo/sitemap";
 
 export interface Env {
   ASSETS: { fetch(request: Request): Promise<Response> };
@@ -37,6 +38,12 @@ export default {
     // API routes
     if (pathname.startsWith("/api/")) {
       return handleApi(request, env, pathname);
+    }
+
+    // Sitemap XML dinámico — se resuelve con D1 en cada request, no es un
+    // archivo estático, así que se intercepta antes del flujo de assets.
+    if (pathname === "/sitemap.xml") {
+      return handleSitemap(env, url.origin);
     }
 
     // Páginas dinámicas: buscar slug en D1 antes de servir assets.
