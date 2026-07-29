@@ -1489,8 +1489,16 @@ ${ev.before_media_url && ev.after_media_url ? `
 
   function renderProductCarouselBlock(props) {
     var sec = sectionWrapper('product-carousel', '<h2 class="block-section-title">' + esc(props.section_title || 'Productos') + '</h2><div class="product-carousel-new"></div>');
+    var container = sec.querySelector('.product-carousel-new');
+    // Compat: bloques creados antes de esta feature no tienen "mode" — se
+    // comportan igual que siempre (fetch por categoría).
+    var mode = props.mode || 'category';
     setTimeout(function() {
-      initDynamicProductCarousel(sec.querySelector('.product-carousel-new'), props.max_items, props.category);
+      if (mode === 'manual') {
+        renderManualCarousel(container, Array.isArray(props.slides) ? props.slides : []);
+      } else {
+        initDynamicProductCarousel(container, props.max_items, props.category);
+      }
     }, 0);
     return sec;
   }
@@ -1639,6 +1647,43 @@ ${ev.before_media_url && ev.after_media_url ? `
       .catch(function() {
         container.innerHTML = '<p class="empty-text">Error al cargar productos.</p>';
       });
+  }
+
+  // ========== Carrusel manual de productos (slides fijas del bloque) ==========
+  function renderManualCarousel(container, slides) {
+    if (!slides || slides.length === 0) {
+      container.innerHTML = '<p class="empty-text">No hay slides configurados.</p>';
+      return;
+    }
+
+    var track = document.createElement('div');
+    track.className = 'pc-track';
+    var html = '';
+    slides.forEach(function(slide) {
+      // Card completa clickeable cuando hay link: se envuelve en <a> en vez de <div>.
+      var tag = slide.link ? 'a' : 'div';
+      var hrefAttr = slide.link ? ' href="' + escapeAttr(slide.link) + '"' : '';
+      html += '<' + tag + ' class="pc-card"' + hrefAttr + '>' +
+        '<img src="' + escapeAttr(slide.image || '') + '" alt="' + esc(slide.title || '') + '">' +
+        '<div class="pc-info"><h3>' + esc(slide.title || '') + '</h3><p>' + esc(slide.description || '') + '</p></div>' +
+        '</' + tag + '>';
+    });
+    track.innerHTML = html;
+    container.innerHTML = '';
+    container.appendChild(track);
+
+    var cards = track.querySelectorAll('.pc-card');
+    var idx = 0;
+    var total = cards.length;
+    if (total === 0) return;
+    function show(i) {
+      track.style.transform = 'translateX(-' + (i * 100) + '%)';
+    }
+    show(0);
+    setInterval(function() {
+      idx = (idx + 1) % total;
+      show(idx);
+    }, 3500);
   }
 
   // ========== Fetch paquetes para bloque dinámico ==========

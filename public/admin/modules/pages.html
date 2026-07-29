@@ -269,7 +269,7 @@
     { type: 'image', icon: '🖼️', label: 'Imagen', desc: 'Imagen a ancho completo con pie', thumb: '<div class="img-fake"></div><div class="line short" style="margin-top:4px"></div>', props: ['url','alt','caption'] },
     { type: 'gallery', icon: '🖼️', label: 'Galería', desc: 'Galería de imágenes en grilla', thumb: '<div class="grid-2x2"><div></div><div></div><div></div><div></div></div>', props: ['section_title','images'] },
     { type: 'video', icon: '🎬', label: 'Video', desc: 'Video de YouTube o Vimeo', thumb: '<div class="video-bar"><div class="play-triangle"></div></div>', props: ['url','title'] },
-    { type: 'product-carousel', icon: '🎵', label: 'Carrusel Productos', desc: '1 card, autoplay, textos grandes. Imagen recomendada: 800×600px (proporción 4:3)', thumb: '<div class="carousel-single"><div class="line" style="width:60%"></div><div class="line" style="width:80%"></div></div>', props: ['section_title','max_items','category'] },
+    { type: 'product-carousel', icon: '🎵', label: 'Carrusel Productos', desc: '1 card, autoplay, textos grandes. Imagen recomendada: 800×600px (proporción 4:3)', thumb: '<div class="carousel-single"><div class="line" style="width:60%"></div><div class="line" style="width:80%"></div></div>', props: ['section_title','mode','category','max_items','slides'] },
     { type: 'packages', icon: '📦', label: 'Paquetes', desc: 'Parrilla de paquetes con precios', thumb: '<div class="line wide" style="width:30%"></div><div class="package-col"><div></div><div style="border:1px solid #1db954"></div><div></div></div>', props: ['section_title'] },
     { type: 'testimonials', icon: '💬', label: 'Testimonios', desc: 'Carrusel de testimonios', thumb: '<div class="line wide" style="width:30%"></div><div class="testimonial-bar"><div class="avatar"></div><div class="form-lines"><div class="line"></div><div class="line"></div></div></div>', props: ['section_title','testimonials'] },
     { type: 'contact-form', icon: '📬', label: 'Formulario', desc: 'Formulario de contacto', thumb: '<div class="line wide" style="width:40%"></div><div class="form-lines"><div class="line" style="width:90%"></div><div class="line" style="width:70%"></div><div class="line" style="width:50%"></div></div>', props: ['title','description'] },
@@ -390,6 +390,125 @@
     return wrap;
   }
 
+  // Sub-editor de slides del carrusel de productos en modo manual. A
+  // diferencia de buildArrayEditor, el campo de imagen es un input file con
+  // miniatura de preview (FileReader) en vez de un texto de URL: el usuario
+  // sube su propia imagen en vez de escoger de productos existentes.
+  function buildSlidesEditor(blockIndex) {
+    var wrap = document.createElement('div');
+    wrap.className = 'array-editor';
+
+    var itemsList = document.createElement('div');
+    itemsList.className = 'array-editor-list';
+
+    function renderItems() {
+      itemsList.innerHTML = '';
+      if (!Array.isArray(blocks[blockIndex].props.slides)) blocks[blockIndex].props.slides = [];
+      var arr = blocks[blockIndex].props.slides;
+      if (arr.length === 0) {
+        var empty = document.createElement('div');
+        empty.className = 'array-editor-empty';
+        empty.textContent = 'Sin slides. Usa el botón de abajo para añadir uno.';
+        itemsList.appendChild(empty);
+        return;
+      }
+      arr.forEach(function(item, itemIdx) {
+        var itemEl = document.createElement('div');
+        itemEl.className = 'array-editor-item';
+
+        var itemHeader = document.createElement('div');
+        itemHeader.className = 'array-editor-item-header';
+        var itemTitle = document.createElement('span');
+        itemTitle.textContent = '#' + (itemIdx + 1);
+        var delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'array-editor-remove';
+        delBtn.title = 'Eliminar';
+        delBtn.textContent = '✕';
+        delBtn.addEventListener('click', function() {
+          blocks[blockIndex].props.slides.splice(itemIdx, 1);
+          renderItems();
+        });
+        itemHeader.appendChild(itemTitle);
+        itemHeader.appendChild(delBtn);
+        itemEl.appendChild(itemHeader);
+
+        // Imagen: preview + input file
+        var imgLabel = document.createElement('label');
+        imgLabel.textContent = 'Imagen';
+        itemEl.appendChild(imgLabel);
+
+        var preview = document.createElement('img');
+        var hasExistingUrl = item.image && typeof item.image === 'string';
+        preview.style.cssText = 'max-width:100%;max-height:140px;border-radius:6px;object-fit:cover;margin-bottom:6px;display:' + (hasExistingUrl ? 'block' : 'none') + ';';
+        if (hasExistingUrl) preview.src = item.image;
+        itemEl.appendChild(preview);
+
+        var fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/png,image/jpeg,image/webp';
+        fileInput.addEventListener('change', (function(it, previewEl) {
+          return function() {
+            var file = this.files && this.files[0];
+            if (!file) return;
+            it.image = file; // se sube a /api/upload recién al guardar
+            var reader = new FileReader();
+            reader.onload = function(e) {
+              previewEl.src = e.target.result;
+              previewEl.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+          };
+        })(item, preview));
+        itemEl.appendChild(fileInput);
+
+        // Título
+        var titleLabel = document.createElement('label');
+        titleLabel.textContent = 'Título';
+        itemEl.appendChild(titleLabel);
+        var titleInput = document.createElement('input');
+        titleInput.value = item.title || '';
+        titleInput.addEventListener('input', (function(it, inp) { return function() { it.title = inp.value; }; })(item, titleInput));
+        itemEl.appendChild(titleInput);
+
+        // Descripción
+        var descLabel = document.createElement('label');
+        descLabel.textContent = 'Descripción';
+        itemEl.appendChild(descLabel);
+        var descInput = document.createElement('textarea');
+        descInput.value = item.description || '';
+        descInput.addEventListener('input', (function(it, inp) { return function() { it.description = inp.value; }; })(item, descInput));
+        itemEl.appendChild(descInput);
+
+        // Link
+        var linkLabel = document.createElement('label');
+        linkLabel.textContent = 'Link (opcional)';
+        itemEl.appendChild(linkLabel);
+        var linkInput = document.createElement('input');
+        linkInput.value = item.link || '';
+        linkInput.addEventListener('input', (function(it, inp) { return function() { it.link = inp.value; }; })(item, linkInput));
+        itemEl.appendChild(linkInput);
+
+        itemsList.appendChild(itemEl);
+      });
+    }
+
+    var addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'array-editor-add';
+    addBtn.textContent = '+ Añadir Slide';
+    addBtn.addEventListener('click', function() {
+      if (!Array.isArray(blocks[blockIndex].props.slides)) blocks[blockIndex].props.slides = [];
+      blocks[blockIndex].props.slides.push({ image: '', title: '', description: '', link: '' });
+      renderItems();
+    });
+
+    renderItems();
+    wrap.appendChild(itemsList);
+    wrap.appendChild(addBtn);
+    return wrap;
+  }
+
   // Construir paleta de bloques
   function buildPalette() {
     els.palette.innerHTML = '';
@@ -411,6 +530,7 @@
     if (type === 'cards') newBlock.props.cards = [];
     if (type === 'gallery') newBlock.props.images = [];
     if (type === 'testimonials') newBlock.props.testimonials = [];
+    if (type === 'product-carousel') { newBlock.props.mode = 'category'; newBlock.props.slides = []; }
     blocks.push(newBlock);
     renderBlocks();
     expandBlock(blocks.length - 1); // auto-expandir el recién añadido
@@ -443,6 +563,73 @@
     if (blockEls[index]) blockEls[index].classList.add('expanded');
   }
 
+  // Rellena el body de un bloque con sus campos de props. Se extrae de
+  // renderBlocks para poder re-invocarla sola cuando cambia el modo del
+  // carrusel de productos, sin reconstruir toda la lista de bloques (eso
+  // perdería el estado expandido/colapsado de cada bloque, que solo vive
+  // como clase CSS en el DOM y no se persiste en ninguna variable).
+  function fillBlockBody(body, i, block, def) {
+    body.innerHTML = '';
+    if (!def || !def.props) return;
+    def.props.forEach(function(prop) {
+      // Visibilidad condicional del carrusel de productos según su modo
+      if (block.type === 'product-carousel') {
+        var mode = block.props.mode || 'category';
+        if ((prop === 'category' || prop === 'max_items') && mode !== 'category') return;
+        if (prop === 'slides' && mode !== 'manual') return;
+      }
+
+      var labelEl = document.createElement('label');
+      labelEl.textContent = formatPropLabel(prop);
+      body.appendChild(labelEl);
+
+      if (prop === 'mode' && block.type === 'product-carousel') {
+        var modeSelect = document.createElement('select');
+        [['category', 'Categoría (automático)'], ['manual', 'Manual (slides personalizados)']].forEach(function(o) {
+          var opt = document.createElement('option');
+          opt.value = o[0];
+          opt.textContent = o[1];
+          modeSelect.appendChild(opt);
+        });
+        modeSelect.value = block.props.mode || 'category';
+        modeSelect.addEventListener('change', function() {
+          blocks[i].props.mode = this.value;
+          fillBlockBody(body, i, blocks[i], def); // re-render solo este body
+        });
+        body.appendChild(modeSelect);
+      } else if (prop === 'slides') {
+        body.appendChild(buildSlidesEditor(i));
+      } else if (ARRAY_FIELD_DEFS[prop]) {
+        body.appendChild(buildArrayEditor(i, prop));
+      } else if (prop === 'category') {
+        var select = document.createElement('select');
+        var optAll = document.createElement('option');
+        optAll.value = '';
+        optAll.textContent = 'Todas las categorías';
+        select.appendChild(optAll);
+        PRODUCT_CATEGORIES.forEach(function(cat) {
+          var opt = document.createElement('option');
+          opt.value = cat;
+          opt.textContent = cat;
+          select.appendChild(opt);
+        });
+        select.value = block.props[prop] || '';
+        select.addEventListener('change', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
+        body.appendChild(select);
+      } else if (prop === 'content' || prop === 'description') {
+        var ta = document.createElement('textarea');
+        ta.value = block.props[prop] || '';
+        ta.addEventListener('input', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
+        body.appendChild(ta);
+      } else {
+        var input = document.createElement('input');
+        input.value = block.props[prop] || '';
+        input.addEventListener('input', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
+        body.appendChild(input);
+      }
+    });
+  }
+
   // Renderizar lista de bloques
   function renderBlocks() {
     els.blockList.innerHTML = '';
@@ -473,42 +660,7 @@
 
       // Llenar body con campos de props
       var body = div.querySelector('.block-body');
-      if (def && def.props) {
-        def.props.forEach(function(prop) {
-          var labelEl = document.createElement('label');
-          labelEl.textContent = formatPropLabel(prop);
-          body.appendChild(labelEl);
-
-          if (ARRAY_FIELD_DEFS[prop]) {
-            body.appendChild(buildArrayEditor(i, prop));
-          } else if (prop === 'category') {
-            var select = document.createElement('select');
-            var optAll = document.createElement('option');
-            optAll.value = '';
-            optAll.textContent = 'Todas las categorías';
-            select.appendChild(optAll);
-            PRODUCT_CATEGORIES.forEach(function(cat) {
-              var opt = document.createElement('option');
-              opt.value = cat;
-              opt.textContent = cat;
-              select.appendChild(opt);
-            });
-            select.value = block.props[prop] || '';
-            select.addEventListener('change', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
-            body.appendChild(select);
-          } else if (prop === 'content' || prop === 'description') {
-            var ta = document.createElement('textarea');
-            ta.value = block.props[prop] || '';
-            ta.addEventListener('input', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
-            body.appendChild(ta);
-          } else {
-            var input = document.createElement('input');
-            input.value = block.props[prop] || '';
-            input.addEventListener('input', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
-            body.appendChild(input);
-          }
-        });
-      }
+      fillBlockBody(body, i, block, def);
 
       // Eventos de la cabecera
       var header = div.querySelector('.block-header');
@@ -532,7 +684,7 @@
     return val ? String(val).substring(0, 50) : '(sin configurar)';
   }
 
-  var PROP_LABEL_OVERRIDES = { category: 'Categoría' };
+  var PROP_LABEL_OVERRIDES = { category: 'Categoría', mode: 'Modo', slides: 'Slides (Manual)' };
   function formatPropLabel(prop) {
     if (PROP_LABEL_OVERRIDES[prop]) return PROP_LABEL_OVERRIDES[prop];
     return prop.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
@@ -544,21 +696,55 @@
     return JSON.stringify(blocks);
   }
 
+  function uploadFile(file) {
+    var formData = new FormData();
+    formData.append('file', file);
+    return fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    }).then(function(r) {
+      if (!r.ok) return r.json().then(function(err) { throw new Error(err.error || 'Error al subir imagen'); });
+      return r.json();
+    });
+  }
+
+  // Sube las imágenes aún no subidas (Files) de los slides manuales del
+  // carrusel de productos, y reemplaza cada una por la URL devuelta por R2.
+  // Si slide.image ya es un string (URL existente, no se tocó), se deja igual.
+  function uploadPendingSlideImages() {
+    var uploads = [];
+    blocks.forEach(function(block) {
+      if (block.type !== 'product-carousel' || !Array.isArray(block.props.slides)) return;
+      block.props.slides.forEach(function(slide) {
+        if (slide.image && typeof slide.image !== 'string') {
+          uploads.push(uploadFile(slide.image).then(function(result) {
+            slide.image = result.url;
+          }));
+        }
+      });
+    });
+    return Promise.all(uploads);
+  }
+
   function savePage() {
-    var body = {
-      slug: els.pageSlug.value.trim(),
-      title: els.pageTitle.value.trim() || null,
-      content_json: collectContentJson(),
-      meta_title: els.pageMetaTitle.value.trim() || null,
-      meta_description: els.pageMetaDescription.value.trim() || null,
-      status: els.pageStatus.value
-    };
-    var url = currentId ? '/api/pages/' + currentId : '/api/pages';
-    var method = currentId ? 'PUT' : 'POST';
-    fetch(url, {
-      method: method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+    els.btnSave.disabled = true;
+    els.btnSave.textContent = 'Guardando...';
+    uploadPendingSlideImages().then(function() {
+      var body = {
+        slug: els.pageSlug.value.trim(),
+        title: els.pageTitle.value.trim() || null,
+        content_json: collectContentJson(),
+        meta_title: els.pageMetaTitle.value.trim() || null,
+        meta_description: els.pageMetaDescription.value.trim() || null,
+        status: els.pageStatus.value
+      };
+      var url = currentId ? '/api/pages/' + currentId : '/api/pages';
+      var method = currentId ? 'PUT' : 'POST';
+      return fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
     }).then(function(r) {
       if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
       return r.json();
@@ -567,6 +753,9 @@
       loadPages();
     }).catch(function(err) {
       alert('Error al guardar: ' + err.message);
+    }).then(function() {
+      els.btnSave.disabled = false;
+      els.btnSave.textContent = '💾 Guardar';
     });
   }
 
