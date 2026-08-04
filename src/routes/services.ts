@@ -1,6 +1,7 @@
 // CRUD de servicios
 import { json, error } from "../utils/response";
 import { queryAll, queryOne, execute, handleDbError } from "../utils/d1";
+import { deleteR2Object } from "../utils/r2";
 import type { Env } from "../index";
 
 export async function handleServices(request: Request, env: Env, pathname: string): Promise<Response> {
@@ -30,9 +31,15 @@ async function listServices(request: Request, env: Env): Promise<Response> {
 
     let whereClause = "WHERE 1=1";
     const params: unknown[] = [];
-    if (status) {
+    // Por defecto solo publicados (endpoint público).
+    // ?status=all permite al admin ver borradores.
+    if (status === "all") {
+      // sin filtro adicional
+    } else if (status) {
       whereClause += " AND status = ?";
       params.push(status);
+    } else {
+      whereClause += " AND status = 'published'";
     }
 
     const countResult = await queryOne(env.STRATON_DB, `SELECT COUNT(*) as total FROM services ${whereClause}`, params);
@@ -68,6 +75,9 @@ async function createService(request: Request, env: Env): Promise<Response> {
   try {
     const body = await request.json() as Record<string, unknown>;
     if (!body.title || typeof body.title !== "string") return error("title is required");
+    // Validar tipos de campos opcionales
+    if (body.features !== undefined && body.features !== null && typeof body.features !== "string") return error("features debe ser string JSON", 400);
+    if (body.sort_order !== undefined && body.sort_order !== null && typeof body.sort_order !== "number") return error("sort_order debe ser número", 400);
 
     const result = await execute(
       env.STRATON_DB,
@@ -85,12 +95,16 @@ async function createService(request: Request, env: Env): Promise<Response> {
 
 async function updateService(request: Request, env: Env, id: number): Promise<Response> {
   try {
-    const existing = await queryOne(env.STRATON_DB, "SELECT id FROM services WHERE id = ?", [id]);
+    const existing = await queryOne(env.STRATON_DB, "SELECT * FROM services WHERE id = ?", [id]);
     if (!existing) return error("Service not found", 404);
 
     const body = await request.json() as Record<string, unknown>;
     const sets: string[] = [];
     const params: unknown[] = [];
+    // Limpiar imagen anterior de R2 si se reemplazó
+    if (body.image_url !== undefined && existing.image_url && existing.image_url !== body.image_url) {
+      deleteR2Object(existing.image_url as string, env);
+    }
     const fields = ["title", "description", "icon", "image_url", "sort_order", "status", "features"];
     for (const field of fields) {
       if (body[field] !== undefined) {

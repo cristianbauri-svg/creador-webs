@@ -1,6 +1,7 @@
 // CRUD de productos
 import { json, error } from "../utils/response";
 import { queryAll, queryOne, execute, handleDbError } from "../utils/d1";
+import { deleteR2Object } from "../utils/r2";
 import type { Env } from "../index";
 
 export async function handleProducts(request: Request, env: Env, pathname: string): Promise<Response> {
@@ -39,9 +40,15 @@ async function listProducts(request: Request, env: Env): Promise<Response> {
       whereClause += " AND category = ?";
       params.push(category);
     }
-    if (status) {
+    // Por defecto solo publicados (endpoint público).
+    // ?status=all permite al admin ver borradores.
+    if (status === "all") {
+      // sin filtro adicional
+    } else if (status) {
       whereClause += " AND status = ?";
       params.push(status);
+    } else {
+      whereClause += " AND status = 'published' AND active = 1";
     }
 
     const countResult = await queryOne(env.STRATON_DB, `SELECT COUNT(*) as total FROM products ${whereClause}`, params);
@@ -79,6 +86,10 @@ async function createProduct(request: Request, env: Env): Promise<Response> {
     if (!body.title || typeof body.title !== "string") {
       return error("title is required");
     }
+    // Validar tipos de campos opcionales
+    if (body.features !== undefined && body.features !== null && typeof body.features !== "string") return error("features debe ser string JSON", 400);
+    if (body.gallery_json !== undefined && body.gallery_json !== null && typeof body.gallery_json !== "string") return error("gallery_json debe ser string JSON", 400);
+    if (body.sort_order !== undefined && body.sort_order !== null && typeof body.sort_order !== "number") return error("sort_order debe ser número", 400);
 
     const result = await execute(
       env.STRATON_DB,
@@ -107,7 +118,7 @@ async function createProduct(request: Request, env: Env): Promise<Response> {
 
 async function updateProduct(request: Request, env: Env, id: number): Promise<Response> {
   try {
-    const existing = await queryOne(env.STRATON_DB, "SELECT id FROM products WHERE id = ?", [id]);
+    const existing = await queryOne(env.STRATON_DB, "SELECT * FROM products WHERE id = ?", [id]);
     if (!existing) return error("Product not found", 404);
 
     const body = await request.json() as Record<string, unknown>;
@@ -123,6 +134,11 @@ async function updateProduct(request: Request, env: Env, id: number): Promise<Re
     }
 
     if (sets.length === 0) return error("No fields to update", 400);
+
+    // Limpiar imagen anterior de R2 si se reemplazó
+    if (body.image_url !== undefined && existing.image_url && existing.image_url !== body.image_url) {
+      deleteR2Object(existing.image_url as string, env);
+    }
 
     params.push(id);
     await execute(env.STRATON_DB, `UPDATE products SET ${sets.join(", ")} WHERE id = ?`, params);

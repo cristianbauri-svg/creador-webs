@@ -127,7 +127,7 @@
   });
 
   function loadTestimonials() {
-    fetch('/api/testimonials')
+    fetch('/api/testimonials?status=all')
       .then(function (r) { return r.json(); })
       .then(renderTable)
       .catch(function (err) {

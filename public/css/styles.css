@@ -1,5 +1,5 @@
 /* =========================================================
-   Straton Audio ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Sistema de DiseÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â±o
+   Straton Audio — Sistema de Diseño
    =========================================================
    Paleta:
      Fondo:       #0A0A0A
@@ -8,8 +8,8 @@
      Bordes:      #2A2A2A
      Texto:       #FFFFFF
      Acento:      #1DB954 (verde vibrante)
-     Premium:     #C9A96E (dorado, ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°Ãƒâ€šÃ‚Â¤10% de superficies)
-   TipografÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a:   Inter (auto-hospedada) / system-ui
+     Premium:     #C9A96E (dorado, ~10% de superficies)
+   Tipografía:   Inter (auto-hospedada) / system-ui
    ========================================================= */
 
 /* ----- Fuentes del sistema (fallback sin archivos externos) ----- */
@@ -258,7 +258,7 @@ ul { list-style: none; }
   border-radius: var(--radius-md);
 }
 
-/* ----- NavegaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n ----- */
+/* ----- Navegación ----- */
 .nav {
   position: fixed;
   top: 0;
@@ -469,7 +469,7 @@ ul { list-style: none; }
   color: var(--color-text-muted);
 }
 
-/* ----- SecciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n Servicios ----- */
+/* ----- Sección Servicios ----- */
 .services-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -545,7 +545,7 @@ ul { list-style: none; }
   line-height: var(--leading-relaxed);
 }
 
-/* ----- SecciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n Paquetes ----- */
+/* ----- Sección Paquetes ----- */
 
 /* Glowing effect background */
 #paquetes {
@@ -801,7 +801,7 @@ ul { list-style: none; }
   font-weight: 500;
 }
 
-/* ----- SecciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n Testimonios ----- */
+/* ----- Sección Testimonios ----- */
 .testimonials-carousel {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
@@ -867,7 +867,7 @@ ul { list-style: none; }
   color: var(--color-text-muted);
 }
 
-/* ----- SecciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n Contacto ----- */
+/* ----- Sección Contacto ----- */
 .contact-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1467,7 +1467,7 @@ a.whatsapp-float {
   }
 }
 
-/* ----- Sticky CotizaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n Bar ----- */
+/* ----- Sticky Cotización Bar ----- */
 .cart-bar {
   position: fixed;
   bottom: 0;
@@ -1670,16 +1670,16 @@ a.whatsapp-float {
 }
 
 /* =============================================
-   SECCIÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œN SERVICIOS ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â BIOLUMINESCENT GRID
+   SECCIÓN SERVICIOS — BIOLUMINESCENT GRID
    ============================================= */
 
-/* Fondo de la secciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n */
+/* Fondo de la sección */
 .services-bioluminescent {
   background: var(--color-bg);
   padding: 6rem 0;
 }
 
-/* Grid asimÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©trico */
+/* Grid asimétrico */
 .bio-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1765,7 +1765,7 @@ a.whatsapp-float {
   line-height: 1;
 }
 
-/* TÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­tulo y descripciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n */
+/* Título y descripción */
 .service-card-title {
   font-size: 1.05rem;
   font-weight: 600;
@@ -1788,7 +1788,7 @@ a.whatsapp-float {
   margin-top: auto;
 }
 
-/* Spans asimÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tricos */
+/* Spans asimétricos */
 .bio-card.col-span-2 {
   grid-column: span 2;
 }
@@ -1902,7 +1902,7 @@ a.whatsapp-float {
   box-shadow: 0 8px 24px var(--color-accent-glow);
 }
 
-/* BotÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n cerrar en la card expandida */
+/* Botón cerrar en la card expandida */
 .bio-card-expanded-close {
   position: absolute;
   top: 1rem;
@@ -2038,7 +2038,7 @@ a.whatsapp-float {
   background: transparent;
 }
 
-/* Grid de fondo: patrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de puntos */
+/* Grid de fondo: patrón de puntos */
 .eq-console-grid {
   position: absolute;
   inset: 0;
@@ -2047,7 +2047,7 @@ a.whatsapp-float {
   pointer-events: none;
 }
 
-/* LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­neas de mediciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n horizontales (grilla de referencia) */
+/* Líneas de medición horizontales (grilla de referencia) */
 .eq-console-measure {
   position: absolute;
   inset: 0;
@@ -2104,7 +2104,7 @@ a.whatsapp-float {
   opacity: 0.45;
 }
 
-/* --- Keyframes: 4 ondas distintas para variedad orgÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡nica --- */
+/* --- Keyframes: 4 ondas distintas para variedad orgánica --- */
 
 @keyframes eq-wave-a {
   0%, 100% { height: 12%; }
@@ -2134,7 +2134,7 @@ a.whatsapp-float {
   85%       { height: 18%; }
 }
 
-/* --- Responsive: mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³vil --- */
+/* --- Responsive: móvil --- */
 @media (max-width: 768px) {
   .eq-console {
     height: 55px;
@@ -2156,7 +2156,7 @@ a.whatsapp-float {
 }
 
 /* =============================================
-   Efecto lumÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nico automÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡tico en mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³viles
+   Efecto lumínico automático en móviles
    ============================================= */
 
 @keyframes mobileGlow {
@@ -2217,7 +2217,7 @@ a.whatsapp-float {
   display: none;                  /* Chrome/Safari */
 }
 
-/* Permitir desactivar snap durante saltos instantÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡neos (scroll infinito) */
+/* Permitir desactivar snap durante saltos instantáneos (scroll infinito) */
 .products-carousel[data-jumping="true"] {
   scroll-snap-type: none;
 }
@@ -2236,7 +2236,7 @@ a.whatsapp-float {
   box-shadow: 0 0 10px var(--color-accent-dim);
 }
 
-/* Estado vacÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­o / carga dentro del carrusel */
+/* Estado vacío / carga dentro del carrusel */
 .products-carousel > .loading-state,
 .products-carousel > .empty-state,
 .products-carousel > .error-state {
@@ -2244,7 +2244,7 @@ a.whatsapp-float {
   scroll-snap-align: center;
 }
 
-/* Botones de navegaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n */
+/* Botones de navegación */
 .carousel-btn {
   flex-shrink: 0;
   width: 44px;
@@ -2281,7 +2281,7 @@ a.whatsapp-float {
   margin-left: var(--space-3);
 }
 
-/* --- PaginaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n: dots --- */
+/* --- Paginación: dots --- */
 .carousel-dots {
   display: flex;
   justify-content: center;
@@ -2339,7 +2339,7 @@ a.whatsapp-float {
   }
 }
 
-/* --- Responsive: mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³vil --- */
+/* --- Responsive: móvil --- */
 @media (max-width: 768px) {
   .products-carousel-wrapper {
     margin: 0 calc(-1 * var(--space-4));
@@ -2348,7 +2348,7 @@ a.whatsapp-float {
   .carousel-btn {
     width: 36px;
     height: 36px;
-    font-size: 0.9rem;           /* Botones mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡s chicos, pero visibles */
+    font-size: 0.9rem;           /* Botones más chicos, pero visibles */
   }
 
   .products-carousel {
@@ -2374,4 +2374,485 @@ a.whatsapp-float {
 /* ====== Scroll anchor offset (compensa navbar fija) ====== */
 section[id] {
   scroll-margin-top: var(--nav-height, 72px);
+}
+
+/* ========================================================================
+   Dynamic Block: Hero — Efecto sticky parallax solo para la foto de fondo
+   Referencia: https://pantallasledbogota.com/ — nav y hero BG se tocan (gap 0),
+   texto centrado verticalmente, animación fade-in-up.
+   ======================================================================== */
+.dynamic-block.block-hero {
+  /* Rompe el max-width: 960px y margin-top: 120px del contenedor padre
+     .dynamic-page para que el hero ocupe todo el ancho y empiece justo
+     debajo del navbar. */
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  margin-top: calc(-120px + var(--nav-height));
+  position: relative;
+  min-height: 100vh;
+  /* Grid stacking: bg, overlay y contenido se apilan en la misma celda */
+  display: grid;
+  grid-template: "hero" 1fr / 1fr;
+  overflow: visible;
+}
+
+/* Todos los hijos directos comparten la misma celda del grid */
+.dynamic-block.block-hero > * {
+  grid-area: hero;
+}
+
+/* Capa de fondo con position:sticky — se queda fija mientras el contenido
+   scrollea. La imagen ocupa todo el viewport, arranca justo debajo de la
+   navbar y cubre el ancho completo sin deformarse (cover). */
+.hero-bg-sticky {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100vh;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #0a0f0a;
+  z-index: 0;
+}
+
+/* Overlay semitransparente con degradado a negro para disolver la imagen
+   de fondo gradualmente cuando el usuario scrollea hacia el siguiente bloque. */
+.dynamic-block.block-hero .hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 10, 10, 0.55) 0%,
+    rgba(10, 10, 10, 0.65) 30%,
+    rgba(29, 185, 84, 0.06) 50%,
+    rgba(10, 10, 10, 0.80) 70%,
+    rgba(10, 10, 10, 0.95) 85%,
+    #0a0a0a 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Contenido textual — centrado verticalmente, con animación fade-in-up.
+   El padding-top usa var(--nav-height) para compensar el navbar fijo. */
+.dynamic-block.block-hero .hero-content {
+  position: relative;
+  z-index: 2;
+  place-self: center;
+  text-align: center;
+  max-width: 800px;
+  width: 100%;
+  padding: calc(var(--nav-height) + 40px) var(--space-6) 40px;
+  /* Animación: aparece de abajo hacia arriba */
+  opacity: 0;
+  transform: translateY(50px);
+  animation: heroFadeInUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+}
+
+@keyframes heroFadeInUp {
+  0%   { opacity: 0; transform: translateY(50px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.dynamic-block.block-hero .hero-content h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-6);
+  color: #fff;
+}
+
+.dynamic-block.block-hero .hero-content p {
+  font-size: var(--text-xl);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-8);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Video de fondo (cuando bg_type = video) — comportamiento absolute clásico */
+.hero-bg-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+/* Botón del hero dinámico */
+.btn-hero {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-8);
+  background: var(--color-accent);
+  color: #fff;
+  border-radius: 100px;
+  font-weight: 600;
+  font-size: var(--text-base);
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s;
+}
+.btn-hero:hover {
+  background: #1ed760;
+  transform: translateY(-1px);
+}
+
+/* ========================================================================
+   Mobile: fallback sin sticky ni full-width
+   position: sticky en background es buggy en iOS Safari.
+   En móvil la imagen hace scroll junto con el contenido.
+   ======================================================================== */
+@media (max-width: 768px) {
+  .dynamic-block.block-hero {
+    width: 100%;
+    margin-left: 0;
+    margin-top: calc(-100px + var(--nav-height));
+    min-height: 100vh;
+  }
+
+  .hero-bg-sticky {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* ========================================================================
+   Dynamic Block: FAQ — Preguntas Frecuentes con despliegue animado
+   ======================================================================== */
+
+/* Contenedor de la sección */
+.dynamic-block.block-faq {
+  padding: var(--space-16) 0;
+  position: relative;
+}
+
+.dynamic-block.block-faq .faq-section-title {
+  text-align: center;
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  margin-bottom: var(--space-12);
+  color: var(--color-text);
+}
+
+/* Contenedor de burbujas */
+.faq-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* =============================================
+   Burbuja individual
+   ============================================= */
+
+.faq-bubble {
+  position: relative;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 1.35rem 1.5rem;
+  cursor: default;
+  transition: border-color 0.35s ease,
+              box-shadow 0.35s ease,
+              transform 0.3s ease,
+              background 0.35s ease;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* --- Efecto de barrido lumínico derecha→izquierda (::after) --- */
+.faq-bubble::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 45%;
+  height: 100%;
+  border-radius: 16px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(29, 185, 84, 0.03) 30%,
+    rgba(29, 185, 84, 0.10) 50%,
+    rgba(29, 185, 84, 0.03) 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  transform: translateX(180%);
+}
+
+.faq-bubble:hover::after,
+.faq-bubble.expanded::after {
+  opacity: 1;
+  animation: faqSweepRL 3.2s ease-in-out infinite;
+}
+
+@keyframes faqSweepRL {
+  0%   { transform: translateX(180%); }
+  100% { transform: translateX(-120%); }
+}
+
+/* --- Capa de brillo interior (mouse tracking, como Servicios) --- */
+.faq-bubble-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  opacity: 0;
+  background: radial-gradient(
+    circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    var(--color-accent-glow),
+    transparent 55%
+  );
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.faq-container:hover .faq-bubble-glow {
+  opacity: 1;
+}
+
+/* --- Estados hover / expanded --- */
+.faq-bubble:hover {
+  border-color: var(--color-border-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.faq-bubble.expanded {
+  border-color: rgba(29, 185, 84, 0.35);
+  box-shadow: 0 0 28px var(--color-accent-glow),
+              0 4px 20px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(
+    180deg,
+    rgba(29, 185, 84, 0.03) 0%,
+    var(--color-card) 100%
+  );
+}
+
+/* =============================================
+   Fila de pregunta + botón toggle
+   ============================================= */
+
+.faq-question-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+  z-index: 1;
+}
+
+.faq-question-text {
+  flex: 1;
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.45;
+  min-width: 0;
+}
+
+/* Indicador numérico sutil */
+.faq-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.faq-bubble.expanded .faq-number {
+  background: var(--color-accent);
+  color: #000;
+}
+
+/* =============================================
+   Botón toggle (+ / −)
+   ============================================= */
+
+.faq-toggle-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  background: transparent;
+  color: var(--color-accent);
+  font-size: 1.25rem;
+  font-weight: 400;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+  line-height: 1;
+  padding: 0;
+  position: relative;
+  z-index: 3;
+}
+
+.faq-toggle-btn:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-dim);
+  box-shadow: 0 0 12px var(--color-accent-glow);
+  transform: scale(1.08);
+}
+
+.faq-toggle-btn:active {
+  transform: scale(0.94);
+}
+
+/* Cuando está expandido: rota el "+" a "−" */
+.faq-bubble.expanded .faq-toggle-btn {
+  transform: rotate(45deg);
+  border-color: var(--color-accent);
+  background: var(--color-accent-dim);
+}
+
+.faq-bubble.expanded .faq-toggle-btn:hover {
+  transform: rotate(45deg) scale(1.08);
+}
+
+/* =============================================
+   Respuesta (colapsada por defecto)
+   ============================================= */
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.35s ease 0.1s,
+              margin-top 0.4s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.faq-bubble.expanded .faq-answer {
+  max-height: 600px; /* suficiente para respuestas largas */
+  opacity: 1;
+  margin-top: 1rem;
+}
+
+.faq-answer-text {
+  font-size: clamp(0.875rem, 1.5vw, 0.95rem);
+  color: var(--color-text-secondary);
+  line-height: 1.65;
+  padding-left: calc(28px + 0.75rem); /* alinear con el texto de la pregunta (número + gap) */
+}
+
+/* Línea divisoria sutil entre pregunta y respuesta */
+.faq-bubble.expanded .faq-question-row {
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* =============================================
+   Animación de entrada stagger al cargar
+   ============================================= */
+
+.faq-bubble.faq-animate-in {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.faq-bubble.faq-animate-in.faq-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* =============================================
+   Auto-expand indicator (sutil pulso en el "+")
+   ============================================= */
+
+@keyframes faqHintPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.4); }
+  50%      { box-shadow: 0 0 0 8px rgba(29, 185, 84, 0); }
+}
+
+.faq-bubble:not(.expanded):not(.was-auto-expanded) .faq-toggle-btn {
+  animation: faqHintPulse 2.5s ease-in-out infinite;
+}
+
+/* Dejar de pulsar cuando ya fue expandida alguna vez */
+.faq-bubble.was-auto-expanded .faq-toggle-btn {
+  animation: none;
+}
+
+/* =============================================
+   Glow en móvil: barrido automático (sin mouse)
+   ============================================= */
+
+@media (max-width: 768px) {
+  /* En móvil, el barrido lumínico se activa automáticamente */
+  .faq-bubble::after {
+    animation: faqSweepRL 5s ease-in-out infinite;
+    opacity: 0.5;
+  }
+
+  .faq-bubble:hover::after,
+  .faq-bubble.expanded::after {
+    opacity: 0.85;
+  }
+
+  .faq-bubble-glow {
+    opacity: 0.15;
+    background: radial-gradient(
+      circle at 50% 50%,
+      var(--color-accent-glow),
+      transparent 50%
+    );
+    animation: faqGlowPulse 4s ease-in-out infinite alternate;
+  }
+
+  @keyframes faqGlowPulse {
+    0%   { opacity: 0.08; }
+    100% { opacity: 0.22; }
+  }
+
+  .faq-container {
+    gap: var(--space-3);
+  }
+
+  .faq-bubble {
+    padding: 1.1rem 1.2rem;
+  }
+
+  .faq-question-text {
+    font-size: 0.9rem;
+  }
+
+  .faq-answer-text {
+    font-size: 0.825rem;
+    padding-left: 0;
+  }
+
+  .faq-toggle-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 1.1rem;
+  }
 }

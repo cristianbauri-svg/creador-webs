@@ -414,15 +414,15 @@
       let socialLinks = '';
       if (settings.social_instagram) {
         socialLinks +=
-          `<a href="${escapeHtml(settings.social_instagram)}" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram">📷</a>`;
+          `<a href="${escapeAttr(settings.social_instagram)}" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram">📷</a>`;
       }
       if (settings.social_facebook) {
         socialLinks +=
-          `<a href="${escapeHtml(settings.social_facebook)}" target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook">👍</a>`;
+          `<a href="${escapeAttr(settings.social_facebook)}" target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook">👍</a>`;
       }
       if (settings.social_tiktok) {
         socialLinks +=
-          `<a href="${escapeHtml(settings.social_tiktok)}" target="_blank" rel="noopener noreferrer" aria-label="TikTok" title="TikTok">♪</a>`;
+          `<a href="${escapeAttr(settings.social_tiktok)}" target="_blank" rel="noopener noreferrer" aria-label="TikTok" title="TikTok">♪</a>`;
       }
       social.innerHTML = socialLinks;
 
@@ -1406,6 +1406,106 @@ ${ev.before_media_url && ev.after_media_url ? `
       var el = renderBlock(block);
       if (el) container.appendChild(el);
     });
+
+    fillTOCBlocks(container);
+  }
+
+  // =========================================================
+  // Tabla de contenido (dropdown) — bloque dinámico
+  // =========================================================
+
+  function slugify(text) {
+    return String(text || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/[\s_]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  // Recoge los h1/h2 estructurales de la página y les asigna id de ancla
+  function collectTOCItems(container) {
+    if (!container) return [];
+    var headings = container.querySelectorAll('h1, h2');
+
+    // Contenedores de contenido cuyo encabezado NO debe aparecer en el TOC
+    var skipClosest = '.cards-grid, .product-carousel-new, .pc-info, .package-card, .package-col, ' +
+      '.testimonial-card, .testimonial-item, .event-card, .service-card, .faq-container, .dynamic-form';
+
+    var items = [];
+    var seen = {};
+    for (var i = 0; i < headings.length; i++) {
+      var h = headings[i];
+      if (h.closest && h.closest(skipClosest)) continue;
+      var txt = (h.textContent || '').trim();
+      if (!txt) continue;
+      var base = slugify(txt) || 'seccion';
+      var id = base;
+      var n = 2;
+      while (seen[id]) { id = base + '-' + n++; }
+      seen[id] = true;
+      h.id = id;
+      items.push({ level: h.tagName === 'H1' ? 1 : 2, text: txt, id: id });
+    }
+    return items;
+  }
+
+  // Construye la lista anidada del TOC (H1 → nivel 1, H2 → subnivel)
+  function buildTOCList(items) {
+    if (!items || items.length < 2) return '';
+    var html = '<ul>';
+    var inSub = false;
+    for (var j = 0; j < items.length; j++) {
+      var it = items[j];
+      if (it.level === 1) {
+        if (inSub) { html += '</ul></li>'; inSub = false; }
+        html += '<li><a href="#' + it.id + '">' + esc(it.text) + '</a>';
+        var next = items[j + 1];
+        if (next && next.level === 2) { html += '<ul>'; inSub = true; }
+        else { html += '</li>'; }
+      } else {
+        html += '<li><a href="#' + it.id + '">' + esc(it.text) + '</a></li>';
+      }
+    }
+    if (inSub) { html += '</ul></li>'; }
+    html += '</ul>';
+    return html;
+  }
+
+  // Render del bloque "Tabla de contenido": placeholder que se completa al final
+  function renderTOC(props) {
+    return sectionWrapper('toc', '<div class="dynamic-toc toc-collapsed" data-toc-slot></div>');
+  }
+
+  // Rellena los placeholders .block-toc con la tabla de contenido de toda la página
+  function fillTOCBlocks(container) {
+    if (!container) return;
+    var slots = container.querySelectorAll('.block-toc [data-toc-slot]');
+    if (!slots.length) return;
+
+    var items = collectTOCItems(container);
+    var listHTML = buildTOCList(items);
+    if (!listHTML) {
+      slots.forEach(function(s) { s.closest('.block-toc').style.display = 'none'; });
+      return;
+    }
+
+    var svgIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line>' +
+      '<line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>';
+
+    slots.forEach(function(slot) {
+      slot.innerHTML =
+        '<div class="toc-title-row">' +
+          '<p class="toc-title">Tabla de contenido</p>' +
+          '<button type="button" class="toc-toggle" aria-label="Alternar tabla de contenido" title="Tabla de contenido">' + svgIcon + '</button>' +
+        '</div>' +
+        '<nav>' + listHTML + '</nav>';
+      slot.querySelector('.toc-toggle').addEventListener('click', function() {
+        slot.classList.toggle('toc-collapsed');
+      });
+    });
   }
 
   // =========================================================
@@ -1428,6 +1528,9 @@ ${ev.before_media_url && ev.after_media_url ? `
       case 'cta': return renderCTA(block.props);
       case 'spacer': return renderSpacer(block.props);
       case 'section-header': return renderSectionHeader(block.props);
+      case 'faq': return renderFAQ(block.props);
+      case 'toc': return renderTOC(block.props);
+      case 'whatsapp': return renderWhatsApp(block.props);
       default: return null;
     }
   }
@@ -1440,30 +1543,67 @@ ${ev.before_media_url && ev.after_media_url ? `
   }
 
   function renderHero(props) {
-    var style = props.bg_url ? 'background-image:url(' + escapeAttr(props.bg_url) + ');' : '';
-    if (props.bg_type === 'video' && props.bg_url) {
-      return sectionWrapper('hero',
-        '<video class="hero-bg-video" autoplay muted loop playsinline><source src="' + escapeAttr(props.bg_url) + '" type="video/mp4"></video>' +
-        '<div class="hero-overlay"></div>' +
-        '<div class="hero-content"><h1>' + esc(props.title) + '</h1><p>' + esc(props.subtitle) + '</p>' +
-        (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '" class="btn-hero">' + esc(props.button_text) + '</a>' : '') +
-        '</div>'
-      );
+    var isVideo = props.bg_type === 'video' && props.bg_url;
+    var bgStyle = (!isVideo && props.bg_url) ? 'background-image:url(' + escapeAttr(props.bg_url) + ');' : '';
+
+    var bgEl;
+    if (isVideo) {
+      bgEl = '<video class="hero-bg-video" autoplay muted loop playsinline><source src="' + escapeAttr(props.bg_url) + '" type="video/mp4"></video>';
+    } else {
+      bgEl = '<div class="hero-bg-sticky" style="' + bgStyle + '"></div>';
     }
+
     return sectionWrapper('hero',
-      '<div class="hero-bg-img" style="' + style + '"></div>' +
+      bgEl +
       '<div class="hero-overlay"></div>' +
       '<div class="hero-content"><h1>' + esc(props.title) + '</h1><p>' + esc(props.subtitle) + '</p>' +
-      (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '" class="btn-hero">' + esc(props.button_text) + '</a>' : '') +
+      (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '" class="btn-hero ' + btnStyleClass(props.button_style) + '">' + esc(props.button_text) + '</a>' : '') +
       '</div>'
     );
   }
 
   function renderText(props) {
+    // El bloque "Texto" se anuncia como contenido enriquecido, así que
+    // permitimos HTML básico. El contenido es inyectado por admins
+    // autenticados vía Cloudflare Access; sanitizamos tags peligrosos
+    // como defensa en profundidad.
+    var safeHtml = sanitizeRichText(props.content || '');
     return sectionWrapper('text',
       '<h2 class="block-text-title">' + esc(props.title) + '</h2>' +
-      '<div class="block-text-content">' + esc(props.content || '') + '</div>'
+      '<div class="block-text-content">' + safeHtml + '</div>'
     );
+  }
+
+  /** Sanitiza HTML para contenido enriquecido: elimina <script>, <iframe>,
+   *  event handlers inline, y el esquema javascript: en links. */
+  function sanitizeRichText(html) {
+    if (!html) return '';
+    var div = document.createElement('div');
+    div.innerHTML = html;
+    // Eliminar tags peligrosos
+    var dangerous = div.querySelectorAll('script, iframe, object, embed, form, input, link[rel="stylesheet"]');
+    for (var i = 0; i < dangerous.length; i++) {
+      dangerous[i].parentNode.removeChild(dangerous[i]);
+    }
+    // Eliminar event handlers inline y javascript: en todos los elementos
+    var all = div.querySelectorAll('*');
+    for (var j = 0; j < all.length; j++) {
+      var el = all[j];
+      // Limpiar atributos que empiezan con "on"
+      var attrs = el.attributes;
+      for (var k = attrs.length - 1; k >= 0; k--) {
+        var name = attrs[k].name.toLowerCase();
+        if (/^on/i.test(name)) {
+          el.removeAttribute(name);
+        }
+      }
+      // Bloquear javascript: en href
+      var href = el.getAttribute('href');
+      if (href && /^\s*javascript:/i.test(href)) {
+        el.setAttribute('href', '#');
+      }
+    }
+    return div.innerHTML;
   }
 
   function renderCards(props) {
@@ -1475,7 +1615,7 @@ ${ev.before_media_url && ev.after_media_url ? `
         (card.image ? '<img src="' + escapeAttr(card.image) + '" alt="' + esc(card.title) + '" class="card-img">' : '') +
         '<h3>' + esc(card.title) + '</h3>' +
         '<p>' + esc(card.description) + '</p>' +
-        (card.link ? '<a href="' + escapeAttr(card.link) + '" class="card-link">Ver más</a>' : '') +
+        (card.link ? '<a href="' + escapeAttr(card.link) + '" class="card-link ' + btnStyleClass(props.button_style) + '">Ver más</a>' : '') +
         '</div>';
     });
     return sectionWrapper('cards', title + '<div class="cards-grid">' + cardsHtml + '</div>');
@@ -1525,7 +1665,7 @@ ${ev.before_media_url && ev.after_media_url ? `
   function renderPackages(props) {
     var title = props.section_title ? '<h2 class="block-section-title">' + esc(props.section_title) + '</h2>' : '';
     var sec = sectionWrapper('packages', title + '<div class="packages-grid-dynamic"></div>');
-    fetchPackagesForDynamic(sec.querySelector('.packages-grid-dynamic'));
+    fetchPackagesForDynamic(sec.querySelector('.packages-grid-dynamic'), props.button_style);
     return sec;
   }
 
@@ -1547,7 +1687,7 @@ ${ev.before_media_url && ev.after_media_url ? `
       '<input type="email" name="email" placeholder="Correo" required>' +
       '<input type="tel" name="phone" placeholder="Teléfono">' +
       '<textarea name="notes" placeholder="Mensaje" required></textarea>' +
-      '<button type="submit">Enviar</button>' +
+      '<button type="submit" class="' + btnStyleClass(props.button_style) + '">Enviar</button>' +
       '<div class="contact-form-status"></div>' +
       '</form>';
     var sec = sectionWrapper('contact-form', title + desc + formHtml);
@@ -1609,7 +1749,7 @@ ${ev.before_media_url && ev.after_media_url ? `
       '<div class="cta-inner" style="' + bg + '">' +
       '<h2>' + esc(props.title) + '</h2>' +
       '<p>' + esc(props.subtitle) + '</p>' +
-      (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '" class="btn-cta">' + esc(props.button_text) + '</a>' : '') +
+      (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '" class="btn-cta ' + btnStyleClass(props.button_style) + '">' + esc(props.button_text) + '</a>' : '') +
       '</div>'
     );
   }
@@ -1622,9 +1762,152 @@ ${ev.before_media_url && ev.after_media_url ? `
     return div;
   }
 
+  function renderWhatsApp(props) {
+    // Usar el número del bloque, o fallback al de la landing page (settings)
+    var phone = (props.phone || '').replace(/[^0-9]/g, '');
+    if (!phone) phone = (siteSettings && siteSettings.whatsapp_number) ? siteSettings.whatsapp_number.replace(/[^0-9]/g, '') : '';
+    if (!phone) {
+      var empty = document.createElement('div');
+      empty.style.display = 'none';
+      return empty;
+    }
+
+    var message = props.message || 'Hola, quiero solicitar una cotización';
+    var encodedMsg = encodeURIComponent(message);
+    var waUrl = 'https://wa.me/' + phone + '?text=' + encodedMsg;
+
+    var a = document.createElement('a');
+    a.href = waUrl;
+    a.className = 'whatsapp-float dynamic-whatsapp';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.setAttribute('aria-label', 'WhatsApp');
+    a.title = 'Contáctanos por WhatsApp';
+    a.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="28" height="28">' +
+      '<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/>' +
+      '</svg>';
+
+    return a;
+  }
+
   function renderSectionHeader(props) {
     var icon = props.icon ? '<span class="section-header-icon">' + esc(props.icon) + '</span>' : '';
     return sectionWrapper('section-header', icon + '<h2>' + esc(props.title) + '</h2>');
+  }
+
+  // ========== FAQ: Preguntas Frecuentes con despliegue al scroll ==========
+  function renderFAQ(props) {
+    var faqs = Array.isArray(props.faqs) ? props.faqs : [];
+    if (faqs.length === 0) {
+      var empty = document.createElement('section');
+      empty.className = 'dynamic-block block-faq';
+      empty.innerHTML = '<div class="empty-state"><p>No hay preguntas configuradas.</p></div>';
+      return empty;
+    }
+
+    var titleHTML = props.section_title
+      ? '<h2 class="faq-section-title">' + esc(props.section_title) + '</h2>'
+      : '';
+
+    var bubblesHTML = faqs.map(function(faq, i) {
+      // La primera burbuja siempre abre expandida por defecto (regla fija).
+      // Se inyecta directo en el HTML para evitar condiciones de carrera
+      // con el IntersectionObserver en escritorio.
+      var preExpanded = (i === 0) ? ' expanded was-auto-expanded' : '';
+      return '<article class="faq-bubble faq-animate-in' + preExpanded + '" data-faq-index="' + i + '">' +
+        '<div class="faq-bubble-glow"></div>' +
+        '<div class="faq-question-row">' +
+          '<span class="faq-number">' + (i + 1) + '</span>' +
+          '<span class="faq-question-text">' + esc(faq.question || '') + '</span>' +
+          '<button class="faq-toggle-btn" aria-label="' + (faq.question ? 'Ver respuesta: ' + faq.question : 'Ver respuesta') + '" title="Ver respuesta">+</button>' +
+        '</div>' +
+        '<div class="faq-answer">' +
+          '<p class="faq-answer-text">' + esc(faq.answer || '') + '</p>' +
+        '</div>' +
+      '</article>';
+    }).join('');
+
+    var sec = sectionWrapper('faq', titleHTML + '<div class="faq-container">' + bubblesHTML + '</div>');
+
+    // Inicializar interacciones una vez que el section esté en el DOM
+    setTimeout(function() {
+      initFAQInteractions(sec);
+    }, 0);
+
+    return sec;
+  }
+
+  /**
+   * Inicializa las interacciones de la sección FAQ:
+   * - Mouse tracking para glow interior
+   * - Botón "+" para toggle con cierre de cualquier otra burbuja abierta
+   * - Animación de entrada stagger
+   */
+  function initFAQInteractions(section) {
+    var container = section.querySelector('.faq-container');
+    var bubbles = section.querySelectorAll('.faq-bubble');
+    if (!container || bubbles.length === 0) return;
+
+    // --- 1. Mouse tracking para glow interior (efecto Servicios) ---
+    container.addEventListener('mousemove', function(e) {
+      var rect = container.getBoundingClientRect();
+      var x = ((e.clientX - rect.left) / rect.width) * 100;
+      var y = ((e.clientY - rect.top) / rect.height) * 100;
+      container.style.setProperty('--mouse-x', x + '%');
+      container.style.setProperty('--mouse-y', y + '%');
+    });
+
+    container.addEventListener('mouseleave', function() {
+      container.style.setProperty('--mouse-x', '50%');
+      container.style.setProperty('--mouse-y', '50%');
+    });
+
+    // --- 2. Botón "+" — toggle con cierre inmediato de cualquier otra ---
+    container.addEventListener('click', function(e) {
+      var btn = e.target.closest('.faq-toggle-btn');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      var clickedBubble = btn.closest('.faq-bubble');
+      if (!clickedBubble) return;
+
+      if (clickedBubble.classList.contains('expanded')) {
+        // Colapsar la cliqueada
+        clickedBubble.classList.remove('expanded');
+      } else {
+        // Cerrar cualquier otra burbuja que esté expandida
+        bubbles.forEach(function(b) {
+          if (b !== clickedBubble) {
+            b.classList.remove('expanded');
+          }
+        });
+        // Expandir la cliqueada
+        clickedBubble.classList.add('expanded');
+      }
+    });
+
+    // --- 3. Animación de entrada stagger ---
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      requestAnimationFrame(function() {
+        bubbles.forEach(function(bubble, i) {
+          bubble.style.transitionDelay = (i * 0.08) + 's';
+          bubble.classList.add('faq-visible');
+        });
+
+        var lastDelay = (bubbles.length - 1) * 0.08;
+        var cleanupMs = (lastDelay + 0.5) * 1000 + 50;
+        setTimeout(function() {
+          bubbles.forEach(function(bubble) {
+            bubble.style.transitionDelay = '';
+          });
+        }, cleanupMs);
+      });
+    } else {
+      bubbles.forEach(function(bubble) {
+        bubble.classList.add('faq-visible');
+      });
+    }
   }
 
   // ========== Carrusel dinámico de productos ==========
@@ -1711,8 +1994,8 @@ ${ev.before_media_url && ev.after_media_url ? `
   }
 
   // ========== Fetch paquetes para bloque dinámico ==========
-  function fetchPackagesForDynamic(container) {
-    cachedFetch('/api/packages')
+  function fetchPackagesForDynamic(container, buttonStyle) {
+    cachedFetch('/api/packages?status=published')
       .then(function(packages) {
         var pkgs = Array.isArray(packages) ? packages : (packages.packages || []);
         if (pkgs.length === 0) { container.innerHTML = '<p class="empty-text">No hay paquetes disponibles.</p>'; return; }
@@ -1724,7 +2007,7 @@ ${ev.before_media_url && ev.after_media_url ? `
             '<h3>' + esc(pkg.name) + '</h3>' +
             '<div class="package-price">' + esc(pkg.price_range || '') + '</div>' +
             '<ul>' + includes.map(function(f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ul>' +
-            '<button class="btn-package-quote">Cotizar</button>' +
+            '<button class="btn-package-quote ' + btnStyleClass(buttonStyle) + '">Cotizar</button>' +
             '</div>';
         });
         container.innerHTML = html;
@@ -1742,6 +2025,15 @@ ${ev.before_media_url && ev.after_media_url ? `
     var s = String(str).trim();
     if (/^(javascript|data):/i.test(s)) return '#';
     return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  /** Devuelve la clase CSS correspondiente al estilo de botón (1, 2, 3).
+   *  Estilo 1 (default): sin clase extra → verde actual.
+   *  Estilo 2: WhatsApp translúcido con glow.
+   *  Estilo 3: Neón 70% opacidad + hover luminoso. */
+  function btnStyleClass(style) {
+    if (style === '2') return 'btn-style-whatsapp';
+    if (style === '3') return 'btn-style-neon';
+    return '';
   }
 
   // =========================================================

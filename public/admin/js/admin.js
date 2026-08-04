@@ -148,13 +148,17 @@
 
   /**
    * Inyecta HTML con scripts en un contenedor.
-   * Extrae <script> tags, inserta el DOM, y ejecuta los scripts.
+   * Extrae <script> tags (inline y externos), inserta el DOM, y ejecuta los scripts.
    */
   function injectModuleHTML(container, htmlString) {
-    // Extraer scripts del HTML
+    // Extraer scripts del HTML — soporta inline (<script>code</script>),
+    // externos (<script src="..."></script>), y módulos.
     const scripts = [];
-    const htmlWithoutScripts = htmlString.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gi, (match, code) => {
-      scripts.push(code);
+    const htmlWithoutScripts = htmlString.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (match, attrs, code) => {
+      // Extraer src si existe
+      const srcMatch = attrs.match(/src=["']([^"']+)["']/i);
+      const isModule = /\btype=["']module["']/i.test(attrs);
+      scripts.push({ code: code.trim(), src: srcMatch ? srcMatch[1] : null, module: isModule });
       return '';
     });
 
@@ -162,9 +166,14 @@
     container.innerHTML = htmlWithoutScripts;
 
     // Ejecutar los scripts en orden
-    scripts.forEach(code => {
+    scripts.forEach(s => {
       const script = document.createElement('script');
-      script.textContent = code;
+      if (s.src) {
+        script.src = s.src;
+      } else {
+        script.textContent = s.code;
+      }
+      if (s.module) script.type = 'module';
       container.appendChild(script);
     });
   }
@@ -286,7 +295,7 @@
         .catch(() => {});
 
       // Testimonials
-      fetch('/api/testimonials')
+      fetch('/api/testimonials?status=all')
         .then(r => r.json())
         .then(data => {
           const el = $('#statTestimonials');

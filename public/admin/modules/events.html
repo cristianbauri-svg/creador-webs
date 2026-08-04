@@ -188,7 +188,7 @@
   els.btnAddMoreGalleryImages.addEventListener('click', function () { els.evtGalleryFile.click(); });
 
   function loadEvents() {
-    fetch('/api/events')
+    fetch('/api/events?status=all')
       .then(function (r) { return r.json(); })
       .then(renderTable)
       .catch(function (err) {

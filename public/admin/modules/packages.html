@@ -115,7 +115,7 @@
   els.form.addEventListener('submit', function (e) { e.preventDefault(); savePackage(); });
 
   function loadPackages() {
-    fetch('/api/packages')
+    fetch('/api/packages?status=all')
       .then(function (r) { return r.json(); })
       .then(renderTable)
       .catch(function (err) {

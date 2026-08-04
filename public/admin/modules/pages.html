@@ -4,6 +4,29 @@
 ============================================================ -->
 <meta charset="UTF-8">
 <style>
+  /* === Fuentes (Nunito Sans + Scope One) — auto-hospedadas === */
+  @font-face {
+    font-family: 'Nunito Sans';
+    font-style: normal;
+    font-weight: 300 600;
+    font-display: swap;
+    src: url('/fonts/nunito-sans-latin.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'Scope One';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/scope-one-latin.woff2') format('woff2');
+  }
+  #pagesModule,
+  #pagesModule input,
+  #pagesModule textarea,
+  #pagesModule select,
+  #pagesModule button {
+    font-family: 'Nunito Sans', system-ui, -apple-system, sans-serif;
+  }
+
   /* === Miniaturas wireframe (paleta Straton) === */
   .block-thumb {
     width: 200px; height: 120px; border-radius: 8px; background: #0a0a0a;
@@ -269,37 +292,45 @@
 
   // Definición de tipos de bloques
   var BLOCK_TYPES = [
-    { type: 'hero', icon: '🦸', label: 'Hero', desc: 'Fondo con título, subtítulo y botón', thumb: '<div class="line wide"></div><div class="line medium"></div><div class="line short"></div><div class="btn-fake"></div>', props: ['bg_type','bg_url','title','subtitle','button_text','button_link'] },
+    { type: 'hero', icon: '🦸', label: 'Hero', desc: 'Fondo con título, subtítulo y botón', thumb: '<div class="line wide"></div><div class="line medium"></div><div class="line short"></div><div class="btn-fake"></div>', props: ['bg_type','bg_url','title','subtitle','button_text','button_link','button_style'] },
     { type: 'text', icon: '📝', label: 'Texto', desc: 'Título y contenido enriquecido', thumb: '<div class="line wide"></div><div class="line medium"></div><div class="line medium"></div><div class="line short"></div>', props: ['title','content'] },
-    { type: 'cards', icon: '🃏', label: 'Cards', desc: '2-4 tarjetas con imagen y texto', thumb: '<div class="line wide" style="width:40%"></div><div class="card-grid"><div class="card-fake"><div class="line"></div><div class="line"></div></div><div class="card-fake"><div class="line"></div><div class="line"></div></div><div class="card-fake"><div class="line"></div><div class="line"></div></div></div>', props: ['section_title','cards'] },
+    { type: 'cards', icon: '🃏', label: 'Cards', desc: '2-4 tarjetas con imagen y texto', thumb: '<div class="line wide" style="width:40%"></div><div class="card-grid"><div class="card-fake"><div class="line"></div><div class="line"></div></div><div class="card-fake"><div class="line"></div><div class="line"></div></div><div class="card-fake"><div class="line"></div><div class="line"></div></div></div>', props: ['section_title','cards','button_style'] },
     { type: 'image', icon: '🖼️', label: 'Imagen', desc: 'Imagen a ancho completo con pie', thumb: '<div class="img-fake"></div><div class="line short" style="margin-top:4px"></div>', props: ['url','alt','caption'] },
     { type: 'gallery', icon: '🖼️', label: 'Galería', desc: 'Galería de imágenes en grilla', thumb: '<div class="grid-2x2"><div></div><div></div><div></div><div></div></div>', props: ['section_title','images'] },
     { type: 'video', icon: '🎬', label: 'Video', desc: 'Video de YouTube o Vimeo', thumb: '<div class="video-bar"><div class="play-triangle"></div></div>', props: ['url','title'] },
     { type: 'product-carousel', icon: '🎵', label: 'Carrusel Productos', desc: '1 card, autoplay, textos grandes. Imagen recomendada: 800×600px (proporción 4:3)', thumb: '<div class="carousel-single"><div class="line" style="width:60%"></div><div class="line" style="width:80%"></div></div>', props: ['section_title','mode','category','max_items','slides'] },
-    { type: 'packages', icon: '📦', label: 'Paquetes', desc: 'Parrilla de paquetes con precios', thumb: '<div class="line wide" style="width:30%"></div><div class="package-col"><div></div><div style="border:1px solid #1db954"></div><div></div></div>', props: ['section_title'] },
+    { type: 'packages', icon: '📦', label: 'Paquetes', desc: 'Parrilla de paquetes con precios', thumb: '<div class="line wide" style="width:30%"></div><div class="package-col"><div></div><div style="border:1px solid #1db954"></div><div></div></div>', props: ['section_title','button_style'] },
     { type: 'testimonials', icon: '💬', label: 'Testimonios', desc: 'Carrusel de testimonios', thumb: '<div class="line wide" style="width:30%"></div><div class="testimonial-bar"><div class="avatar"></div><div class="form-lines"><div class="line"></div><div class="line"></div></div></div>', props: ['section_title','testimonials'] },
-    { type: 'contact-form', icon: '📬', label: 'Formulario', desc: 'Formulario de contacto', thumb: '<div class="line wide" style="width:40%"></div><div class="form-lines"><div class="line" style="width:90%"></div><div class="line" style="width:70%"></div><div class="line" style="width:50%"></div></div>', props: ['title','description'] },
-    { type: 'cta', icon: '📢', label: 'CTA', desc: 'Llamado a la acción con fondo', thumb: '<div style="position:relative;flex:1"><div class="cta-bg"></div><div style="position:relative;z-index:1;display:flex;flex-direction:column;gap:4px;padding:8px"><div class="line wide" style="background:#fff3"></div><div class="btn-fake"></div></div></div>', props: ['bg_color','title','subtitle','button_text','button_link'] },
+    { type: 'contact-form', icon: '📬', label: 'Formulario', desc: 'Formulario de contacto', thumb: '<div class="line wide" style="width:40%"></div><div class="form-lines"><div class="line" style="width:90%"></div><div class="line" style="width:70%"></div><div class="line" style="width:50%"></div></div>', props: ['title','description','button_style'] },
+    { type: 'cta', icon: '📢', label: 'CTA', desc: 'Llamado a la acción con fondo', thumb: '<div style="position:relative;flex:1"><div class="cta-bg"></div><div style="position:relative;z-index:1;display:flex;flex-direction:column;gap:4px;padding:8px"><div class="line wide" style="background:#fff3"></div><div class="btn-fake"></div></div></div>', props: ['bg_color','title','subtitle','button_text','button_link','button_style'] },
     { type: 'spacer', icon: '↕️', label: 'Espaciador', desc: 'Separador vertical ajustable', thumb: '<div class="spacer-bar"></div>', props: ['height'] },
-    { type: 'section-header', icon: '🏷️', label: 'Encabezado', desc: 'Título de sección con ícono', thumb: '<div style="display:flex;align-items:center;gap:8px"><div class="icon-circle"></div><div class="line wide"></div></div>', props: ['title','icon'] }
+    { type: 'section-header', icon: '🏷️', label: 'Encabezado', desc: 'Título de sección con ícono', thumb: '<div style="display:flex;align-items:center;gap:8px"><div class="icon-circle"></div><div class="line wide"></div></div>', props: ['title','icon'] },
+    { type: 'faq', icon: '❓', label: 'FAQ', desc: 'Preguntas frecuentes con despliegue animado al hacer scroll', thumb: '<div style="display:flex;flex-direction:column;gap:7px;flex:1;padding:4px"><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#1db954;flex-shrink:0"></div><div class="line" style="width:65%;height:7px"></div></div><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#2a2a2a;flex-shrink:0"></div><div class="line" style="width:50%;height:7px"></div></div><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#2a2a2a;flex-shrink:0"></div><div class="line" style="width:55%;height:7px"></div></div></div>', props: ['section_title','faqs'] },
+    { type: 'toc', icon: '📑', label: 'Tabla de contenido', desc: 'Índice desplegable con los títulos (H1/H2) de la página', thumb: '<div style="display:flex;flex-direction:column;gap:5px;flex:1;padding:6px;border:1px solid #2a2a2a;border-radius:6px"><div style="display:flex;align-items:center;justify-content:space-between"><div class="line" style="width:55%;height:9px;background:#D0FAE5"></div><div style="width:14px;height:14px;border:1px solid #3a3a3a;border-radius:3px;flex-shrink:0"></div></div><div class="line" style="width:80%;height:6px"></div><div class="line" style="width:65%;height:6px"></div><div class="line" style="width:50%;height:6px"></div></div>', props: [] },
+    { type: 'whatsapp', icon: '💬', label: 'WhatsApp', desc: 'Botón flotante de WhatsApp con número y mensaje personalizables', thumb: '<div style="position:relative;flex:1;display:flex;align-items:flex-end;justify-content:flex-end"><div style="width:36px;height:36px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(37,211,102,0.3)">💬</div></div>', props: ['phone','message'] }
   ];
 
   // Definición de campos para props de tipo array (editor con sub-formulario)
   var ARRAY_FIELD_DEFS = {
     cards: {
       items: ['image', 'title', 'description', 'link'],
-      labels: { image: 'Imagen (URL)', title: 'Título', description: 'Descripción', link: 'Link' },
+      labels: { image: 'Imagen', title: 'Título', description: 'Descripción', link: 'Link' },
       addLabel: '+ Añadir Card'
     },
     images: {
       items: ['url', 'alt'],
-      labels: { url: 'URL', alt: 'Alt' },
+      labels: { url: 'Imagen', alt: 'Alt' },
       addLabel: '+ Añadir Imagen'
     },
     testimonials: {
       items: ['text', 'author'],
       labels: { text: 'Texto', author: 'Autor' },
       addLabel: '+ Añadir Testimonio'
+    },
+    faqs: {
+      items: ['question', 'answer'],
+      labels: { question: 'Pregunta', answer: 'Respuesta' },
+      addLabel: '+ Añadir Pregunta'
     }
   };
 
@@ -360,18 +391,68 @@
         itemEl.appendChild(itemHeader);
 
         def.items.forEach(function(field) {
+          // Detectar campos de imagen (cards: "image", gallery: "url")
+          // para usar file upload con preview en vez de input de texto
+          var isImageField = (prop === 'cards' && field === 'image') || (prop === 'images' && field === 'url');
+
           var fLabel = document.createElement('label');
           fLabel.textContent = def.labels[field] || field;
           itemEl.appendChild(fLabel);
 
-          var fInput = (field === 'description' || field === 'text')
-            ? document.createElement('textarea')
-            : document.createElement('input');
-          fInput.value = item[field] || '';
-          fInput.addEventListener('input', (function(it, f, inp) {
-            return function() { it[f] = inp.value; };
-          })(item, field, fInput));
-          itemEl.appendChild(fInput);
+          if (isImageField) {
+            // --- File upload con preview ---
+            var preview = document.createElement('img');
+            var hasExisting = item[field] && typeof item[field] === 'string';
+            preview.style.cssText = 'max-width:100%;max-height:120px;border-radius:6px;object-fit:cover;margin-bottom:6px;display:' + (hasExisting ? 'block' : 'none') + ';';
+            if (hasExisting) preview.src = item[field];
+            itemEl.appendChild(preview);
+
+            var fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/png,image/jpeg,image/webp';
+            fileInput.addEventListener('change', (function(it, f, previewEl) {
+              return function() {
+                var file = this.files && this.files[0];
+                if (!file) return;
+                it[f] = file; // File object, se sube al guardar
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                  previewEl.src = e.target.result;
+                  previewEl.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+              };
+            })(item, field, preview));
+            itemEl.appendChild(fileInput);
+
+            if (hasExisting) {
+              var clearBtn = document.createElement('button');
+              clearBtn.type = 'button';
+              clearBtn.textContent = 'Quitar foto';
+              clearBtn.style.cssText = 'background:none;border:1px solid #2a2a2a;color:#aaa;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:11px;margin-top:4px;align-self:flex-start;';
+              clearBtn.addEventListener('click', function() {
+                item[field] = '';
+                preview.style.display = 'none';
+                preview.src = '';
+                fileInput.value = '';
+              });
+              itemEl.appendChild(clearBtn);
+            }
+          } else if (field === 'description' || field === 'text') {
+            var fInput = document.createElement('textarea');
+            fInput.value = item[field] || '';
+            fInput.addEventListener('input', (function(it, f, inp) {
+              return function() { it[f] = inp.value; };
+            })(item, field, fInput));
+            itemEl.appendChild(fInput);
+          } else {
+            var fInput = document.createElement('input');
+            fInput.value = item[field] || '';
+            fInput.addEventListener('input', (function(it, f, inp) {
+              return function() { it[f] = inp.value; };
+            })(item, field, fInput));
+            itemEl.appendChild(fInput);
+          }
         });
 
         itemsList.appendChild(itemEl);
@@ -536,10 +617,28 @@
     if (type === 'cards') newBlock.props.cards = [];
     if (type === 'gallery') newBlock.props.images = [];
     if (type === 'testimonials') newBlock.props.testimonials = [];
+    if (type === 'faq') newBlock.props.faqs = [];
     if (type === 'product-carousel') { newBlock.props.mode = 'category'; newBlock.props.slides = []; }
+    if (type === 'whatsapp') {
+      newBlock.props.phone = '';
+      newBlock.props.message = 'Hola, quiero solicitar una cotización';
+    }
     blocks.push(newBlock);
     renderBlocks();
     expandBlock(blocks.length - 1); // auto-expandir el recién añadido
+    // Precargar el número de WhatsApp desde settings (async, no bloquea el render)
+    if (type === 'whatsapp') {
+      fetch('/api/settings')
+        .then(function(r) { return r.json(); })
+        .then(function(settings) {
+          var phone = (settings && settings.whatsapp_number) ? settings.whatsapp_number.replace(/[^0-9]/g, '') : '';
+          if (phone && blocks[blocks.length - 1] && blocks[blocks.length - 1].type === 'whatsapp' && !blocks[blocks.length - 1].props.phone) {
+            blocks[blocks.length - 1].props.phone = phone;
+            renderBlocks();
+          }
+        })
+        .catch(function() { /* ignorar — el admin ingresa el número manualmente */ });
+    }
   }
 
   // Eliminar bloque
@@ -627,6 +726,131 @@
         ta.value = block.props[prop] || '';
         ta.addEventListener('input', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
         body.appendChild(ta);
+      } else if (prop === 'bg_url' && block.type === 'hero') {
+        // Hero: file upload para imagen, URL input para video
+        var bgType = block.props.bg_type || '';
+        if (bgType === 'video') {
+          // Video: input de URL
+          var urlInput = document.createElement('input');
+          urlInput.type = 'text';
+          urlInput.placeholder = 'https://...';
+          urlInput.value = typeof block.props.bg_url === 'string' ? block.props.bg_url : '';
+          urlInput.addEventListener('input', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
+          body.appendChild(urlInput);
+        } else {
+          // Imagen: file upload con preview
+          var bgImgWrap = document.createElement('div');
+          bgImgWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+
+          var preview = document.createElement('img');
+          var hasExisting = block.props.bg_url && typeof block.props.bg_url === 'string';
+          preview.style.cssText = 'max-width:100%;max-height:160px;border-radius:8px;object-fit:cover;display:' + (hasExisting ? 'block' : 'none') + ';';
+          if (hasExisting) preview.src = block.props.bg_url;
+          bgImgWrap.appendChild(preview);
+
+          var fileInput = document.createElement('input');
+          fileInput.type = 'file';
+          fileInput.accept = 'image/png,image/jpeg,image/webp';
+          fileInput.addEventListener('change', (function(blockRef, previewEl) {
+            return function() {
+              var file = this.files && this.files[0];
+              if (!file) return;
+              blockRef.props.bg_url = file; // File object, se sube al guardar
+              var reader = new FileReader();
+              reader.onload = function(e) {
+                previewEl.src = e.target.result;
+                previewEl.style.display = 'block';
+              };
+              reader.readAsDataURL(file);
+            };
+          })(block, preview));
+          bgImgWrap.appendChild(fileInput);
+
+          if (hasExisting) {
+            var clearBtn = document.createElement('button');
+            clearBtn.type = 'button';
+            clearBtn.textContent = 'Quitar foto';
+            clearBtn.style.cssText = 'background:none;border:1px solid #2a2a2a;color:#aaa;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;align-self:flex-start;';
+            clearBtn.addEventListener('click', function() {
+              block.props.bg_url = '';
+              preview.style.display = 'none';
+              preview.src = '';
+              fileInput.value = '';
+            });
+            bgImgWrap.appendChild(clearBtn);
+          }
+
+          body.appendChild(bgImgWrap);
+        }
+      } else if (prop === 'url' && block.type === 'image') {
+        // Bloque Imagen: file upload con preview, igual que Hero
+        var imgWrap = document.createElement('div');
+        imgWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+
+        var preview = document.createElement('img');
+        var hasExistingUrl = block.props.url && typeof block.props.url === 'string';
+        preview.style.cssText = 'max-width:100%;max-height:160px;border-radius:8px;object-fit:cover;display:' + (hasExistingUrl ? 'block' : 'none') + ';';
+        if (hasExistingUrl) preview.src = block.props.url;
+        imgWrap.appendChild(preview);
+
+        var fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/png,image/jpeg,image/webp';
+        fileInput.addEventListener('change', (function(blockRef, previewEl) {
+          return function() {
+            var file = this.files && this.files[0];
+            if (!file) return;
+            blockRef.props.url = file; // File object, se sube al guardar
+            var reader = new FileReader();
+            reader.onload = function(e) {
+              previewEl.src = e.target.result;
+              previewEl.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+          };
+        })(block, preview));
+        imgWrap.appendChild(fileInput);
+
+        if (hasExistingUrl) {
+          var clearBtn = document.createElement('button');
+          clearBtn.type = 'button';
+          clearBtn.textContent = 'Quitar foto';
+          clearBtn.style.cssText = 'background:none;border:1px solid #2a2a2a;color:#aaa;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;align-self:flex-start;';
+          clearBtn.addEventListener('click', function() {
+            block.props.url = '';
+            preview.style.display = 'none';
+            preview.src = '';
+            fileInput.value = '';
+          });
+          imgWrap.appendChild(clearBtn);
+        }
+
+        body.appendChild(imgWrap);
+      } else if (prop === 'alt' && block.type === 'image') {
+        var altInput = document.createElement('input');
+        altInput.value = block.props[prop] || '';
+        altInput.placeholder = 'Ej: Consola de mezcla Yamaha CL5 en evento';
+        altInput.addEventListener('input', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
+        body.appendChild(altInput);
+        var altHelp = document.createElement('small');
+        altHelp.style.cssText = 'display:block;color:#888;font-size:10px;margin-top:2px;line-height:1.4;';
+        altHelp.textContent = 'Describe la imagen para lectores de pantalla y SEO. Si es decorativa, déjalo vacío.';
+        body.appendChild(altHelp);
+      } else if (prop === 'button_style') {
+        var styleSelect = document.createElement('select');
+        [
+          ['1', 'Verde actual (default)'],
+          ['2', 'Verde WhatsApp — tono translúcido con glow'],
+          ['3', 'Verde neón — 70% opacidad + hover luminoso']
+        ].forEach(function(o) {
+          var opt = document.createElement('option');
+          opt.value = o[0];
+          opt.textContent = o[1];
+          styleSelect.appendChild(opt);
+        });
+        styleSelect.value = block.props[prop] || '1';
+        styleSelect.addEventListener('change', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
+        body.appendChild(styleSelect);
       } else {
         var input = document.createElement('input');
         input.value = block.props[prop] || '';
@@ -690,7 +914,7 @@
     return val ? String(val).substring(0, 50) : '(sin configurar)';
   }
 
-  var PROP_LABEL_OVERRIDES = { category: 'Categoría', mode: 'Modo', slides: 'Slides (Manual)' };
+  var PROP_LABEL_OVERRIDES = { category: 'Categoría', mode: 'Modo', slides: 'Slides (Manual)', bg_url: 'Fondo (BG)', bg_type: 'Tipo de fondo', url: 'Imagen', alt: 'Texto alternativo (ALT)', section_title: 'Título de sección', faqs: 'Preguntas', button_style: 'Estilo de botón' };
   function formatPropLabel(prop) {
     if (PROP_LABEL_OVERRIDES[prop]) return PROP_LABEL_OVERRIDES[prop];
     return prop.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
@@ -732,10 +956,73 @@
     return Promise.all(uploads);
   }
 
+  // Sube las imágenes de fondo de los bloques Hero que aún no se han subido
+  // (File objects). Si bg_url ya es un string (URL existente), se deja igual.
+  function uploadPendingHeroImages() {
+    var uploads = [];
+    blocks.forEach(function(block) {
+      if (block.type !== 'hero') return;
+      if (block.props.bg_type === 'video') return;
+      if (block.props.bg_url && typeof block.props.bg_url !== 'string') {
+        uploads.push(uploadFile(block.props.bg_url).then(function(result) {
+          block.props.bg_url = result.url;
+        }));
+      }
+    });
+    return Promise.all(uploads);
+  }
+
+  // Sube las imágenes de bloques "image" que aún no se han subido (File objects).
+  // Si props.url ya es un string (URL existente), se deja igual.
+  function uploadPendingImageBlockImages() {
+    var uploads = [];
+    blocks.forEach(function(block) {
+      if (block.type !== 'image') return;
+      if (block.props.url && typeof block.props.url !== 'string') {
+        uploads.push(uploadFile(block.props.url).then(function(result) {
+          block.props.url = result.url;
+        }));
+      }
+    });
+    return Promise.all(uploads);
+  }
+
+  // Sube las imágenes de los bloques Cards (cards[].image) que aún son File objects
+  function uploadPendingCardImages() {
+    var uploads = [];
+    blocks.forEach(function(block) {
+      if (block.type !== 'cards' || !Array.isArray(block.props.cards)) return;
+      block.props.cards.forEach(function(card) {
+        if (card.image && typeof card.image !== 'string') {
+          uploads.push(uploadFile(card.image).then(function(result) {
+            card.image = result.url;
+          }));
+        }
+      });
+    });
+    return Promise.all(uploads);
+  }
+
+  // Sube las imágenes de los bloques Gallery (images[].url) que aún son File objects
+  function uploadPendingGalleryImages() {
+    var uploads = [];
+    blocks.forEach(function(block) {
+      if (block.type !== 'gallery' || !Array.isArray(block.props.images)) return;
+      block.props.images.forEach(function(img) {
+        if (img.url && typeof img.url !== 'string') {
+          uploads.push(uploadFile(img.url).then(function(result) {
+            img.url = result.url;
+          }));
+        }
+      });
+    });
+    return Promise.all(uploads);
+  }
+
   function savePage() {
     els.btnSave.disabled = true;
     els.btnSave.textContent = 'Guardando...';
-    uploadPendingSlideImages().then(function() {
+    Promise.all([uploadPendingSlideImages(), uploadPendingHeroImages(), uploadPendingImageBlockImages(), uploadPendingCardImages(), uploadPendingGalleryImages()]).then(function() {
       var body = {
         slug: els.pageSlug.value.trim(),
         title: els.pageTitle.value.trim() || null,

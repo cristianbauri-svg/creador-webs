@@ -129,7 +129,7 @@
   });
 
   function loadServices() {
-    fetch('/api/services')
+    fetch('/api/services?status=all')
       .then(function (r) { return r.json(); })
       .then(renderTable)
       .catch(function (err) {

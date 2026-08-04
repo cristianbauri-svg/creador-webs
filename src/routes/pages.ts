@@ -38,9 +38,15 @@ async function listPages(request: Request, env: Env): Promise<Response> {
 
     let whereClause = "WHERE 1=1";
     const params: unknown[] = [];
-    if (status && status !== "all") {
+    // Por defecto solo publicadas (endpoint público).
+    // ?status=all permite al admin ver borradores.
+    if (status === "all") {
+      // sin filtro adicional
+    } else if (status) {
       whereClause += " AND status = ?";
       params.push(status);
+    } else {
+      whereClause += " AND status = 'published'";
     }
 
     const countResult = await queryOne(env.STRATON_DB, `SELECT COUNT(*) as total FROM pages ${whereClause}`, params);
@@ -74,7 +80,8 @@ async function getPage(env: Env, id: number): Promise<Response> {
 
 async function getPageBySlug(env: Env, slug: string): Promise<Response> {
   try {
-    const row = await queryOne(env.STRATON_DB, "SELECT * FROM pages WHERE slug = ?", [slug]);
+    // Endpoint público: solo devuelve páginas publicadas
+    const row = await queryOne(env.STRATON_DB, "SELECT * FROM pages WHERE slug = ? AND status = 'published'", [slug]);
     if (!row) return error("Page not found", 404);
     return json(row);
   } catch (e) {
@@ -86,6 +93,8 @@ async function createPage(request: Request, env: Env): Promise<Response> {
   try {
     const body = await request.json() as Record<string, unknown>;
     if (!body.slug || typeof body.slug !== "string") return error("slug is required");
+    // Validar tipos de campos opcionales (previene datos malformados en D1)
+    if (body.content_json !== undefined && body.content_json !== null && typeof body.content_json !== "string") return error("content_json debe ser string JSON", 400);
 
     const result = await execute(
       env.STRATON_DB,

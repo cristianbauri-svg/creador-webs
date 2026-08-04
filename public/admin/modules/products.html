@@ -186,7 +186,7 @@
   els.btnAddMoreImages.addEventListener('click', function () { els.prodGalleryFile.click(); });
 
   function loadProducts() {
-    fetch('/api/products')
+    fetch('/api/products?status=all')
       .then(function (r) { return r.json(); })
       .then(renderTable)
       .catch(function (err) {
@@ -199,7 +199,7 @@
   // "+ Crear nueva categoría". Si selectedValue no está en la lista (categoría
   // nueva de un producto existente), se agrega y se selecciona igual.
   function populateCategorySelect(selectedValue) {
-    fetch('/api/products?per_page=100')
+    fetch('/api/products?per_page=100&status=all')
       .then(function (r) { return r.json(); })
       .then(function (products) {
         var items = Array.isArray(products) ? products : (products.products || []);

@@ -321,7 +321,15 @@ export function jsonLdScriptTag(): string {
  * el frontend pueda reescribir enlaces internos hardcodeados a producción.
  */
 export function siteUrlScript(origin: string): string {
-  return `<script>window.__SITE_URL__ = "${origin}";</script>`;
+  // Escapar caracteres peligrosos para prevenir XSS vía Host header:
+  // - Comillas dobles romperían el string literal JS
+  // - "</script>" cerraría prematuramente el tag <script>
+  // - Backslash podría usarse para evadir los escapes anteriores
+  const safe = origin
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/</g, "\\x3c");
+  return `<script>window.__SITE_URL__ = "${safe}";</script>`;
 }
 
 /**

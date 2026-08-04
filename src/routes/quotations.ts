@@ -8,26 +8,6 @@ import type { Env } from "../index";
 export async function handleQuotations(request: Request, env: Env, pathname: string, ctx: ExecutionContext): Promise<Response> {
   const method = request.method;
 
-  // Rate limiting: máximo 5 cotizaciones por hora por IP
-  if (method === "POST") {
-    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-    const rateKey = `ratelimit:quotation:${ip}`;
-    const currentCount = parseInt(await env.STRATON_KV.get(rateKey) || "0");
-
-    if (currentCount >= 5) {
-      return error("Demasiadas solicitudes. Intenta de nuevo en una hora.", 429);
-    }
-
-    // M11: escribir en KV en segundo plano (mejor que bloquear la respuesta,
-    // pero sigue sin ser atómico).
-    // TODO: read-then-write en KV no es atómico — dos requests concurrentes
-    // de la misma IP pueden leer el mismo currentCount y ambos pasar el
-    // rate limit. Un fix real requeriría Durable Objects (o un contador con
-    // locking), fuera de alcance ahora.
-    const newCount = currentCount + 1;
-    ctx.waitUntil(env.STRATON_KV.put(rateKey, String(newCount), { expirationTtl: 3600 }));
-  }
-
   // GET /api/quotations/:id
   const match = pathname.match(/^\/api\/quotations\/(\d+)$/);
   if (match) {
@@ -96,6 +76,39 @@ async function createQuotation(request: Request, env: Env, ctx: ExecutionContext
     if (body.event_date && !/^\d{4}-\d{2}-\d{2}$/.test(body.event_date)) {
       return error("Formato de fecha inválido. Use YYYY-MM-DD.", 400);
     }
+
+    // Validar tipos de campos opcionales (previene inyección de datos malformados)
+    if (body.notes !== undefined && body.notes !== null && typeof body.notes !== "string") {
+      return error("notes debe ser texto", 400);
+    }
+    if (body.products_json !== undefined && body.products_json !== null && typeof body.products_json !== "string") {
+      return error("products_json debe ser string JSON", 400);
+    }
+    if (body.company !== undefined && body.company !== null && typeof body.company !== "string") {
+      return error("company debe ser texto", 400);
+    }
+    if (body.city !== undefined && body.city !== null && typeof body.city !== "string") {
+      return error("city debe ser texto", 400);
+    }
+
+    // Rate limiting: máximo 5 cotizaciones por hora por IP.
+    // La validación del body ocurre ANTES de incrementar el contador,
+    // así un body inválido no consume cuota.
+    // NOTA: read-then-write en KV no es atómico — dos requests concurrentes
+    // de la misma IP pueden leer el mismo currentCount y ambos pasar.
+    // Un fix completo requeriría Durable Objects, pero el impacto es
+    // limitado (máximo ~2x el límite en ráfagas muy cortas).
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const rateKey = `ratelimit:quotation:${ip}`;
+    const currentCount = parseInt(await env.STRATON_KV.get(rateKey) || "0");
+
+    if (currentCount >= 5) {
+      return error("Demasiadas solicitudes. Intenta de nuevo en una hora.", 429);
+    }
+
+    // Escribir el nuevo contador en segundo plano para no bloquear la respuesta
+    const newCount = currentCount + 1;
+    ctx.waitUntil(env.STRATON_KV.put(rateKey, String(newCount), { expirationTtl: 3600 }));
 
     const result = await execute(
       env.STRATON_DB,

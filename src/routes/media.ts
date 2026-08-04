@@ -2,9 +2,9 @@
 // GET /api/media/{key} — devuelve el objeto almacenado en el bucket
 import type { Env } from "../index";
 
-// Único prefijo que src/routes/upload.ts escribe actualmente en R2.
-// Si se añade un nuevo prefijo de subida, hay que sumarlo aquí también.
-const ALLOWED_PREFIXES = ["products/"];
+// Prefijos permitidos para servir desde R2.
+// Deben coincidir con ALLOWED_FOLDERS en src/routes/upload.ts.
+const ALLOWED_PREFIXES = ["products/", "avatars/", "events/", "hero/", "cards/"];
 
 function withNosniff(body: BodyInit | null, init: ResponseInit): Response {
   const headers = new Headers(init.headers);
@@ -46,6 +46,8 @@ export async function handleMedia(
   );
   headers.set("Cache-Control", "public, max-age=31536000");
   headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "DENY");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
   return new Response(object.body, { headers });
 }

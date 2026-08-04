@@ -1,6 +1,7 @@
 // CRUD de testimonios
 import { json, error } from "../utils/response";
 import { queryAll, queryOne, execute, handleDbError } from "../utils/d1";
+import { deleteR2Object } from "../utils/r2";
 import type { Env } from "../index";
 
 export async function handleTestimonials(request: Request, env: Env, pathname: string): Promise<Response> {
@@ -35,9 +36,15 @@ async function listTestimonials(request: Request, env: Env): Promise<Response> {
       whereClause += " AND visible = ?";
       params.push(visible === "1" || visible === "true" ? 1 : 0);
     }
-    if (status) {
+    // Por defecto solo publicados (endpoint público).
+    // ?status=all permite al admin ver borradores.
+    if (status === "all") {
+      // sin filtro adicional
+    } else if (status) {
       whereClause += " AND status = ?";
       params.push(status);
+    } else {
+      whereClause += " AND status = 'published'";
     }
 
     const countResult = await queryOne(env.STRATON_DB, `SELECT COUNT(*) as total FROM testimonials ${whereClause}`, params);
@@ -91,12 +98,16 @@ async function createTestimonial(request: Request, env: Env): Promise<Response> 
 
 async function updateTestimonial(request: Request, env: Env, id: number): Promise<Response> {
   try {
-    const existing = await queryOne(env.STRATON_DB, "SELECT id FROM testimonials WHERE id = ?", [id]);
+    const existing = await queryOne(env.STRATON_DB, "SELECT * FROM testimonials WHERE id = ?", [id]);
     if (!existing) return error("Testimonial not found", 404);
 
     const body = await request.json() as Record<string, unknown>;
     const sets: string[] = [];
     const params: unknown[] = [];
+    // Limpiar avatar anterior de R2 si se reemplazó
+    if (body.avatar_url !== undefined && existing.avatar_url && existing.avatar_url !== body.avatar_url) {
+      deleteR2Object(existing.avatar_url as string, env);
+    }
     const fields = ["client_name", "company", "quote", "event_id", "avatar_url", "visible", "status"];
     for (const field of fields) {
       if (body[field] !== undefined) {

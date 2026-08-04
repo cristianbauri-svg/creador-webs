@@ -5,6 +5,7 @@ import type { Env } from "../index";
 
 const ALLOWED_TYPES = ["image/webp", "image/jpeg", "image/png"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_FOLDERS = ["products", "avatars", "events", "hero", "cards"];
 
 export async function handleUpload(request: Request, env: Env): Promise<Response> {
   if (request.method !== "POST") {
@@ -60,9 +61,14 @@ export async function handleUpload(request: Request, env: Env): Promise<Response
     return error("Tipo de archivo no válido. Solo se permiten PNG, JPEG y WebP.", 400);
   }
 
+  // Carpeta de destino: el admin puede especificar un folder en el FormData.
+  // Si no se especifica o no es válido, se usa "products" por defecto.
+  const folderInput = (formData.get("folder") as string) || "products";
+  const folder = ALLOWED_FOLDERS.includes(folderInput) ? folderInput : "products";
+
   // Generar nombre único
   const ext = file.type.split("/")[1] || "jpg";
-  const key = `products/${crypto.randomUUID()}.${ext}`;
+  const key = `${folder}/${crypto.randomUUID()}.${ext}`;
 
   try {
     await env.STRATON_BUCKET.put(key, file.stream(), {

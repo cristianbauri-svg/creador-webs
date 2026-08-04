@@ -1,6 +1,7 @@
 // CRUD de eventos
 import { json, error } from "../utils/response";
 import { queryAll, queryOne, execute, handleDbError } from "../utils/d1";
+import { deleteR2Object } from "../utils/r2";
 import type { Env } from "../index";
 
 export async function handleEvents(request: Request, env: Env, pathname: string): Promise<Response> {
@@ -35,9 +36,15 @@ async function listEvents(request: Request, env: Env): Promise<Response> {
       whereClause += " AND event_type = ?";
       params.push(eventType);
     }
-    if (status) {
+    // Por defecto solo publicados (endpoint público).
+    // ?status=all permite al admin ver borradores.
+    if (status === "all") {
+      // sin filtro adicional
+    } else if (status) {
       whereClause += " AND status = ?";
       params.push(status);
+    } else {
+      whereClause += " AND status = 'published'";
     }
 
     const countResult = await queryOne(env.STRATON_DB, `SELECT COUNT(*) as total FROM events ${whereClause}`, params);
@@ -73,6 +80,8 @@ async function createEvent(request: Request, env: Env): Promise<Response> {
   try {
     const body = await request.json() as Record<string, unknown>;
     if (!body.title || typeof body.title !== "string") return error("title is required");
+    // Validar tipos de campos opcionales
+    if (body.gallery_json !== undefined && body.gallery_json !== null && typeof body.gallery_json !== "string") return error("gallery_json debe ser string JSON", 400);
 
     const validTypes = ["corporativo", "social", "concierto"];
     if (body.event_type && !validTypes.includes(body.event_type as string)) {
@@ -95,12 +104,19 @@ async function createEvent(request: Request, env: Env): Promise<Response> {
 
 async function updateEvent(request: Request, env: Env, id: number): Promise<Response> {
   try {
-    const existing = await queryOne(env.STRATON_DB, "SELECT id FROM events WHERE id = ?", [id]);
+    const existing = await queryOne(env.STRATON_DB, "SELECT * FROM events WHERE id = ?", [id]);
     if (!existing) return error("Event not found", 404);
 
     const body = await request.json() as Record<string, unknown>;
     const sets: string[] = [];
     const params: unknown[] = [];
+    // Limpiar imágenes anteriores de R2 si se reemplazaron
+    if (body.before_media_url !== undefined && existing.before_media_url && existing.before_media_url !== body.before_media_url) {
+      deleteR2Object(existing.before_media_url as string, env);
+    }
+    if (body.after_media_url !== undefined && existing.after_media_url && existing.after_media_url !== body.after_media_url) {
+      deleteR2Object(existing.after_media_url as string, env);
+    }
     const fields = ["title", "event_type", "solution", "result", "before_media_url", "after_media_url", "gallery_json", "status"];
     for (const field of fields) {
       if (body[field] !== undefined) {

@@ -30,9 +30,15 @@ async function listPackages(request: Request, env: Env): Promise<Response> {
 
     let whereClause = "WHERE 1=1";
     const params: unknown[] = [];
-    if (status) {
+    // Por defecto solo publicados (endpoint público).
+    // ?status=all permite al admin ver borradores.
+    if (status === "all") {
+      // sin filtro adicional
+    } else if (status) {
       whereClause += " AND status = ?";
       params.push(status);
+    } else {
+      whereClause += " AND status = 'published'";
     }
 
     const countResult = await queryOne(env.STRATON_DB, `SELECT COUNT(*) as total FROM packages ${whereClause}`, params);
@@ -68,6 +74,9 @@ async function createPackage(request: Request, env: Env): Promise<Response> {
   try {
     const body = await request.json() as Record<string, unknown>;
     if (!body.name || typeof body.name !== "string") return error("name is required");
+    // Validar tipos de campos opcionales
+    if (body.includes_json !== undefined && body.includes_json !== null && typeof body.includes_json !== "string") return error("includes_json debe ser string JSON", 400);
+    if (body.sort_order !== undefined && body.sort_order !== null && typeof body.sort_order !== "number") return error("sort_order debe ser número", 400);
 
     const result = await execute(
       env.STRATON_DB,

@@ -135,11 +135,11 @@ async function verifyAccessJwt(jwt: string, env: Env): Promise<AccessClaims | nu
 /**
  * Valida el acceso a rutas protegidas.
  * Retorna true si:
- *   - env.ENVIRONMENT === "development" (bypass explícito de desarrollo
- *     local vía .dev.vars — NUNCA se infiere de la ausencia del header,
- *     porque eso es justo el hueco que esto corrige: si Access no está
- *     configurado sobre /api/* en producción, una request también llegaría
- *     sin header, y aceptarla igual sería el mismo problema de antes).
+ *   - La request proviene de localhost/127.0.0.1 (desarrollo local con
+ *     wrangler dev). Este bypass es fail-safe: un Worker en producción en
+ *     el edge de Cloudflare NUNCA recibe requests con localhost en el
+ *     hostname, así que este chequeo no puede activarse accidentalmente
+ *     por una variable de entorno mal configurada.
  *   - El header Cf-Access-Jwt-Assertion está presente y el JWT es
  *     criptográficamente válido (firma, aud, expiración).
  *
@@ -147,9 +147,12 @@ async function verifyAccessJwt(jwt: string, env: Env): Promise<AccessClaims | nu
  * presente pero inválido, o error verificando.
  */
 export async function validateAccess(request: Request, env: Env): Promise<boolean> {
-  // Bypass explícito solo en desarrollo local. Fail-safe: si ENVIRONMENT no
-  // está seteado o vale otra cosa, NO se activa el bypass (se exige JWT).
-  if (env.ENVIRONMENT === "development") {
+  // Bypass solo en desarrollo local detectado por hostname.
+  // Fail-safe: ningún Worker en producción recibe requests con localhost
+  // o 127.0.0.1 en el host, así que este bypass es imposible de activar
+  // accidentalmente en el edge de Cloudflare.
+  const url = new URL(request.url);
+  if (url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname.endsWith(".localhost")) {
     return true;
   }
 

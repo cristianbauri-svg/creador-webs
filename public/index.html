@@ -19,6 +19,30 @@
 
   <!-- Estilos del carrito de cotización y página dinámica -->
   <style>
+    /* ====== Fuentes (Nunito Sans + Scope One) — auto-hospedadas ====== */
+    @font-face {
+      font-family: 'Nunito Sans';
+      font-style: normal;
+      font-weight: 300 600;
+      font-display: swap;
+      src: url('/fonts/nunito-sans-latin.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'Scope One';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('/fonts/scope-one-latin.woff2') format('woff2');
+    }
+    .dynamic-page { font-family: 'Nunito Sans', system-ui, sans-serif; }
+    .dynamic-page blockquote { font-family: 'Scope One', serif; }
+    /* Títulos de bloque con font-family explícito → heredan Nunito dentro de la página dinámica */
+    .dynamic-page .block-section-title,
+    .dynamic-page .pc-info h3,
+    .dynamic-page .contact-form-dynamic input,
+    .dynamic-page .contact-form-dynamic textarea,
+    .dynamic-page .contact-form-dynamic button { font-family: inherit; }
+
     /* ====== Página dinámica (paleta Straton Audio) ====== */
     .dynamic-page {
       max-width: 960px;
@@ -54,11 +78,11 @@
       display: inline-block; background: var(--color-accent, #1db954); color: #fff; padding: 12px 28px; border-radius: 6px;
       text-decoration: none; font-weight: 600; transition: background 0.2s;
     }
-    .btn-hero:hover { background: var(--color-accent-hover, #1ed760); }
+    .btn-hero:hover { background: var(--color-accent-hover, #1ed760); color: #000; }
 
     /* --- Texto --- */
     .block-text .block-text-title {
-      font-size: 2rem; font-weight: 700; color: var(--color-accent, #1db954); margin-bottom: 1rem;
+      font-size: 2rem; font-weight: 700; color: var(--color-accent, #1db954); margin-bottom: 1rem; opacity: 0.70;
     }
     .block-text .block-text-content {
       font-size: 1.05rem; line-height: 1.8; color: var(--color-text-secondary, #b0b0b0);
@@ -123,7 +147,7 @@
     .package-card-dynamic ul { list-style: none; padding: 0; color: var(--color-text-secondary, #ccc); margin: 1rem 0; }
     .package-card-dynamic ul li { padding: 4px 0; }
     .btn-package-quote { background: var(--color-accent, #1db954); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
-    .btn-package-quote:hover { background: var(--color-accent-hover, #1ed760); }
+    .btn-package-quote:hover { background: var(--color-accent-hover, #1ed760); color: #000; }
 
     /* --- Testimonios --- */
     .testimonials-slider {
@@ -149,7 +173,7 @@
       background: var(--color-accent, #1db954); color: #fff; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600;
       transition: background 0.2s;
     }
-    .contact-form-dynamic button:hover { background: var(--color-accent-hover, #1ed760); }
+    .contact-form-dynamic button:hover { background: var(--color-accent-hover, #1ed760); color: #000; }
     .contact-form-dynamic button:disabled { opacity: 0.6; cursor: not-allowed; }
     .contact-form-status { font-size: 0.9rem; min-height: 1.2em; }
     .contact-form-status.success { color: var(--color-accent, #1db954); }
@@ -165,7 +189,70 @@
       display: inline-block; background: var(--color-accent, #1db954); color: #fff; padding: 12px 28px; border-radius: 6px;
       text-decoration: none; font-weight: 600; transition: background 0.2s;
     }
-    .btn-cta:hover { background: var(--color-accent-hover, #1ed760); }
+    .btn-cta:hover { background: var(--color-accent-hover, #1ed760); color: #000; }
+
+    /* ====== Estilos de botón (3 tonos seleccionables desde el admin) ====== */
+    /* Estilo 1 — Verde actual (default, sin clase adicional) */
+    /* Estilo 2 — Verde WhatsApp: tono translúcido con glow */
+    .btn-style-whatsapp,
+    a.btn-style-whatsapp,
+    button.btn-style-whatsapp {
+      background: rgba(29, 185, 84, 0.58);
+      box-shadow: 0 0 12px rgba(29, 185, 84, 0.7),
+                  0 0 24px rgba(29, 185, 84, 0.5),
+                  0 0 48px rgba(29, 185, 84, 0.3);
+    }
+    .btn-style-whatsapp:hover,
+    a.btn-style-whatsapp:hover,
+    button.btn-style-whatsapp:hover {
+      background: #1db954;
+      color: #000;
+      box-shadow: 0 0 16px rgba(29, 185, 84, 0.9),
+                  0 0 32px rgba(29, 185, 84, 0.7),
+                  0 0 64px rgba(29, 185, 84, 0.5);
+    }
+    /* Estilo 3 — Verde neón: 70% opacidad + hover con efecto lumínico */
+    .btn-style-neon,
+    a.btn-style-neon,
+    button.btn-style-neon {
+      background: rgba(29, 185, 84, 0.70);
+      box-shadow: 0 0 6px rgba(29, 185, 84, 0.3);
+      transition: background 0.25s, box-shadow 0.25s, transform 0.15s;
+    }
+    .btn-style-neon:hover,
+    a.btn-style-neon:hover,
+    button.btn-style-neon:hover {
+      background: #1ed760;
+      color: #000;
+      box-shadow: 0 0 18px rgba(29, 185, 84, 0.85),
+                  0 0 40px rgba(29, 185, 84, 0.55),
+                  0 0 70px rgba(29, 185, 84, 0.30),
+                  0 0 100px rgba(29, 185, 84, 0.15);
+      transform: translateY(-1px);
+    }
+    /* Card links con estilo whatsapp/neon (solo afecta color, no background) */
+    a.card-link.btn-style-whatsapp {
+      background: transparent;
+      color: rgba(29, 185, 84, 0.58);
+      box-shadow: none;
+    }
+    a.card-link.btn-style-whatsapp:hover {
+      background: transparent;
+      color: #1db954;
+      box-shadow: none;
+    }
+    a.card-link.btn-style-neon {
+      background: transparent;
+      color: rgba(29, 185, 84, 0.70);
+      box-shadow: none;
+      text-shadow: 0 0 8px rgba(29, 185, 84, 0.5);
+    }
+    a.card-link.btn-style-neon:hover {
+      background: transparent;
+      color: #1ed760;
+      box-shadow: none;
+      text-shadow: 0 0 16px rgba(29, 185, 84, 0.8), 0 0 32px rgba(29, 185, 84, 0.4);
+    }
 
     /* --- Espaciador --- */
     .dynamic-spacer { width: 100%; }
@@ -181,11 +268,40 @@
 
     /* Título de sección genérico */
     .block-section-title {
-      font-size: 2rem; font-weight: 700; color: var(--color-accent, #1db954); margin-bottom: 1.5rem; text-align: center;
+      font-size: 2rem; font-weight: 700; color: var(--color-accent, #1db954); margin-bottom: 1.5rem; text-align: center; opacity: 0.70;
       font-family: var(--font-primary, system-ui, sans-serif);
     }
 
     .empty-text { color: var(--color-text-muted, #666); text-align: center; padding: 20px; }
+
+    /* ==== Tabla de contenido (dropdown, dark + #D0FAE5) ==== */
+    .dynamic-toc {
+      display: inline-block; max-width: 100%; min-width: 240px;
+      background: #0D0D0D; border: 1px solid #2A2A2A; border-radius: 10px;
+      padding: 12px 16px; margin-bottom: 2rem; box-shadow: 0 1px 1px rgba(0,0,0,.05);
+    }
+    .dynamic-toc .toc-title-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .dynamic-toc .toc-title {
+      margin: 0; font-size: 0.95rem; font-weight: 700; color: #fff;
+    }
+    .dynamic-toc .toc-toggle {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 28px; padding: 0; border: 1px solid #3A3A3A; border-radius: 5px;
+      background: none; color: #D0FAE5; cursor: pointer;
+    }
+    .dynamic-toc .toc-toggle:hover { border-color: #D0FAE5; }
+    .dynamic-toc .toc-toggle svg { width: 18px; height: 18px; display: block; }
+    .dynamic-toc nav { margin-top: 10px; }
+    .dynamic-toc nav ul { list-style: none; margin: 0; padding: 0; }
+    .dynamic-toc nav li { line-height: 1.55; margin: 3px 0; }
+    .dynamic-toc nav ul ul { margin-left: 1.1em; }
+    .dynamic-toc nav a { color: #D0FAE5; text-decoration: none; font-size: 0.9rem; }
+    .dynamic-toc nav a:hover { text-decoration: underline; }
+    .dynamic-toc.toc-collapsed nav { display: none; }
+    /* El TOC como bloque dinámico: el wrapper ya aporta el margen */
+    .dynamic-block.block-toc .dynamic-toc { margin-bottom: 0; }
 
     /* Ajuste de ancho solo en escritorio */
     @media (min-width: 769px) {
