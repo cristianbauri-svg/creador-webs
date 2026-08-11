@@ -740,6 +740,24 @@
           idx = (idx + 1) % total;
           show(idx);
         }, 3500);
+
+        // Pausar en hover (desktop) y touch (mobile)
+        container.addEventListener('mouseenter', function() {
+          if (container._carouselInterval) { clearInterval(container._carouselInterval); container._carouselInterval = null; }
+        });
+        container.addEventListener('mouseleave', function() {
+          if (!container._carouselInterval) {
+            container._carouselInterval = setInterval(function() { idx = (idx + 1) % total; show(idx); }, 3500);
+          }
+        });
+        container.addEventListener('touchstart', function() {
+          if (container._carouselInterval) { clearInterval(container._carouselInterval); container._carouselInterval = null; }
+        });
+        container.addEventListener('touchend', function() {
+          if (!container._carouselInterval) {
+            container._carouselInterval = setInterval(function() { idx = (idx + 1) % total; show(idx); }, 3500);
+          }
+        });
       }
     } catch (err) {
       console.error('Error cargando productos:', err);
@@ -1197,7 +1215,7 @@
             ? gallery[0]
             : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80';
 
-          var linkOpen = ev.link ? '<a href="' + escapeAttr(ev.link) + '" style="text-decoration:none;color:inherit;display:block;">' : '';
+          var linkOpen = ev.link ? '<a href="' + escapeAttr(ev.link) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;display:block;">' : '';
           var linkClose = ev.link ? '</a>' : '';
           return linkOpen + `
             <article class="event-card animate-in" data-type="${ev.event_type || ''}">
@@ -1443,7 +1461,7 @@ ${ev.before_media_url && ev.after_media_url ? `
 
   // Render del bloque "Tabla de contenido": placeholder que se completa al final
   function renderTOC(props) {
-    return sectionWrapper('toc', '<div class="dynamic-toc toc-collapsed" data-toc-slot></div>');
+    return sectionWrapper('toc', '<div class="dynamic-toc toc-collapsed" data-toc-slot></div>', props.bg_color);
   }
 
   // Rellena los placeholders .block-toc con la tabla de contenido de toda la página
@@ -1503,9 +1521,10 @@ ${ev.before_media_url && ev.after_media_url ? `
     }
   }
 
-  function sectionWrapper(className, inner) {
+  function sectionWrapper(className, inner, bgColor) {
     var sec = document.createElement('section');
     sec.className = 'dynamic-block block-' + className;
+    if (bgColor) { sec.style.backgroundColor = bgColor; }
     sec.innerHTML = inner;
     return sec;
   }
@@ -1526,7 +1545,8 @@ ${ev.before_media_url && ev.after_media_url ? `
       '<div class="hero-overlay"></div>' +
       '<div class="hero-content"><h1>' + esc(props.title) + '</h1><p>' + esc(props.subtitle) + '</p>' +
       (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '" class="btn-hero ' + btnStyleClass(props.button_style) + '">' + esc(props.button_text) + '</a>' : '') +
-      '</div>'
+      '</div>',
+      props.bg_color
     );
   }
 
@@ -1536,10 +1556,17 @@ ${ev.before_media_url && ev.after_media_url ? `
     // autenticados vía Cloudflare Access; sanitizamos tags peligrosos
     // como defensa en profundidad.
     var safeHtml = sanitizeRichText(props.content || '');
-    return sectionWrapper('text',
+    var sec = sectionWrapper('text',
       '<h2 class="block-text-title">' + esc(props.title) + '</h2>' +
-      '<div class="block-text-content">' + safeHtml + '</div>'
+      '<div class="block-text-content">' + safeHtml + '</div>',
+      props.bg_color
     );
+    // Posicionamiento libre: márgenes negativos permiten superposición
+    if (props.margin_top) { sec.style.marginTop = parseInt(props.margin_top) + 'px'; }
+    if (props.margin_bottom) { sec.style.marginBottom = parseInt(props.margin_bottom) + 'px'; }
+    sec.style.position = 'relative';
+    sec.style.zIndex = '1';
+    return sec;
   }
 
   /** Sanitiza HTML para contenido enriquecido: elimina <script>, <iframe>,
@@ -1586,13 +1613,13 @@ ${ev.before_media_url && ev.after_media_url ? `
         (card.link ? '<a href="' + escapeAttr(card.link) + '" class="card-link ' + btnStyleClass(props.button_style) + '">Ver más</a>' : '') +
         '</div>';
     });
-    return sectionWrapper('cards', title + '<div class="cards-grid">' + cardsHtml + '</div>');
+    return sectionWrapper('cards', title + '<div class="cards-grid">' + cardsHtml + '</div>', props.bg_color);
   }
 
   function renderImage(props) {
     var img = '<img src="' + escapeAttr(props.url) + '" alt="' + esc(props.alt || '') + '" class="block-full-image">';
     var caption = props.caption ? '<p class="block-image-caption">' + esc(props.caption) + '</p>' : '';
-    return sectionWrapper('image', img + caption);
+    return sectionWrapper('image', img + caption, props.bg_color);
   }
 
   function renderGallery(props) {
@@ -1602,7 +1629,7 @@ ${ev.before_media_url && ev.after_media_url ? `
     images.forEach(function(img) {
       imagesHtml += '<div class="gallery-item"><img src="' + escapeAttr(img.url) + '" alt="' + esc(img.alt || '') + '"></div>';
     });
-    return sectionWrapper('gallery', title + '<div class="gallery-grid">' + imagesHtml + '</div>');
+    return sectionWrapper('gallery', title + '<div class="gallery-grid">' + imagesHtml + '</div>', props.bg_color);
   }
 
   function renderVideo(props) {
@@ -1611,11 +1638,11 @@ ${ev.before_media_url && ev.after_media_url ? `
       embed = '<div class="video-container"><iframe src="' + escapeAttr(props.url) + '" frameborder="0" allowfullscreen></iframe></div>';
     }
     var title = props.title ? '<h2 class="block-section-title">' + esc(props.title) + '</h2>' : '';
-    return sectionWrapper('video', title + embed);
+    return sectionWrapper('video', title + embed, props.bg_color);
   }
 
   function renderProductCarouselBlock(props) {
-    var sec = sectionWrapper('product-carousel', '<h2 class="block-section-title">' + esc(props.section_title || 'Productos') + '</h2><div class="product-carousel-new"></div>');
+    var sec = sectionWrapper('product-carousel', '<h2 class="block-section-title">' + esc(props.section_title || 'Productos') + '</h2><div class="product-carousel-new"></div>', props.bg_color);
     var container = sec.querySelector('.product-carousel-new');
     // Compat: bloques creados antes de esta feature no tienen "mode" — se
     // comportan igual que siempre (fetch por categoría).
@@ -1632,7 +1659,7 @@ ${ev.before_media_url && ev.after_media_url ? `
 
   function renderPackages(props) {
     var title = props.section_title ? '<h2 class="block-section-title">' + esc(props.section_title) + '</h2>' : '';
-    var sec = sectionWrapper('packages', title + '<div class="packages-grid-dynamic"></div>');
+    var sec = sectionWrapper('packages', title + '<div class="packages-grid-dynamic"></div>', props.bg_color);
     fetchPackagesForDynamic(sec.querySelector('.packages-grid-dynamic'), props.button_style);
     return sec;
   }
@@ -1644,7 +1671,7 @@ ${ev.before_media_url && ev.after_media_url ? `
     testimonials.forEach(function(t) {
       html += '<div class="testimonial-item"><p>' + esc(t.text) + '</p><span>' + esc(t.author) + '</span></div>';
     });
-    return sectionWrapper('testimonials', title + '<div class="testimonials-slider">' + html + '</div>');
+    return sectionWrapper('testimonials', title + '<div class="testimonials-slider">' + html + '</div>', props.bg_color);
   }
 
   function renderContactForm(props) {
@@ -1658,7 +1685,7 @@ ${ev.before_media_url && ev.after_media_url ? `
       '<button type="submit" class="' + btnStyleClass(props.button_style) + '">Enviar</button>' +
       '<div class="contact-form-status"></div>' +
       '</form>';
-    var sec = sectionWrapper('contact-form', title + desc + formHtml);
+    var sec = sectionWrapper('contact-form', title + desc + formHtml, props.bg_color);
     initDynamicContactForm(sec.querySelector('.contact-form-dynamic'));
     return sec;
   }
@@ -1718,16 +1745,170 @@ ${ev.before_media_url && ev.after_media_url ? `
       '<h2>' + esc(props.title) + '</h2>' +
       '<p>' + esc(props.subtitle) + '</p>' +
       (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '" class="btn-cta ' + btnStyleClass(props.button_style) + '">' + esc(props.button_text) + '</a>' : '') +
-      '</div>'
+      '</div>',
+      props.bg_color
     );
   }
 
   function renderSpacer(props) {
+    var style = props.style || '0';
     var h = parseInt(props.height) || 40;
-    var div = document.createElement('div');
-    div.className = 'dynamic-spacer';
-    div.style.height = h + 'px';
-    return div;
+
+    // Estilo 0: simple (solo espacio vertical)
+    if (style === '0') {
+      var div = document.createElement('div');
+      div.className = 'dynamic-spacer';
+      div.style.height = h + 'px';
+      if (props.bg_color) { div.style.backgroundColor = props.bg_color; }
+      return div;
+    }
+
+    // Contenedor común para estilos visuales
+    var wrap = document.createElement('div');
+    wrap.className = 'dynamic-spacer spacer-visual';
+    wrap.style.height = h + 'px';
+    wrap.style.display = 'flex';
+    wrap.style.alignItems = 'center';
+    wrap.style.justifyContent = 'center';
+    wrap.style.overflow = 'hidden';
+    if (props.bg_color) { wrap.style.backgroundColor = props.bg_color; }
+
+    // Estilo 1: bits de sonido pixelados (cuadritos tipo ecualizador)
+    if (style === '1') {
+      var bitsContainer = document.createElement('div');
+      bitsContainer.style.cssText = 'display:flex;align-items:flex-end;gap:3px;height:24px;';
+      var bitHeights = [4, 10, 3, 12, 2, 14, 5, 10, 3, 8, 4, 12, 2, 7, 4, 9, 2, 6];
+      for (var b = 0; b < bitHeights.length; b++) {
+        var bit = document.createElement('div');
+        bit.style.cssText = 'width:3px;height:' + bitHeights[b] + 'px;border-radius:1px;background:#1db954;opacity:' + (0.2 + (bitHeights[b] / 60)) + ';transition:height 0.3s;';
+        bitsContainer.appendChild(bit);
+      }
+      wrap.appendChild(bitsContainer);
+      return wrap;
+    }
+
+    // Estilo 2: línea lumínica delgada (verde neón con glow)
+    if (style === '2') {
+      var line = document.createElement('div');
+      line.style.cssText = 'width:70%;max-width:400px;height:1px;background:linear-gradient(to right, transparent 0%, rgba(29,185,84,0.7) 20%, rgba(29,185,84,0.7) 80%, transparent 100%);box-shadow:0 0 6px rgba(29,185,84,0.35);border-radius:1px;';
+      wrap.appendChild(line);
+      return wrap;
+    }
+
+    // Estilo 3: línea semigruesa translúcida (~4px)
+    if (style === '3') {
+      var thick = document.createElement('div');
+      thick.style.cssText = 'width:50%;max-width:400px;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;';
+      wrap.appendChild(thick);
+      return wrap;
+    }
+
+    // Estilo 4: línea semidelgada translúcida (~1px)
+    if (style === '4') {
+      var thin = document.createElement('div');
+      thin.style.cssText = 'width:50%;max-width:400px;height:1px;background:rgba(255,255,255,0.08);border-radius:1px;';
+      wrap.appendChild(thin);
+      return wrap;
+    }
+
+    // Estilo 5: Espectro — barras verticales que cruzan ambos bloques
+    // Inspirado en la imagen de referencia: barras tipo ecualizador que
+    // ascienden y descienden desde una línea central cálida
+    if (style === '5') {
+      var specH = h; // usar altura completa
+      var midY = specH / 2;
+
+      // [altura_%, r, g, b, x_%, width_px, hacia_arriba]
+      var bars = [
+        // ámbar/naranja (izquierda 0-24%)
+        [0.45, 179,129,45, 0, 2, true],   [0.32, 159,113,24, 2, 2, false],
+        [0.55, 155,80,23, 4, 2, true],    [0.38, 177,144,44, 6, 2, false],
+        [0.50, 171,130,60, 8, 2, true],   [0.28, 201,173,133, 10, 2, false],
+        [0.60, 236,166,65, 12, 2, true],  [0.42, 255,227,167, 14, 2, false],
+        [0.35, 179,129,45, 16, 2, true],  [0.52, 159,113,24, 18, 2, false],
+        [0.48, 177,144,44, 20, 2, true],  [0.30, 171,130,60, 22, 2, false],
+        [0.58, 201,173,133, 24, 2, true],
+        // transición ámbar→oliva (25-34%)
+        [0.44, 145,115,35, 26, 2, false],[0.54, 133,127,30, 28, 2, true],
+        [0.36, 120,108,28, 30, 2, false],[0.50, 105,98,21, 32, 2, true],
+        [0.32, 133,142,47, 34, 2, false],
+        // oliva (35-49%)
+        [0.56, 123,143,52, 36, 2, true],  [0.40, 103,153,22, 38, 2, false],
+        [0.48, 118,142,53, 40, 2, true],  [0.30, 92,142,7, 42, 2, false],
+        [0.52, 105,130,30, 44, 2, true],  [0.38, 133,142,47, 46, 2, false],
+        [0.44, 110,139,17, 48, 2, true],  [0.34, 123,143,52, 50, 2, false],
+        // verde neón (51-69%)
+        [0.50, 61,137,6, 52, 2, true],    [0.42, 63,186,97, 54, 2, false],
+        [0.36, 27,164,44, 56, 2, true],   [0.54, 47,163,60, 58, 2, false],
+        [0.46, 23,144,58, 60, 2, true],   [0.32, 30,179,87, 62, 2, false],
+        [0.58, 39,158,78, 64, 2, true],   [0.40, 25,172,68, 66, 2, false],
+        [0.52, 99,166,18, 68, 2, true],   [0.44, 32,91,51, 70, 2, false],
+        // verde intenso (71-89%)
+        [0.48, 51,175,88, 72, 2, true],   [0.36, 60,68,35, 74, 2, false],
+        [0.56, 89,40,29, 76, 2, true],   [0.42, 47,163,60, 78, 2, false],
+        [0.34, 63,186,97, 80, 2, true],  [0.52, 30,179,87, 82, 2, false],
+        [0.46, 39,158,78, 84, 2, true],  [0.38, 25,172,68, 86, 2, false],
+        [0.50, 99,166,18, 88, 2, true],  [0.44, 51,175,88, 90, 2, false],
+        // borde derecho (91-99%)
+        [0.40, 23,144,58, 92, 2, true],  [0.48, 32,91,51, 94, 2, false],
+        [0.36, 60,68,35, 96, 2, true],   [0.52, 89,40,29, 98, 2, false],
+      ];
+
+      wrap.style.position = 'relative';
+
+      // Línea central cálida con gradiente desvanecido en puntas (35% opacidad)
+      var centerGlow = document.createElement('div');
+      centerGlow.style.cssText =
+        'position:absolute;left:0;width:100%;height:1px;' +
+        'top:' + (midY - 0.5) + 'px;' +
+        'background:linear-gradient(to right,' +
+          'transparent 0%,' +
+          'rgba(255,246,220,0.35) 10%,' +
+          'rgba(255,255,183,0.35) 50%,' +
+          'rgba(202,255,207,0.35) 90%,' +
+          'transparent 100%);' +
+        'box-shadow:0 0 6px rgba(255,246,220,0.12);' +
+        'z-index:2;';
+      wrap.appendChild(centerGlow);
+
+      // Renderizar barras con puntas agudas (gradiente → transparente en la punta)
+      bars.forEach(function(bar) {
+        var ratio = bar[0];
+        var r = bar[1], g = bar[2], b = bar[3];
+        var xPct = bar[4];
+        var widthPx = bar[5];
+        var goesUp = bar[6];
+        var barHeight = Math.round(specH * ratio);
+
+        var barEl = document.createElement('div');
+        // Gradiente que se desvanece en la punta para efecto agudo
+        var gradient = goesUp
+          ? 'linear-gradient(to top, rgba(' + r + ',' + g + ',' + b + ',0.35) 0%, rgba(' + r + ',' + g + ',' + b + ',0.35) 65%, transparent 100%)'
+          : 'linear-gradient(to bottom, rgba(' + r + ',' + g + ',' + b + ',0.35) 0%, rgba(' + r + ',' + g + ',' + b + ',0.35) 65%, transparent 100%)';
+
+        var styles =
+          'position:absolute;' +
+          'left:' + xPct + '%;' +
+          'width:' + widthPx + 'px;' +
+          'height:' + barHeight + 'px;' +
+          'background:' + gradient + ';' +
+          'z-index:1;';
+        styles += goesUp
+          ? 'bottom:' + midY + 'px;'
+          : 'top:' + midY + 'px;';
+        barEl.style.cssText = styles;
+        wrap.appendChild(barEl);
+      });
+
+      return wrap;
+    }
+
+    // Fallback: simple
+    var fb = document.createElement('div');
+    fb.className = 'dynamic-spacer';
+    fb.style.height = h + 'px';
+    if (props.bg_color) { fb.style.backgroundColor = props.bg_color; }
+    return fb;
   }
 
   function renderWhatsApp(props) {
@@ -1760,7 +1941,7 @@ ${ev.before_media_url && ev.after_media_url ? `
 
   function renderSectionHeader(props) {
     var icon = props.icon ? '<span class="section-header-icon">' + esc(props.icon) + '</span>' : '';
-    return sectionWrapper('section-header', icon + '<h2>' + esc(props.title) + '</h2>');
+    return sectionWrapper('section-header', icon + '<h2>' + esc(props.title) + '</h2>', props.bg_color);
   }
 
   // ========== FAQ: Preguntas Frecuentes con despliegue al scroll ==========
@@ -1795,7 +1976,7 @@ ${ev.before_media_url && ev.after_media_url ? `
       '</article>';
     }).join('');
 
-    var sec = sectionWrapper('faq', titleHTML + '<div class="faq-container">' + bubblesHTML + '</div>');
+    var sec = sectionWrapper('faq', titleHTML + '<div class="faq-container">' + bubblesHTML + '</div>', props.bg_color);
 
     // Inicializar interacciones una vez que el section esté en el DOM
     setTimeout(function() {

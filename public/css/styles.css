@@ -413,6 +413,7 @@ ul { list-style: none; }
 }
 
 .hero-title {
+  font-family: 'Nunito Sans', system-ui, sans-serif;
   font-size: clamp(var(--text-4xl), 5vw, var(--text-6xl));
   font-weight: 800;
   line-height: var(--leading-tight);

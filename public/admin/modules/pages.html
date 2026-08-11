@@ -292,22 +292,22 @@
 
   // Definición de tipos de bloques
   var BLOCK_TYPES = [
-    { type: 'hero', icon: '🦸', label: 'Hero', desc: 'Fondo con título, subtítulo y botón', thumb: '<div class="line wide"></div><div class="line medium"></div><div class="line short"></div><div class="btn-fake"></div>', props: ['bg_type','bg_url','title','subtitle','button_text','button_link','button_style'] },
-    { type: 'text', icon: '📝', label: 'Texto', desc: 'Título y contenido enriquecido', thumb: '<div class="line wide"></div><div class="line medium"></div><div class="line medium"></div><div class="line short"></div>', props: ['title','content'] },
-    { type: 'cards', icon: '🃏', label: 'Cards', desc: '2-4 tarjetas con imagen y texto', thumb: '<div class="line wide" style="width:40%"></div><div class="card-grid"><div class="card-fake"><div class="line"></div><div class="line"></div></div><div class="card-fake"><div class="line"></div><div class="line"></div></div><div class="card-fake"><div class="line"></div><div class="line"></div></div></div>', props: ['section_title','cards','button_style'] },
-    { type: 'image', icon: '🖼️', label: 'Imagen', desc: 'Imagen a ancho completo con pie', thumb: '<div class="img-fake"></div><div class="line short" style="margin-top:4px"></div>', props: ['url','alt','caption'] },
-    { type: 'gallery', icon: '🖼️', label: 'Galería', desc: 'Galería de imágenes en grilla', thumb: '<div class="grid-2x2"><div></div><div></div><div></div><div></div></div>', props: ['section_title','images'] },
-    { type: 'video', icon: '🎬', label: 'Video', desc: 'Video de YouTube o Vimeo', thumb: '<div class="video-bar"><div class="play-triangle"></div></div>', props: ['url','title'] },
-    { type: 'product-carousel', icon: '🎵', label: 'Carrusel Productos', desc: '1 card, autoplay, textos grandes. Imagen recomendada: 800×600px (proporción 4:3)', thumb: '<div class="carousel-single"><div class="line" style="width:60%"></div><div class="line" style="width:80%"></div></div>', props: ['section_title','mode','category','max_items','slides'] },
-    { type: 'packages', icon: '📦', label: 'Paquetes', desc: 'Parrilla de paquetes con precios', thumb: '<div class="line wide" style="width:30%"></div><div class="package-col"><div></div><div style="border:1px solid #1db954"></div><div></div></div>', props: ['section_title','button_style'] },
-    { type: 'testimonials', icon: '💬', label: 'Testimonios', desc: 'Carrusel de testimonios', thumb: '<div class="line wide" style="width:30%"></div><div class="testimonial-bar"><div class="avatar"></div><div class="form-lines"><div class="line"></div><div class="line"></div></div></div>', props: ['section_title','testimonials'] },
-    { type: 'contact-form', icon: '📬', label: 'Formulario', desc: 'Formulario de contacto', thumb: '<div class="line wide" style="width:40%"></div><div class="form-lines"><div class="line" style="width:90%"></div><div class="line" style="width:70%"></div><div class="line" style="width:50%"></div></div>', props: ['title','description','button_style'] },
+    { type: 'hero', icon: '🦸', label: 'Hero', desc: 'Fondo con título, subtítulo y botón', thumb: '<div class="line wide"></div><div class="line medium"></div><div class="line short"></div><div class="btn-fake"></div>', props: ['bg_color','bg_type','bg_url','title','subtitle','button_text','button_link','button_style'] },
+    { type: 'text', icon: '📝', label: 'Texto', desc: 'Título y contenido enriquecido', thumb: '<div class="line wide"></div><div class="line medium"></div><div class="line medium"></div><div class="line short"></div>', props: ['bg_color','title','content','margin_top','margin_bottom'] },
+    { type: 'cards', icon: '🃏', label: 'Cards', desc: '2-4 tarjetas con imagen y texto', thumb: '<div class="line wide" style="width:40%"></div><div class="card-grid"><div class="card-fake"><div class="line"></div><div class="line"></div></div><div class="card-fake"><div class="line"></div><div class="line"></div></div><div class="card-fake"><div class="line"></div><div class="line"></div></div></div>', props: ['bg_color','section_title','cards','button_style'] },
+    { type: 'image', icon: '🖼️', label: 'Imagen', desc: 'Imagen a ancho completo con pie', thumb: '<div class="img-fake"></div><div class="line short" style="margin-top:4px"></div>', props: ['bg_color','url','alt','caption'] },
+    { type: 'gallery', icon: '🖼️', label: 'Galería', desc: 'Galería de imágenes en grilla', thumb: '<div class="grid-2x2"><div></div><div></div><div></div><div></div></div>', props: ['bg_color','section_title','images'] },
+    { type: 'video', icon: '🎬', label: 'Video', desc: 'Video de YouTube o Vimeo', thumb: '<div class="video-bar"><div class="play-triangle"></div></div>', props: ['bg_color','url','title'] },
+    { type: 'product-carousel', icon: '🎵', label: 'Carrusel Productos', desc: '1 card, autoplay, textos grandes. Imagen recomendada: 800×600px (proporción 4:3)', thumb: '<div class="carousel-single"><div class="line" style="width:60%"></div><div class="line" style="width:80%"></div></div>', props: ['bg_color','section_title','mode','category','max_items','slides'] },
+    { type: 'packages', icon: '📦', label: 'Paquetes', desc: 'Parrilla de paquetes con precios', thumb: '<div class="line wide" style="width:30%"></div><div class="package-col"><div></div><div style="border:1px solid #1db954"></div><div></div></div>', props: ['bg_color','section_title','button_style'] },
+    { type: 'testimonials', icon: '💬', label: 'Testimonios', desc: 'Carrusel de testimonios', thumb: '<div class="line wide" style="width:30%"></div><div class="testimonial-bar"><div class="avatar"></div><div class="form-lines"><div class="line"></div><div class="line"></div></div></div>', props: ['bg_color','section_title','testimonials'] },
+    { type: 'contact-form', icon: '📬', label: 'Formulario', desc: 'Formulario de contacto', thumb: '<div class="line wide" style="width:40%"></div><div class="form-lines"><div class="line" style="width:90%"></div><div class="line" style="width:70%"></div><div class="line" style="width:50%"></div></div>', props: ['bg_color','title','description','button_style'] },
     { type: 'cta', icon: '📢', label: 'CTA', desc: 'Llamado a la acción con fondo', thumb: '<div style="position:relative;flex:1"><div class="cta-bg"></div><div style="position:relative;z-index:1;display:flex;flex-direction:column;gap:4px;padding:8px"><div class="line wide" style="background:#fff3"></div><div class="btn-fake"></div></div></div>', props: ['bg_color','title','subtitle','button_text','button_link','button_style'] },
-    { type: 'spacer', icon: '↕️', label: 'Espaciador', desc: 'Separador vertical ajustable', thumb: '<div class="spacer-bar"></div>', props: ['height'] },
-    { type: 'section-header', icon: '🏷️', label: 'Encabezado', desc: 'Título de sección con ícono', thumb: '<div style="display:flex;align-items:center;gap:8px"><div class="icon-circle"></div><div class="line wide"></div></div>', props: ['title','icon'] },
-    { type: 'faq', icon: '❓', label: 'FAQ', desc: 'Preguntas frecuentes con despliegue animado al hacer scroll', thumb: '<div style="display:flex;flex-direction:column;gap:7px;flex:1;padding:4px"><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#1db954;flex-shrink:0"></div><div class="line" style="width:65%;height:7px"></div></div><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#2a2a2a;flex-shrink:0"></div><div class="line" style="width:50%;height:7px"></div></div><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#2a2a2a;flex-shrink:0"></div><div class="line" style="width:55%;height:7px"></div></div></div>', props: ['section_title','faqs'] },
-    { type: 'toc', icon: '📑', label: 'Tabla de contenido', desc: 'Índice desplegable con los títulos (H1/H2) de la página', thumb: '<div style="display:flex;flex-direction:column;gap:5px;flex:1;padding:6px;border:1px solid #2a2a2a;border-radius:6px"><div style="display:flex;align-items:center;justify-content:space-between"><div class="line" style="width:55%;height:9px;background:#D0FAE5"></div><div style="width:14px;height:14px;border:1px solid #3a3a3a;border-radius:3px;flex-shrink:0"></div></div><div class="line" style="width:80%;height:6px"></div><div class="line" style="width:65%;height:6px"></div><div class="line" style="width:50%;height:6px"></div></div>', props: [] },
-    { type: 'whatsapp', icon: '💬', label: 'WhatsApp', desc: 'Botón flotante de WhatsApp con número y mensaje personalizables', thumb: '<div style="position:relative;flex:1;display:flex;align-items:flex-end;justify-content:flex-end"><div style="width:36px;height:36px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(37,211,102,0.3)">💬</div></div>', props: ['phone','message'] }
+    { type: 'spacer', icon: '↕️', label: 'Espaciador', desc: 'Separador vertical ajustable', thumb: '<div class="spacer-bar"></div>', props: ['bg_color','style','height'] },
+    { type: 'section-header', icon: '🏷️', label: 'Encabezado', desc: 'Título de sección con ícono', thumb: '<div style="display:flex;align-items:center;gap:8px"><div class="icon-circle"></div><div class="line wide"></div></div>', props: ['bg_color','title','icon'] },
+    { type: 'faq', icon: '❓', label: 'FAQ', desc: 'Preguntas frecuentes con despliegue animado al hacer scroll', thumb: '<div style="display:flex;flex-direction:column;gap:7px;flex:1;padding:4px"><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#1db954;flex-shrink:0"></div><div class="line" style="width:65%;height:7px"></div></div><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#2a2a2a;flex-shrink:0"></div><div class="line" style="width:50%;height:7px"></div></div><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#2a2a2a;flex-shrink:0"></div><div class="line" style="width:55%;height:7px"></div></div></div>', props: ['bg_color','section_title','faqs'] },
+    { type: 'toc', icon: '📑', label: 'Tabla de contenido', desc: 'Índice desplegable con los títulos (H1/H2) de la página', thumb: '<div style="display:flex;flex-direction:column;gap:5px;flex:1;padding:6px;border:1px solid #2a2a2a;border-radius:6px"><div style="display:flex;align-items:center;justify-content:space-between"><div class="line" style="width:55%;height:9px;background:#D0FAE5"></div><div style="width:14px;height:14px;border:1px solid #3a3a3a;border-radius:3px;flex-shrink:0"></div></div><div class="line" style="width:80%;height:6px"></div><div class="line" style="width:65%;height:6px"></div><div class="line" style="width:50%;height:6px"></div></div>', props: ['bg_color'] },
+    { type: 'whatsapp', icon: '💬', label: 'WhatsApp', desc: 'Botón flotante de WhatsApp con número y mensaje personalizables', thumb: '<div style="position:relative;flex:1;display:flex;align-items:flex-end;justify-content:flex-end"><div style="width:36px;height:36px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(37,211,102,0.3)">💬</div></div>', props: ['bg_color','phone','message'] }
   ];
 
   // Definición de campos para props de tipo array (editor con sub-formulario)
@@ -851,6 +851,80 @@
         styleSelect.value = block.props[prop] || '1';
         styleSelect.addEventListener('change', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
         body.appendChild(styleSelect);
+      } else if (prop === 'bg_color') {
+        var colorWrap = document.createElement('div');
+        colorWrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
+
+        var colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.value = block.props[prop] || '#0a0a0a';
+        colorInput.style.cssText = 'width:40px;height:34px;border:1px solid #2a2a2a;border-radius:6px;cursor:pointer;padding:2px;background:#111;';
+
+        var hexLabel = document.createElement('span');
+        hexLabel.textContent = block.props[prop] || '#0a0a0a';
+        hexLabel.style.cssText = 'font-size:12px;color:#aaa;font-family:monospace;';
+
+        colorInput.addEventListener('input', (function(idx, p, label) {
+          return function() {
+            blocks[idx].props[p] = this.value;
+            label.textContent = this.value;
+          };
+        })(i, prop, hexLabel));
+
+        var clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.textContent = 'Sin color';
+        clearBtn.style.cssText = 'background:none;border:1px solid #2a2a2a;color:#aaa;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;';
+        clearBtn.addEventListener('click', (function(idx, p, inputEl, labelEl) {
+          return function() {
+            blocks[idx].props[p] = '';
+            inputEl.value = '#0a0a0a';
+            labelEl.textContent = 'Sin color';
+          };
+        })(i, prop, colorInput, hexLabel));
+
+        colorWrap.appendChild(colorInput);
+        colorWrap.appendChild(hexLabel);
+        colorWrap.appendChild(clearBtn);
+        body.appendChild(colorWrap);
+      } else if (prop === 'style' && block.type === 'spacer') {
+        var styleSelect = document.createElement('select');
+        [
+          ['0', 'Simple — solo espacio vertical'],
+          ['1', 'Bits de sonido — cuadritos pixelados tipo ecualizador'],
+          ['2', 'Línea lumínica — trazo verde neón con glow sutil'],
+          ['3', 'Línea semigruesa — 4px translúcida'],
+          ['4', 'Línea semidelgada — 1px translúcida'],
+          ['5', 'Espectro — barras verticales que cruzan ambos bloques']
+        ].forEach(function(o) {
+          var opt = document.createElement('option');
+          opt.value = o[0];
+          opt.textContent = o[1];
+          styleSelect.appendChild(opt);
+        });
+        styleSelect.value = block.props[prop] || '0';
+        styleSelect.addEventListener('change', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
+        body.appendChild(styleSelect);
+      } else if (prop === 'margin_top' || prop === 'margin_bottom') {
+        var numWrap = document.createElement('div');
+        numWrap.style.cssText = 'display:flex;align-items:center;gap:6px;';
+
+        var numInput = document.createElement('input');
+        numInput.type = 'number';
+        numInput.step = '1';
+        numInput.value = block.props[prop] || '0';
+        numInput.style.cssText = 'width:80px;';
+        numInput.placeholder = '0';
+
+        var unitLabel = document.createElement('span');
+        unitLabel.textContent = 'px (negativo = sube)';
+        unitLabel.style.cssText = 'font-size:11px;color:#888;white-space:nowrap;';
+
+        numInput.addEventListener('input', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
+
+        numWrap.appendChild(numInput);
+        numWrap.appendChild(unitLabel);
+        body.appendChild(numWrap);
       } else {
         var input = document.createElement('input');
         input.value = block.props[prop] || '';
