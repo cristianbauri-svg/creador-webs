@@ -1941,7 +1941,12 @@ ${ev.before_media_url && ev.after_media_url ? `
 
   function renderSectionHeader(props) {
     var icon = props.icon ? '<span class="section-header-icon">' + esc(props.icon) + '</span>' : '';
-    return sectionWrapper('section-header', icon + '<h2>' + esc(props.title) + '</h2>', props.bg_color);
+    var sec = sectionWrapper('section-header', icon + '<h2>' + esc(props.title) + '</h2>', props.bg_color);
+    if (props.margin_top) { sec.style.marginTop = parseInt(props.margin_top) + 'px'; }
+    if (props.margin_bottom) { sec.style.marginBottom = parseInt(props.margin_bottom) + 'px'; }
+    sec.style.position = 'relative';
+    sec.style.zIndex = '1';
+    return sec;
   }
 
   // ========== FAQ: Preguntas Frecuentes con despliegue al scroll ==========
