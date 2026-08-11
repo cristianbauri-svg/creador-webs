@@ -90,7 +90,13 @@
 
     /* --- Cards --- */
     .cards-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-top: 1rem;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-top: 1rem;
+    }
+    @media (max-width: 900px) {
+      .cards-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 520px) {
+      .cards-grid { grid-template-columns: 1fr; }
     }
     .card-item {
       background: var(--color-card, #161616); border-radius: 10px; overflow: hidden; padding: 20px; text-align: center;
