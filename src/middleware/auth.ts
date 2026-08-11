@@ -156,7 +156,20 @@ export async function validateAccess(request: Request, env: Env): Promise<boolea
     return true;
   }
 
-  const jwt = request.headers.get("Cf-Access-Jwt-Assertion");
+  // En producción, Cloudflare Access inyecta Cf-Access-Jwt-Assertion
+  // en las requests que pasan por el proxy de Access (ej: /admin/*).
+  // Para rutas fuera de Access (/api/*), el navegador envía la cookie
+  // HttpOnly CF_Authorization automáticamente (Path=/). El JWT en la
+  // cookie tiene la misma estructura (RS256, aud, exp) y se valida con
+  // el mismo código criptográfico. Ningún token se expone a JavaScript.
+  let jwt = request.headers.get("Cf-Access-Jwt-Assertion");
+  if (!jwt) {
+    const cookieHeader = request.headers.get("Cookie") || "";
+    const match = cookieHeader.match(/(?:^|;\s*)CF_Authorization=([^;]+)/);
+    if (match) {
+      jwt = match[1];
+    }
+  }
   if (!jwt) {
     return false;
   }

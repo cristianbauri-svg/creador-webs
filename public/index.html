@@ -118,7 +118,7 @@
     .video-container iframe { position: absolute; top:0; left:0; width:100%; height:100%; }
 
     /* --- Carrusel de productos (nuevo) --- */
-    .block-product-carousel .product-carousel-new {
+    .product-carousel-new {
       overflow: hidden; position: relative; width: 100%;
     }
     .pc-track {
@@ -127,6 +127,7 @@
     .pc-card {
       flex: 0 0 100%; box-sizing: border-box; padding: 20px;
       display: flex; flex-direction: column; align-items: center; text-align: center;
+      background: var(--color-card, #161616); border-radius: 12px;
     }
     .pc-card img {
       width: 100%; height: 300px; object-fit: cover; border-radius: 12px; margin-bottom: 1.5rem;
@@ -538,6 +539,7 @@
       <div class="nav-links" id="navLinks">
         <a href="https://stratonaudio.com.co/#servicios">Servicios</a>
         <a href="https://stratonaudio.com.co/#productos">Productos</a>
+        <a href="https://stratonaudio.com.co/pantallas-led">Pantallas LED</a>
         <a href="https://stratonaudio.com.co/#paquetes">Paquetes</a>
         <a href="https://stratonaudio.com.co/#portafolio">Portafolio</a>
         <a href="https://stratonaudio.com.co/#testimonios">Testimonios</a>
@@ -663,21 +665,15 @@
   <!-- ============================================= -->
   <!-- Productos -->
   <!-- ============================================= -->
-  <section class="section section-alt" id="productos">
+  <section class="section section-alt" id="productos" style="background-color: #E0E3DE;">
     <div class="container">
       <div class="section-header">
-        <span class="section-tag">Productos</span>
-        <h2 class="section-title">Equipos profesionales</h2>
-        <p class="section-subtitle">Tecnología de punta en audio, iluminación, pantallas LED y más. Disponibles para alquiler y venta.</p>
+        <span class="section-tag" style="color: #1a7a3a;">Productos</span>
+        <h2 class="section-title" style="color: #1a1a1a;">Equipos profesionales</h2>
+        <p class="section-subtitle" style="color: #4a4a4a;">Tecnología de punta en audio, iluminación, pantallas LED y más. Disponibles para alquiler y venta.</p>
       </div>
-      <div class="products-carousel-wrapper">
-        <div class="products-carousel-row">
-          <button class="carousel-btn carousel-prev" aria-label="Producto anterior" id="productsPrev">&#10094;</button>
-          <div class="products-carousel" id="productsContainer">
-            <div class="loading-state">Cargando productos...</div>
-          </div>
-          <button class="carousel-btn carousel-next" aria-label="Producto siguiente" id="productsNext">&#10095;</button>
-        </div>
+      <div class="product-carousel-new" id="productsContainer">
+        <div class="loading-state">Cargando productos...</div>
       </div>
     </div>
   </section>
@@ -730,7 +726,7 @@
   <!-- ============================================= -->
   <!-- Portafolio / Eventos -->
   <!-- ============================================= -->
-  <section class="section" id="portafolio">
+  <section class="section" id="portafolio" style="background: linear-gradient(to bottom, #0A0A0A 0%, #E0E3DE 100%);">
     <div class="container">
       <div class="section-header">
         <span class="section-tag">Portafolio</span>

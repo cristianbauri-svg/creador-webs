@@ -90,9 +90,9 @@ async function createEvent(request: Request, env: Env): Promise<Response> {
 
     const result = await execute(
       env.STRATON_DB,
-      `INSERT INTO events (title, event_type, solution, result, before_media_url, after_media_url, gallery_json, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [body.title, body.event_type || null, body.solution || null, body.result || null, body.before_media_url || null, body.after_media_url || null, body.gallery_json || null, body.status || "draft"]
+      `INSERT INTO events (title, event_type, solution, result, before_media_url, after_media_url, gallery_json, status, link)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [body.title, body.event_type || null, body.solution || null, body.result || null, body.before_media_url || null, body.after_media_url || null, body.gallery_json || null, body.status || "draft", body.link || null]
     );
 
     const inserted = await queryOne(env.STRATON_DB, "SELECT * FROM events WHERE id = ?", [result.meta.last_row_id]);
@@ -117,7 +117,7 @@ async function updateEvent(request: Request, env: Env, id: number): Promise<Resp
     if (body.after_media_url !== undefined && existing.after_media_url && existing.after_media_url !== body.after_media_url) {
       deleteR2Object(existing.after_media_url as string, env);
     }
-    const fields = ["title", "event_type", "solution", "result", "before_media_url", "after_media_url", "gallery_json", "status"];
+    const fields = ["title", "event_type", "solution", "result", "before_media_url", "after_media_url", "gallery_json", "status", "link"];
     for (const field of fields) {
       if (body[field] !== undefined) {
         sets.push(`${field} = ?`);

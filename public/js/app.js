@@ -712,69 +712,35 @@
         return;
       }
 
-      container.innerHTML = products.map(p => {
-        var imgHtml = p.image_url
-          ? `<img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.title)}" loading="lazy" style="width:100%;height:200px;object-fit:cover;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />`
-          : '';
-        var placeholder = !p.image_url
-          ? `<div style="width:100%;height:200px;display:flex;align-items:center;justify-content:center;background:var(--color-surface);color:var(--color-text-muted);font-size:2.5rem;">📦</div>`
-          : `<div style="width:100%;height:200px;display:none;align-items:center;justify-content:center;background:var(--color-surface);color:var(--color-text-muted);font-size:2.5rem;">📦</div>`;
-        var typeBadge = p.service_type === 'Alquiler'
-          ? `<span style="display:inline-block;padding:0.15rem 0.5rem;border-radius:100px;font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;background:rgba(0,0,0,0.75);border:1px solid var(--color-gold);color:var(--color-gold);">Alquiler</span>`
-          : `<span style="display:inline-block;padding:0.15rem 0.5rem;border-radius:100px;font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;background:rgba(0,0,0,0.75);border:1px solid var(--color-gold);color:var(--color-accent);">Venta</span>`;
-        var categoryBadge = p.category
-          ? `<span style="display:inline-block;padding:0.15rem 0.5rem;border-radius:100px;font-size:0.65rem;font-weight:500;background:rgba(0,0,0,0.75);border:1px solid var(--color-gold);color:var(--color-text-secondary);">${escapeHtml(p.category)}</span>`
-          : '';
+      // Renderizar como carrusel de productos (1 card visible, autoplay, centrado)
+      var track = document.createElement('div');
+      track.className = 'pc-track';
+      products.forEach(function(p) {
+        var card = document.createElement('div');
+        card.className = 'pc-card';
+        card.innerHTML = '<img src="' + escapeAttr(p.image_url || '') + '" alt="' + esc(p.title) + '">' +
+          '<div class="pc-info"><h3>' + esc(p.title) + '</h3><p>' + esc(p.description || '') + '</p></div>';
+        track.appendChild(card);
+      });
+      container.innerHTML = '';
+      container.appendChild(track);
 
-        var galleryUrls = [];
-        if (p.gallery_json) {
-          try { var g = JSON.parse(p.gallery_json); if (Array.isArray(g)) galleryUrls = g; } catch(e) {}
+      // Autoplay
+      var cards = track.querySelectorAll('.pc-card');
+      var idx = 0;
+      var total = cards.length;
+      if (total > 0) {
+        function show(i) {
+          track.style.transform = 'translateX(-' + (i * 100) + '%)';
         }
-
-        var galleryHtml = '';
-        if (galleryUrls.length > 0) {
-          var galleryId = 'gallery-' + (p.id || Math.random().toString(36).substr(2));
-          var urlsJson = JSON.stringify(galleryUrls).replace(/"/g, '&quot;');
-          galleryHtml = '<div class="product-gallery" style="position:relative;margin-top:0.75rem;" data-gallery-id="' + galleryId + '" data-gallery-urls="' + urlsJson + '" data-gallery-current="0">' +
-            '<div style="position:relative;overflow:hidden;border-radius:var(--radius);background:var(--color-surface);">' +
-              '<img src="' + escapeHtml(galleryUrls[0]) + '" alt="" style="width:100%;height:180px;object-fit:cover;display:block;" />' +
-              '<span class="gallery-counter" style="position:absolute;top:0.5rem;right:0.5rem;background:rgba(0,0,0,0.6);color:#fff;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:100px;">1/' + galleryUrls.length + '</span>' +
-              (galleryUrls.length > 1 ? '<button class="gallery-prev" style="position:absolute;left:0.5rem;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.5);color:#fff;border:none;cursor:pointer;font-size:0.8rem;display:flex;align-items:center;justify-content:center;">◀</button>' : '') +
-              (galleryUrls.length > 1 ? '<button class="gallery-next" style="position:absolute;right:0.5rem;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.5);color:#fff;border:none;cursor:pointer;font-size:0.8rem;display:flex;align-items:center;justify-content:center;">▶</button>' : '') +
-            '</div>' +
-            (galleryUrls.length > 1 ? '<div style="display:flex;justify-content:center;gap:6px;margin-top:0.5rem;">' + galleryUrls.map(function(_, i) { return '<span class="gallery-dot" style="width:8px;height:8px;border-radius:50%;background:' + (i === 0 ? 'var(--color-accent)' : 'var(--color-border)') + ';cursor:pointer;" data-index="' + i + '"></span>'; }).join('') + '</div>' : '') +
-          '</div>';
-        }
-
-        return `
-        <article class="service-card animate-in" style="display:flex;flex-direction:column;">
-          <div style="position:relative;overflow:hidden;">
-            ${imgHtml}
-            ${placeholder}
-            <div style="position:absolute;top:0.5rem;left:0.5rem;display:flex;gap:0.35rem;flex-wrap:wrap;">
-              ${categoryBadge}
-              ${typeBadge}
-            </div>
-          </div>
-          <div class="service-card-body" style="flex:1;display:flex;flex-direction:column;">
-            <h3>${escapeHtml(p.title)}</h3>
-            <p style="flex:1;">${escapeHtml(p.description || '')}</p>
-            ${p.features ? `<ul style="list-style:none;padding:0;margin:0.5rem 0 0 0;flex:1;">
-              ${p.features.split('\n').filter(function(f){return f.trim()!=='';}).map(function(f){
-                return `<li style="display:flex;align-items:flex-start;gap:0.4rem;margin-bottom:0.25rem;font-size:0.8rem;color:var(--color-text-muted);">
-                  <span style="color:var(--color-accent);font-weight:700;flex-shrink:0;">•</span>
-                  <span>${escapeHtml(f.trim())}</span>
-                </li>`;
-              }).join('')}
-            </ul>` : ''}
-            <button data-add-to-cart="${JSON.stringify({type:'product',id:p.id,name:p.title,image:p.image_url||'',price:0}).replace(/"/g,'&quot;')}" class="btn btn-primary" style="margin-top:var(--space-4);align-self:flex-start;">Añadir a cotización</button>
-            ${galleryHtml}
-          </div>
-        </article>`;
-      }).join('');
-
-      initAnimations();
-      initProductCarousel();
+        show(0);
+        var existingInterval = container._carouselInterval;
+        if (existingInterval) clearInterval(existingInterval);
+        container._carouselInterval = setInterval(function() {
+          idx = (idx + 1) % total;
+          show(idx);
+        }, 3500);
+      }
     } catch (err) {
       console.error('Error cargando productos:', err);
       container.innerHTML = `
@@ -1231,7 +1197,9 @@
             ? gallery[0]
             : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80';
 
-          return `
+          var linkOpen = ev.link ? '<a href="' + escapeAttr(ev.link) + '" style="text-decoration:none;color:inherit;display:block;">' : '';
+          var linkClose = ev.link ? '</a>' : '';
+          return linkOpen + `
             <article class="event-card animate-in" data-type="${ev.event_type || ''}">
               <img class="event-card-image"
                    src="${escapeHtml(gallery.length > 0 ? gallery[0] : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80')}"
@@ -1271,7 +1239,7 @@ ${ev.before_media_url && ev.after_media_url ? `
   </details>
 ` : ''}
             </article>
-          `;
+          ` + linkClose;
         }).join('');
 
         initAnimations();
