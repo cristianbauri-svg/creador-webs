@@ -1524,7 +1524,7 @@ ${ev.before_media_url && ev.after_media_url ? `
   function sectionWrapper(className, inner, bgColor) {
     var sec = document.createElement('section');
     sec.className = 'dynamic-block block-' + className;
-    if (bgColor) { sec.style.backgroundColor = bgColor; }
+    if (bgColor) { sec.style.background = bgColor; }
     sec.innerHTML = inner;
     return sec;
   }
@@ -1739,7 +1739,7 @@ ${ev.before_media_url && ev.after_media_url ? `
   }
 
   function renderCTA(props) {
-    var bg = props.bg_color ? 'background-color:' + escapeAttr(props.bg_color) + ';' : '';
+    var bg = props.bg_color ? 'background:' + escapeAttr(props.bg_color) + ';' : '';
     return sectionWrapper('cta',
       '<div class="cta-inner" style="' + bg + '">' +
       '<h2>' + esc(props.title) + '</h2>' +
@@ -1759,7 +1759,7 @@ ${ev.before_media_url && ev.after_media_url ? `
       var div = document.createElement('div');
       div.className = 'dynamic-spacer';
       div.style.height = h + 'px';
-      if (props.bg_color) { div.style.backgroundColor = props.bg_color; }
+      if (props.bg_color) { div.style.background = props.bg_color; }
       return div;
     }
 
@@ -1771,7 +1771,7 @@ ${ev.before_media_url && ev.after_media_url ? `
     wrap.style.alignItems = 'center';
     wrap.style.justifyContent = 'center';
     wrap.style.overflow = 'hidden';
-    if (props.bg_color) { wrap.style.backgroundColor = props.bg_color; }
+    if (props.bg_color) { wrap.style.background = props.bg_color; }
 
     // Estilo 1: bits de sonido pixelados (cuadritos tipo ecualizador)
     if (style === '1') {
@@ -1907,7 +1907,7 @@ ${ev.before_media_url && ev.after_media_url ? `
     var fb = document.createElement('div');
     fb.className = 'dynamic-spacer';
     fb.style.height = h + 'px';
-    if (props.bg_color) { fb.style.backgroundColor = props.bg_color; }
+    if (props.bg_color) { fb.style.background = props.bg_color; }
     return fb;
   }
 

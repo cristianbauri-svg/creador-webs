@@ -861,7 +861,7 @@
         colorInput.style.cssText = 'width:40px;height:34px;border:1px solid #2a2a2a;border-radius:6px;cursor:pointer;padding:2px;background:#111;';
 
         var hexLabel = document.createElement('span');
-        hexLabel.textContent = block.props[prop] || '#0a0a0a';
+        hexLabel.textContent = block.props[prop] || 'Sin fondo';
         hexLabel.style.cssText = 'font-size:12px;color:#aaa;font-family:monospace;';
 
         colorInput.addEventListener('input', (function(idx, p, label) {
@@ -871,21 +871,40 @@
           };
         })(i, prop, hexLabel));
 
+        // Campo de texto para degradado CSS
+        var gradInput = document.createElement('input');
+        gradInput.type = 'text';
+        gradInput.placeholder = 'O pega un degradado CSS… ej: linear-gradient(to bottom, #0A0A0A, #E0E3DE)';
+        gradInput.style.cssText = 'margin-top:6px;font-size:11px;';
+        // Si el valor actual no empieza con #, es un degradado → mostrarlo
+        var currentVal = block.props[prop] || '';
+        if (currentVal && currentVal.indexOf('#') !== 0) {
+          gradInput.value = currentVal;
+        }
+        gradInput.addEventListener('input', (function(idx, p, label) {
+          return function() {
+            blocks[idx].props[p] = this.value;
+            label.textContent = this.value ? 'degradado' : 'Sin fondo';
+          };
+        })(i, prop, hexLabel));
+
         var clearBtn = document.createElement('button');
         clearBtn.type = 'button';
         clearBtn.textContent = 'Sin color';
         clearBtn.style.cssText = 'background:none;border:1px solid #2a2a2a;color:#aaa;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;';
-        clearBtn.addEventListener('click', (function(idx, p, inputEl, labelEl) {
+        clearBtn.addEventListener('click', (function(idx, p, inputEl, gradEl, labelEl) {
           return function() {
             blocks[idx].props[p] = '';
             inputEl.value = '#0a0a0a';
-            labelEl.textContent = 'Sin color';
+            gradEl.value = '';
+            labelEl.textContent = 'Sin fondo';
           };
-        })(i, prop, colorInput, hexLabel));
+        })(i, prop, colorInput, gradInput, hexLabel));
 
         colorWrap.appendChild(colorInput);
         colorWrap.appendChild(hexLabel);
         colorWrap.appendChild(clearBtn);
+        colorWrap.appendChild(gradInput);
         body.appendChild(colorWrap);
       } else if (prop === 'style' && block.type === 'spacer') {
         var styleSelect = document.createElement('select');
