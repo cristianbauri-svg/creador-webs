@@ -864,13 +864,6 @@
         hexLabel.textContent = block.props[prop] || 'Sin fondo';
         hexLabel.style.cssText = 'font-size:12px;color:#aaa;font-family:monospace;';
 
-        colorInput.addEventListener('input', (function(idx, p, label) {
-          return function() {
-            blocks[idx].props[p] = this.value;
-            label.textContent = this.value;
-          };
-        })(i, prop, hexLabel));
-
         // Campo de texto para degradado CSS
         var gradInput = document.createElement('input');
         gradInput.type = 'text';
@@ -881,10 +874,22 @@
         if (currentVal && currentVal.indexOf('#') !== 0) {
           gradInput.value = currentVal;
         }
+
+        colorInput.addEventListener('input', (function(idx, p, label, gradEl) {
+          return function() {
+            blocks[idx].props[p] = this.value;
+            label.textContent = this.value;
+            // El swatch nativo no puede representar un degradado: si había
+            // uno guardado, se pisa por el color plano — limpiar el campo
+            // de texto para que la UI no siga mostrando el degradado viejo.
+            gradEl.value = '';
+          };
+        })(i, prop, hexLabel, gradInput));
+
         gradInput.addEventListener('input', (function(idx, p, label) {
           return function() {
             blocks[idx].props[p] = this.value;
-            label.textContent = this.value ? 'degradado' : 'Sin fondo';
+            label.textContent = this.value || 'Sin fondo';
           };
         })(i, prop, hexLabel));
 

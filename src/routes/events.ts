@@ -82,6 +82,7 @@ async function createEvent(request: Request, env: Env): Promise<Response> {
     if (!body.title || typeof body.title !== "string") return error("title is required");
     // Validar tipos de campos opcionales
     if (body.gallery_json !== undefined && body.gallery_json !== null && typeof body.gallery_json !== "string") return error("gallery_json debe ser string JSON", 400);
+    if (body.link !== undefined && body.link !== null && typeof body.link !== "string") return error("link debe ser texto", 400);
 
     const validTypes = ["corporativo", "social", "concierto"];
     if (body.event_type && !validTypes.includes(body.event_type as string)) {

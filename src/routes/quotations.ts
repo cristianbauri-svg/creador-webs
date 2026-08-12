@@ -63,16 +63,25 @@ async function createQuotation(request: Request, env: Env, ctx: ExecutionContext
     const body = await request.json() as Record<string, unknown>;
 
     // Validar formato de email
+    if (body.email !== undefined && body.email !== null && typeof body.email !== "string") {
+      return error("email debe ser texto", 400);
+    }
     if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
       return error("Formato de email inválido", 400);
     }
 
     // Validar formato de teléfono (mínimo 7 dígitos, permite +, espacios, guiones)
+    if (body.phone !== undefined && body.phone !== null && typeof body.phone !== "string") {
+      return error("phone debe ser texto", 400);
+    }
     if (body.phone && body.phone.replace(/[^0-9]/g, '').length < 7) {
       return error("El teléfono debe tener al menos 7 dígitos", 400);
     }
 
     // Validar formato de fecha ISO 8601 (YYYY-MM-DD)
+    if (body.event_date !== undefined && body.event_date !== null && typeof body.event_date !== "string") {
+      return error("event_date debe ser texto", 400);
+    }
     if (body.event_date && !/^\d{4}-\d{2}-\d{2}$/.test(body.event_date)) {
       return error("Formato de fecha inválido. Use YYYY-MM-DD.", 400);
     }
