@@ -198,7 +198,7 @@ function buildOrganization() {
       "Soluciones profesionales en audio e iluminación para eventos corporativos, sociales y conciertos. Alquiler y venta de equipos de alta calidad.",
     // ASUNCIÓN: teléfono normalizado a E.164 desde "+57 310 2646751".
     telephone: "+573102646751",
-    email: "info@stratonaudio.com.co",
+    email: "eventos@stratonaudio.com.co",
     address: {
       "@type": "PostalAddress",
       addressLocality: "Bogotá",
