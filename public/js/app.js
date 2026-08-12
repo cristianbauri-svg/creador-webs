@@ -1613,7 +1613,7 @@ ${ev.before_media_url && ev.after_media_url ? `
         (card.link ? '<a href="' + escapeAttr(card.link) + '" class="card-link ' + btnStyleClass(props.button_style) + '">Ver más</a>' : '') +
         '</div>';
     });
-    return sectionWrapper('cards', title + '<div class="cards-grid">' + cardsHtml + '</div>', props.bg_color);
+    return sectionWrapper('cards', title + '<div class="cards-grid cards-' + cards.length + '">' + cardsHtml + '</div>', props.bg_color);
   }
 
   function renderImage(props) {
