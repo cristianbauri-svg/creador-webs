@@ -173,6 +173,47 @@ h3{font-size:clamp(1.25rem,3vw,1.75rem)}
 
   <!-- JS deferred -->
   <script src="/js/main.js" defer></script>
+
+  <!-- Hotmart attribution: captura src/sck de la URL y los propaga a enlaces hotmart.com / hotm.art -->
+  <script>
+    (function() {
+      // 1. Guardar los parámetros de la URL apenas llega el usuario
+      const urlParams = new URLSearchParams(window.location.search);
+      const src = urlParams.get('src');
+      const sck = urlParams.get('sck');
+
+      if (src) sessionStorage.setItem('hm_src', src);
+      if (sck) sessionStorage.setItem('hm_sck', sck);
+
+      // 2. Función para pegar parámetros a un enlace de Hotmart
+      function appendParamsToHotmart(urlStr) {
+        try {
+          let savedSrc = sessionStorage.getItem('hm_src');
+          let savedSck = sessionStorage.getItem('hm_sck');
+
+          if (!savedSrc && !savedSck) return urlStr;
+
+          let url = new URL(urlStr, window.location.origin);
+          if (url.hostname.includes('hotmart.com') || url.hostname.includes('hotm.art')) {
+            if (savedSrc) url.searchParams.set('src', savedSrc);
+            if (savedSck) url.searchParams.set('sck', savedSck);
+            return url.toString();
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        return urlStr;
+      }
+
+      // 3. Interceptar clics en tiempo real en cualquier botón/enlace de Hotmart
+      document.addEventListener('click', function(e) {
+        let target = e.target.closest('a');
+        if (target && target.href && (target.href.includes('hotmart.com') || target.href.includes('hotm.art'))) {
+          target.href = appendParamsToHotmart(target.href);
+        }
+      }, true);
+    })();
+  </script>
 </head>
 <body>
 
