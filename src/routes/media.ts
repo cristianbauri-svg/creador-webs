@@ -12,10 +12,22 @@ function withNosniff(body: BodyInit | null, init: ResponseInit): Response {
   return new Response(body, { ...init, headers });
 }
 
+function buildHeaders(object: R2Object): Headers {
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  headers.set("ETag", object.httpEtag);
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "DENY");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  return headers;
+}
+
 export async function handleMedia(
   request: Request,
   env: Env,
-  pathname: string
+  pathname: string,
+  ctx: ExecutionContext
 ): Promise<Response> {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return withNosniff("Method not allowed", { status: 405 });
@@ -33,21 +45,41 @@ export async function handleMedia(
     return withNosniff("Forbidden", { status: 403 });
   }
 
-  const object = await env.STRATON_BUCKET.get(key);
+  // Cache de edge de Cloudflare: evita ir a R2 en cada request desde
+  // cualquier colo. La key de cache es la URL completa del request.
+  const cache = caches.default;
+  const cacheKey = new Request(request.url, request);
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  // R2 espera el ETag sin comillas ni prefijo "W/", pero el header
+  // If-None-Match del navegador llega citado (p.ej. `"abc123"`).
+  const ifNoneMatchRaw = request.headers.get("If-None-Match");
+  const ifNoneMatch = ifNoneMatchRaw
+    ? ifNoneMatchRaw.replace(/^W\//, "").replace(/^"|"$/g, "")
+    : null;
+  const object: R2ObjectBody | R2Object | null = ifNoneMatch
+    ? await env.STRATON_BUCKET.get(key, { onlyIf: { etagDoesNotMatch: ifNoneMatch } })
+    : await env.STRATON_BUCKET.get(key);
 
   if (!object) {
     return withNosniff("Not found", { status: 404 });
   }
 
-  const headers = new Headers();
-  headers.set(
-    "Content-Type",
-    object.httpMetadata?.contentType || "application/octet-stream"
-  );
-  headers.set("Cache-Control", "public, max-age=31536000");
-  headers.set("X-Content-Type-Options", "nosniff");
-  headers.set("X-Frame-Options", "DENY");
-  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  const headers = buildHeaders(object);
+  headers.set("Content-Length", String(object.size));
 
-  return new Response(object.body, { headers });
+  const body = (object as R2ObjectBody).body;
+  if (!body) {
+    // onlyIf coincidió (etag sin cambios): objeto no modificado.
+    return withNosniff(null, { status: 304, headers });
+  }
+
+  const response = new Response(body, { headers });
+
+  ctx.waitUntil(cache.put(cacheKey, response.clone()));
+
+  return response;
 }

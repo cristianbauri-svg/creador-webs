@@ -217,7 +217,7 @@ async function handleApi(request: Request, env: Env, pathname: string, ctx: Exec
     }
 
     if (pathname.startsWith("/api/media/")) {
-      return await handleMedia(request, env, pathname);
+      return await handleMedia(request, env, pathname, ctx);
     }
 
     if (pathname === "/api/upload") {

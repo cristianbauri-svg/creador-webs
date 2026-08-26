@@ -629,7 +629,7 @@
     const mediaHTML = service.video_url
       ? `<video src="${escapeHtml(service.video_url)}" controls preload="metadata"></video>`
       : (service.image_url
-          ? `<img src="${escapeHtml(service.image_url)}" alt="${escapeHtml(service.title)}" />`
+          ? `<img src="${escapeHtml(service.image_url)}" alt="${escapeHtml(service.title)}" loading="lazy" decoding="async" />`
           : '');
 
     const featuresHTML = service.features
@@ -1304,7 +1304,7 @@ ${ev.before_media_url && ev.after_media_url ? `
     var cards = Array.isArray(props.cards) ? props.cards : [];
     cards.forEach(function(card) {
       cardsHtml += '<div class="card-item">' +
-        (card.image ? '<img src="' + escapeAttr(card.image) + '" alt="' + esc(card.title) + '" class="card-img">' : '') +
+        (card.image ? '<img src="' + escapeAttr(card.image) + '" alt="' + esc(card.title) + '" class="card-img" loading="lazy" decoding="async">' : '') +
         '<h3>' + esc(card.title) + '</h3>' +
         '<p>' + esc(card.description) + '</p>' +
         (card.link ? '<a href="' + escapeAttr(card.link) + '" class="card-link ' + btnStyleClass(props.button_style) + '">Ver más</a>' : '') +
@@ -1314,7 +1314,7 @@ ${ev.before_media_url && ev.after_media_url ? `
   }
 
   function renderImage(props) {
-    var img = '<img src="' + escapeAttr(props.url) + '" alt="' + esc(props.alt || '') + '" class="block-full-image">';
+    var img = '<img src="' + escapeAttr(props.url) + '" alt="' + esc(props.alt || '') + '" class="block-full-image" loading="lazy" decoding="async">';
     var caption = props.caption ? '<p class="block-image-caption">' + esc(props.caption) + '</p>' : '';
     return sectionWrapper('image', img + caption, props.bg_color);
   }
@@ -1324,7 +1324,7 @@ ${ev.before_media_url && ev.after_media_url ? `
     var imagesHtml = '';
     var images = Array.isArray(props.images) ? props.images : [];
     images.forEach(function(img) {
-      imagesHtml += '<div class="gallery-item"><img src="' + escapeAttr(img.url) + '" alt="' + esc(img.alt || '') + '"></div>';
+      imagesHtml += '<div class="gallery-item"><img src="' + escapeAttr(img.url) + '" alt="' + esc(img.alt || '') + '" loading="lazy" decoding="async"></div>';
     });
     return sectionWrapper('gallery', title + '<div class="gallery-grid">' + imagesHtml + '</div>', props.bg_color);
   }
@@ -1779,7 +1779,7 @@ ${ev.before_media_url && ev.after_media_url ? `
         items.forEach(function(prod) {
           var card = document.createElement('div');
           card.className = 'pc-card';
-          card.innerHTML = '<img src="' + escapeAttr(prod.image_url || '') + '" alt="' + esc(prod.title) + '">' +
+          card.innerHTML = '<img src="' + escapeAttr(prod.image_url || '') + '" alt="' + esc(prod.title) + '" loading="lazy" decoding="async">' +
             '<div class="pc-info"><h3>' + esc(prod.title) + '</h3><p>' + esc(prod.description || '') + '</p></div>';
           track.appendChild(card);
         });
@@ -1822,7 +1822,7 @@ ${ev.before_media_url && ev.after_media_url ? `
       var tag = slide.link ? 'a' : 'div';
       var hrefAttr = slide.link ? ' href="' + escapeAttr(slide.link) + '"' : '';
       html += '<' + tag + ' class="pc-card"' + hrefAttr + '>' +
-        '<img src="' + escapeAttr(slide.image || '') + '" alt="' + esc(slide.title || '') + '">' +
+        '<img src="' + escapeAttr(slide.image || '') + '" alt="' + esc(slide.title || '') + '" loading="lazy" decoding="async">' +
         '<div class="pc-info"><h3>' + esc(slide.title || '') + '</h3><p>' + esc(slide.description || '') + '</p></div>' +
         '</' + tag + '>';
     });
