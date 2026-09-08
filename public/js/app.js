@@ -1237,10 +1237,13 @@ ${ev.before_media_url && ev.after_media_url ? `
       bgEl = '<div class="hero-bg-sticky" style="' + bgStyle + '"></div>';
     }
 
+    var heading = props.title ? '<h1>' + esc(props.title) + '</h1>' : '';
+    var sub = props.subtitle ? '<p>' + esc(props.subtitle) + '</p>' : '';
+
     return sectionWrapper('hero',
       bgEl +
       '<div class="hero-overlay"></div>' +
-      '<div class="hero-content"><h1>' + esc(props.title) + '</h1><p>' + esc(props.subtitle) + '</p>' +
+      '<div class="hero-content">' + heading + sub +
       (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '" class="btn-hero ' + btnStyleClass(props.button_style) + '">' + esc(props.button_text) + '</a>' : '') +
       '</div>',
       props.bg_color

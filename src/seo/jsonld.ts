@@ -317,6 +317,79 @@ export function jsonLdScriptTag(): string {
 }
 
 /**
+ * Contexto de una página dinámica (fila `pages` de D1) para construir el
+ * grafo JSON-LD específico de esa URL: WebSite + WebPage + Service +
+ * BreadcrumbList, todos relacionados con la Organization mediante @id.
+ * Todos los valores salen de la propia página (title/meta de D1), nunca
+ * se inventan.
+ */
+export interface PageContext {
+  slug: string;
+  title?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+}
+
+export function buildPageJsonLdGraph(page: PageContext, origin: string): Record<string, unknown> {
+  const base = buildJsonLdGraph();
+  const url = `${origin}/${page.slug}`;
+  const pageName = page.meta_title || page.title || "Straton Audio";
+  const description = page.meta_description || "";
+
+  const website = {
+    "@type": "WebSite",
+    "@id": `${origin}/#website`,
+    url: origin,
+    name: "Straton Audio",
+    publisher: { "@id": ORG_ID },
+  };
+
+  const webpage: Record<string, unknown> = {
+    "@type": "WebPage",
+    "@id": `${url}#webpage`,
+    url,
+    name: pageName,
+    inLanguage: "es",
+    isPartOf: { "@id": `${origin}/#website` },
+    about: { "@id": `${url}#service` },
+  };
+  if (description) webpage.description = description;
+
+  // El nombre del Service se deriva del título corto de la página; es el
+  // servicio realmente mostrado en esa URL (p.ej. "Alquiler de sonido
+  // profesional" en /sonido).
+  const serviceName = page.title || page.meta_title || page.slug;
+  const service: Record<string, unknown> = {
+    "@type": "Service",
+    "@id": `${url}#service`,
+    name: serviceName,
+    url,
+    serviceType: serviceName,
+    provider: { "@id": ORG_ID },
+    areaServed: { "@type": "City", name: "Bogotá" },
+  };
+  if (description) service.description = description;
+
+  const breadcrumb = {
+    "@type": "BreadcrumbList",
+    "@id": `${url}#breadcrumb`,
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Inicio", item: origin },
+      { "@type": "ListItem", position: 2, name: serviceName, item: url },
+    ],
+  };
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [...(base["@graph"] as unknown[]), website, webpage, service, breadcrumb],
+  };
+}
+
+export function pageJsonLdScriptTag(page: PageContext, origin: string): string {
+  return `<script type="application/ld+json">${JSON.stringify(buildPageJsonLdGraph(page, origin))}</script>`;
+}
+
+/**
  * Genera un <script> que expone el origen actual de la solicitud para que
  * el frontend pueda reescribir enlaces internos hardcodeados a producción.
  */

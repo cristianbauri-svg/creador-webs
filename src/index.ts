@@ -15,7 +15,7 @@ import { handlePages } from "./routes/pages";
 import { handleSettings } from "./routes/settings";
 import { handleUpload } from "./routes/upload";
 import { handleMedia } from "./routes/media";
-import { injectJsonLd, jsonLdScriptTag, siteUrlScript } from "./seo/jsonld";
+import { injectJsonLd, pageJsonLdScriptTag, siteUrlScript, type PageContext } from "./seo/jsonld";
 import { handleSitemap } from "./seo/sitemap";
 
 export interface Env {
@@ -133,14 +133,62 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
   // Escapar </ para que no rompa el <script> tag
   const safeJson = JSON.stringify(pageData).replace(/<\//g, "<\\/");
   const pageScript = `<script>window.__PAGE__ = ${safeJson};</script>`;
-  const ldJson = jsonLdScriptTag();
+
+  // Grafo JSON-LD específico de la página (WebSite + WebPage + Service +
+  // BreadcrumbList enlazados a la Organization). Usa solo datos de D1.
+  const slug = String(page.slug || "").trim();
+  const pageContext: PageContext = {
+    slug,
+    title: typeof page.title === "string" ? page.title : null,
+    meta_title: typeof page.meta_title === "string" ? page.meta_title : null,
+    meta_description: typeof page.meta_description === "string" ? page.meta_description : null,
+  };
+  const ldJson = pageJsonLdScriptTag(pageContext, origin);
   const siteScript = siteUrlScript(origin);
+
+  // SEO on-page server-side: title, meta description, canonical y Open Graph
+  // específicos de la página. Así el HTML crudo (sin ejecutar JS) ya trae los
+  // valores correctos para crawlers, redes sociales y agentes.
+  const seoTitle = pageContext.meta_title || pageContext.title || null;
+  const seoDescription = pageContext.meta_description || null;
+  const canonicalUrl = slug ? `${origin}/${slug}` : origin;
 
   class HeadHandler {
     element(element: Element) {
       element.append(ldJson, { html: true });
       element.append(pageScript, { html: true });
       element.append(siteScript, { html: true });
+      element.append(`<link rel="canonical" href="${canonicalUrl}" />`, { html: true });
+    }
+  }
+
+  class TitleHandler {
+    element(element: Element) {
+      if (seoTitle) element.setInnerContent(seoTitle);
+    }
+  }
+
+  class MetaDescriptionHandler {
+    element(element: Element) {
+      if (seoDescription) element.setAttribute("content", seoDescription);
+    }
+  }
+
+  class OgTitleHandler {
+    element(element: Element) {
+      if (seoTitle) element.setAttribute("content", seoTitle);
+    }
+  }
+
+  class OgDescriptionHandler {
+    element(element: Element) {
+      if (seoDescription) element.setAttribute("content", seoDescription);
+    }
+  }
+
+  class OgUrlHandler {
+    element(element: Element) {
+      element.setAttribute("content", canonicalUrl);
     }
   }
 
@@ -159,6 +207,11 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
 
   return new HTMLRewriter()
     .on("head", new HeadHandler())
+    .on("title", new TitleHandler())
+    .on('meta[name="description"]', new MetaDescriptionHandler())
+    .on('meta[property="og:title"]', new OgTitleHandler())
+    .on('meta[property="og:description"]', new OgDescriptionHandler())
+    .on('meta[property="og:url"]', new OgUrlHandler())
     .transform(new Response(response.body, { headers, status: response.status }));
 }
 
