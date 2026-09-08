@@ -170,6 +170,7 @@ dist
 
 *.zip
 backup-full-*/
+backup-sonido-*/
 diff.txt
 pantallas-led.html
 .claude/sdd-cache/

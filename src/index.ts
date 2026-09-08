@@ -110,6 +110,92 @@ function injectAdminEmail(response: Response, email: string | null): Response {
   return new HTMLRewriter().on("head", new HeadHandler()).transform(response);
 }
 
+// =========================================================
+// Server-render del hero dinámico (páginas de D1)
+// =========================================================
+
+/** Escapa texto para uso dentro de HTML (contenido de texto). */
+function escapeHtmlText(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Escapa un valor para usarlo como atributo HTML. Bloquea javascript:/data:. */
+function escapeAttrValue(value: unknown): string {
+  const str = String(value ?? "").trim();
+  if (/^(javascript|data):/i.test(str)) return "#";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/** Espejo de btnStyleClass() en public/js/app.js. */
+function btnStyleClassServer(style: unknown): string {
+  if (style === "2") return "btn-style-whatsapp";
+  if (style === "3") return "btn-style-neon";
+  return "";
+}
+
+/** Espejo exacto de renderHero() en public/js/app.js, pero server-side.
+ *  Produce el mismo markup (clases e inline styles) para que el CSS aplicado
+ *  sea idéntico al del render client-side. */
+function renderHeroHtml(props: Record<string, unknown>): string {
+  const isVideo = props.bg_type === "video" && props.bg_url;
+  const bgStyle =
+    !isVideo && props.bg_url
+      ? `background-image:url(${escapeAttrValue(props.bg_url)});`
+      : "";
+  const bgEl = isVideo
+    ? `<video class="hero-bg-video" autoplay muted loop playsinline><source src="${escapeAttrValue(props.bg_url)}" type="video/mp4"></video>`
+    : `<div class="hero-bg-sticky" style="${bgStyle}"></div>`;
+
+  const heading = props.title ? `<h1>${escapeHtmlText(props.title)}</h1>` : "";
+  const sub = props.subtitle ? `<p>${escapeHtmlText(props.subtitle)}</p>` : "";
+  const button = props.button_text
+    ? `<a href="${escapeAttrValue(props.button_link || "#")}" class="btn-hero ${btnStyleClassServer(props.button_style)}">${escapeHtmlText(props.button_text)}</a>`
+    : "";
+
+  const bgColorStyle = props.bg_color
+    ? ` style="background:${escapeAttrValue(props.bg_color)};"`
+    : "";
+
+  return (
+    `<section class="dynamic-block block-hero"${bgColorStyle}>` +
+    bgEl +
+    `<div class="hero-overlay"></div>` +
+    `<div class="hero-content">${heading}${sub}${button}</div>` +
+    `</section>`
+  );
+}
+
+/** Encuentra el primer bloque hero con título no vacío y lo renderiza. */
+function buildServerHero(contentJson: Record<string, unknown>): string {
+  const blocks = Array.isArray(contentJson) ? contentJson : [];
+  for (const block of blocks) {
+    if (!block || typeof block !== "object") continue;
+    const b = block as { type?: unknown; props?: unknown };
+    if (b.type !== "hero" || !b.props || typeof b.props !== "object") continue;
+    const props = b.props as Record<string, unknown>;
+    if (props.title) return renderHeroHtml(props);
+  }
+  return "";
+}
+
+/** Oculta el contenido de la landing (home) y muestra la página dinámica.
+ *  Aplicado server-side para que no haya parpadeo de la home antes de que
+ *  app.js corra, y para que el HTML sin JS ya no muestre la home. */
+const HIDE_LANDING_STYLE =
+  `<style>` +
+  `#hero,#statsBanner,#servicios,#productos,#paquetes,#portafolio,#testimonios,#contacto,` +
+  `.logo-marquee,.eq-console,.cart-toggle,.whatsapp-float,#cart-bar{display:none!important}` +
+  `#dynamic-page{display:block!important}` +
+  `</style>`;
+
 /**
  * Inyecta window.__PAGE__ con los datos de la página dinámica, el JSON-LD
  * SEO y window.__SITE_URL__ en el <head> del HTML. Usa HTMLRewriter para
@@ -129,6 +215,9 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
     meta_description: page.meta_description || null,
     content_json: contentJson,
   };
+
+  // Hero renderizado server-side (punto 1): se inyecta en #dynamic-page.
+  const serverHero = buildServerHero(contentJson);
 
   // Escapar </ para que no rompa el <script> tag
   const safeJson = JSON.stringify(pageData).replace(/<\//g, "<\\/");
@@ -158,7 +247,27 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
       element.append(ldJson, { html: true });
       element.append(pageScript, { html: true });
       element.append(siteScript, { html: true });
+      element.append(HIDE_LANDING_STYLE, { html: true });
       element.append(`<link rel="canonical" href="${canonicalUrl}" />`, { html: true });
+    }
+  }
+
+  // Renderiza el primer hero de la página dentro del contenedor dinámico y lo
+  // muestra, para que el HTML inicial ya traiga el contenido de la landing
+  // (H1, subtítulo y CTA) en lugar de la home. app.js luego lo re-renderiza.
+  class DynamicPageHandler {
+    element(element: Element) {
+      element.setInnerContent(serverHero, { html: true });
+      element.setAttribute("style", "display:block;");
+    }
+  }
+
+  // Elimina el hero de la home (que incluye el <video> autoplay) para que no
+  // se descargue ni muestre en las páginas dinámicas. También evita el H1
+  // duplicado de la home en el HTML crudo.
+  class HomeHeroRemovalHandler {
+    element(element: Element) {
+      element.remove();
     }
   }
 
@@ -212,6 +321,8 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
     .on('meta[property="og:title"]', new OgTitleHandler())
     .on('meta[property="og:description"]', new OgDescriptionHandler())
     .on('meta[property="og:url"]', new OgUrlHandler())
+    .on("#dynamic-page", new DynamicPageHandler())
+    .on("#hero", new HomeHeroRemovalHandler())
     .transform(new Response(response.body, { headers, status: response.status }));
 }
 

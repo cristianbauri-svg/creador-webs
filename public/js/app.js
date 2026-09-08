@@ -1307,7 +1307,7 @@ ${ev.before_media_url && ev.after_media_url ? `
     var cards = Array.isArray(props.cards) ? props.cards : [];
     cards.forEach(function(card) {
       cardsHtml += '<div class="card-item">' +
-        (card.image ? '<img src="' + escapeAttr(card.image) + '" alt="' + esc(card.title) + '" class="card-img" loading="lazy" decoding="async">' : '') +
+        (card.image ? '<img src="' + escapeAttr(card.image) + '" ' + imgSrcsetAttrs(card.image, '(max-width: 900px) 50vw, 25vw') + ' alt="' + esc(card.title) + '" class="card-img" loading="lazy" decoding="async">' : '') +
         '<h3>' + esc(card.title) + '</h3>' +
         '<p>' + esc(card.description) + '</p>' +
         (card.link ? '<a href="' + escapeAttr(card.link) + '" class="card-link ' + btnStyleClass(props.button_style) + '">Ver más</a>' : '') +
@@ -1317,7 +1317,7 @@ ${ev.before_media_url && ev.after_media_url ? `
   }
 
   function renderImage(props) {
-    var img = '<img src="' + escapeAttr(props.url) + '" alt="' + esc(props.alt || '') + '" class="block-full-image" loading="lazy" decoding="async">';
+    var img = '<img src="' + escapeAttr(props.url) + '" ' + imgSrcsetAttrs(props.url, '(max-width: 768px) 92vw, 50vw') + ' alt="' + esc(props.alt || '') + '" class="block-full-image" loading="lazy" decoding="async">';
     var caption = props.caption ? '<p class="block-image-caption">' + esc(props.caption) + '</p>' : '';
     return sectionWrapper('image', img + caption, props.bg_color);
   }
@@ -1327,7 +1327,7 @@ ${ev.before_media_url && ev.after_media_url ? `
     var imagesHtml = '';
     var images = Array.isArray(props.images) ? props.images : [];
     images.forEach(function(img) {
-      imagesHtml += '<div class="gallery-item"><img src="' + escapeAttr(img.url) + '" alt="' + esc(img.alt || '') + '" loading="lazy" decoding="async"></div>';
+      imagesHtml += '<div class="gallery-item"><img src="' + escapeAttr(img.url) + '" ' + imgSrcsetAttrs(img.url, '(max-width: 600px) 50vw, 25vw') + ' alt="' + esc(img.alt || '') + '" loading="lazy" decoding="async"></div>';
     });
     return sectionWrapper('gallery', title + '<div class="gallery-grid">' + imagesHtml + '</div>', props.bg_color);
   }
@@ -1880,6 +1880,20 @@ ${ev.before_media_url && ev.after_media_url ? `
     if (/^(javascript|data):/i.test(s)) return '#';
     return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
+
+  /** Genera los atributos `srcset` y `sizes` para imágenes de producto.
+   *  Solo aplica a /api/media/products/*.webp, que tienen variantes -640 y
+   *  -1280 pre-generadas en R2. Para cualquier otra imagen devuelve ''.
+   *  `sizes` debe reflejar el ancho renderizado real (aprox.). */
+  function imgSrcsetAttrs(url, sizes) {
+    if (!url) return '';
+    var s = String(url);
+    if (!/^\/api\/media\/products\/.+\.webp$/i.test(s)) return '';
+    var base = s.replace(/\.webp$/i, '');
+    var srcset = base + '-640.webp 640w, ' + base + '-1280.webp 1280w';
+    var sizesAttr = sizes || '(max-width: 768px) 92vw, 33vw';
+    return 'srcset="' + srcset + '" sizes="' + sizesAttr + '"';
+  }
   /** Devuelve la clase CSS correspondiente al estilo de botón (1, 2, 3).
    *  Estilo 1 (default): sin clase extra → verde actual.
    *  Estilo 2: WhatsApp translúcido con glow.
@@ -1888,6 +1902,30 @@ ${ev.before_media_url && ev.after_media_url ? `
     if (style === '2') return 'btn-style-whatsapp';
     if (style === '3') return 'btn-style-neon';
     return '';
+  }
+
+  /**
+   * Evento de conversión de WhatsApp para Google Ads / GTM.
+   * Dispara un evento `whatsapp_click` en dataLayer cuando el usuario hace
+   * click en cualquier enlace de WhatsApp (wa.me / api.whatsapp.com). GTM
+   * usa este evento como trigger para la etiqueta de conversión de Google Ads.
+   * NOTA: esto solo emite el evento; la definición de la acción de conversión
+   * (y su mapeo a la etiqueta) vive en el panel de GTM / Google Ads.
+   */
+  function initWhatsAppTracking() {
+    document.addEventListener('click', function(e) {
+      var link = e.target && e.target.closest ? e.target.closest('a') : null;
+      if (!link) return;
+      var href = link.getAttribute('href') || '';
+      if (/wa\.me|api\.whatsapp\.com|whatsapp\.com\/send/i.test(href)) {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          event: 'whatsapp_click',
+          url: href,
+          text: (link.textContent || '').trim().slice(0, 120)
+        });
+      }
+    });
   }
 
   // =========================================================
@@ -1918,6 +1956,9 @@ ${ev.before_media_url && ev.after_media_url ? `
   async function init() {
     // Corregir enlaces internos antes de cualquier otra operación
     fixInternalLinks();
+
+    // Rastrear clicks de WhatsApp para conversión (Google Ads / GTM)
+    initWhatsAppTracking();
 
     // Si hay página dinámica inyectada por el Worker, renderizarla y salir
     if (window.__PAGE__) {
