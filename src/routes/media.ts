@@ -12,10 +12,10 @@ function withNosniff(body: BodyInit | null, init: ResponseInit): Response {
   return new Response(body, { ...init, headers });
 }
 
-function buildHeaders(object: R2Object): Headers {
+function buildHeaders(object: R2Object, cacheControl: string): Headers {
   const headers = new Headers();
   object.writeHttpMetadata(headers);
-  headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  headers.set("Cache-Control", cacheControl);
   headers.set("ETag", object.httpEtag);
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("X-Frame-Options", "DENY");
@@ -68,7 +68,12 @@ export async function handleMedia(
     return withNosniff("Not found", { status: 404 });
   }
 
-  const headers = buildHeaders(object);
+  // products/ puede reemplazarse en mantenimiento → TTL corto con revalidación.
+  // El resto (avatars, events, hero, cards) es inmutable.
+  const cacheControl = key.startsWith("products/")
+    ? "public, max-age=3600, must-revalidate"
+    : "public, max-age=31536000, immutable";
+  const headers = buildHeaders(object, cacheControl);
   headers.set("Content-Length", String(object.size));
 
   const body = (object as R2ObjectBody).body;
