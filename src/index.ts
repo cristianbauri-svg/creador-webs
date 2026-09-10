@@ -291,15 +291,25 @@ function renderHeroHtml(props: Record<string, unknown>): string {
   );
 }
 
-/** Encuentra el primer bloque hero con título no vacío y lo renderiza. */
-function buildServerHero(contentJson: Record<string, unknown>): string {
+/** Encuentra el primer bloque hero con título no vacío y lo renderiza.
+ *  Si existe al menos un bloque hero pero ninguno trae título propio, usa
+ *  `pageTitle` (el título de la página en D1) como fallback sobre el primer
+ *  hero encontrado, para que la página nunca quede sin un <h1> server-
+ *  rendered. Si no hay ningún bloque hero, no se fabrica uno — el
+ *  comportamiento de esas páginas no cambia. */
+function buildServerHero(contentJson: Record<string, unknown>, pageTitle?: string | null): string {
   const blocks = Array.isArray(contentJson) ? contentJson : [];
+  let firstHeroProps: Record<string, unknown> | null = null;
   for (const block of blocks) {
     if (!block || typeof block !== "object") continue;
     const b = block as { type?: unknown; props?: unknown };
     if (b.type !== "hero" || !b.props || typeof b.props !== "object") continue;
     const props = b.props as Record<string, unknown>;
     if (props.title) return renderHeroHtml(props);
+    if (!firstHeroProps) firstHeroProps = props;
+  }
+  if (firstHeroProps && pageTitle) {
+    return renderHeroHtml({ ...firstHeroProps, title: pageTitle });
   }
   return "";
 }
@@ -343,7 +353,7 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
   };
 
   // Hero renderizado server-side (punto 1): se inyecta en #dynamic-page.
-  const serverHero = buildServerHero(contentJson);
+  const serverHero = buildServerHero(contentJson, typeof page.title === "string" ? page.title : null);
 
   // Escapar </ para que no rompa el <script> tag
   const safeJson = JSON.stringify(pageData).replace(/<\//g, "<\\/");
