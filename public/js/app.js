@@ -1228,13 +1228,30 @@ ${ev.before_media_url && ev.after_media_url ? `
 
   function renderHero(props) {
     var isVideo = props.bg_type === 'video' && props.bg_url;
-    var bgStyle = (!isVideo && props.bg_url) ? 'background-image:url(' + escapeAttr(props.bg_url) + ');' : '';
 
     var bgEl;
     if (isVideo) {
       bgEl = '<video class="hero-bg-video" autoplay muted loop playsinline><source src="' + escapeAttr(props.bg_url) + '" type="video/mp4"></video>';
     } else {
-      bgEl = '<div class="hero-bg-sticky" style="' + bgStyle + '"></div>';
+      // Dos slots (Horizontal / Vertical) con un ojo de visibilidad por
+      // dispositivo en cada uno → una sola imagen por dispositivo.
+      var heroImg = resolveSlotImages({
+        horizontal: props.bg_url,
+        horizontalDesktop: props.bg_url_visible_desktop,
+        horizontalMobile: props.bg_url_visible_mobile,
+        vertical: props.bg_url_mobile,
+        verticalDesktop: props.bg_url_mobile_visible_desktop,
+        verticalMobile: props.bg_url_mobile_visible_mobile
+      });
+      bgEl = '<div class="hero-bg-sticky">' +
+        ((heroImg.desktop || heroImg.mobile)
+          ? pictureHtml({
+              desktop: heroImg.desktop,
+              mobile: heroImg.mobile,
+              extraAttrs: 'fetchpriority="high" decoding="async"'
+            })
+          : '') +
+        '</div>';
     }
 
     var heading = props.title ? '<h1>' + esc(props.title) + '</h1>' : '';
@@ -1317,7 +1334,23 @@ ${ev.before_media_url && ev.after_media_url ? `
   }
 
   function renderImage(props) {
-    var img = '<img src="' + escapeAttr(props.url) + '" ' + imgSrcsetAttrs(props.url, '(max-width: 768px) 92vw, 50vw') + ' alt="' + esc(props.alt || '') + '" class="block-full-image" loading="lazy" decoding="async">';
+    var imgSlots = resolveSlotImages({
+      horizontal: props.url,
+      horizontalDesktop: props.url_visible_desktop,
+      horizontalMobile: props.url_visible_mobile,
+      vertical: props.url_mobile,
+      verticalDesktop: props.url_mobile_visible_desktop,
+      verticalMobile: props.url_mobile_visible_mobile
+    });
+    var img = (imgSlots.desktop || imgSlots.mobile)
+      ? pictureHtml({
+          desktop: imgSlots.desktop,
+          mobile: imgSlots.mobile,
+          className: 'block-full-image',
+          alt: props.alt || '',
+          extraAttrs: 'loading="lazy" decoding="async"'
+        })
+      : '';
     var caption = props.caption ? '<p class="block-image-caption">' + esc(props.caption) + '</p>' : '';
     return sectionWrapper('image', img + caption, props.bg_color);
   }
@@ -1881,18 +1914,75 @@ ${ev.before_media_url && ev.after_media_url ? `
     return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  /** Genera los atributos `srcset` y `sizes` para imágenes de producto.
-   *  Solo aplica a /api/media/products/*.webp, que tienen variantes -640 y
-   *  -1280 pre-generadas en R2. Para cualquier otra imagen devuelve ''.
-   *  `sizes` debe reflejar el ancho renderizado real (aprox.). */
-  function imgSrcsetAttrs(url, sizes) {
+  /** Variantes responsive pre-generadas en R2 para una URL de producto.
+   *  Solo aplica a /api/media/products/*.webp, que tiene las variantes -640 y
+   *  -1280. Para cualquier otra imagen devuelve '' (sin srcset). */
+  function imgVariants(url) {
     if (!url) return '';
     var s = String(url);
     if (!/^\/api\/media\/products\/.+\.webp$/i.test(s)) return '';
     var base = s.replace(/\.webp$/i, '');
-    var srcset = base + '-640.webp 640w, ' + base + '-1280.webp 1280w';
-    var sizesAttr = sizes || '(max-width: 768px) 92vw, 33vw';
-    return 'srcset="' + srcset + '" sizes="' + sizesAttr + '"';
+    return base + '-640.webp 640w, ' + base + '-1280.webp 1280w';
+  }
+
+  /** Genera los atributos `srcset` y `sizes` para imágenes de producto.
+   *  `sizes` debe reflejar el ancho renderizado real (aprox.). Devuelve ''
+   *  si la imagen no tiene variantes pre-generadas. */
+  function imgSrcsetAttrs(url, sizes) {
+    var variants = imgVariants(url);
+    if (!variants) return '';
+    return 'srcset="' + variants + '" sizes="' + (sizes || '(max-width: 768px) 92vw, 33vw') + '"';
+  }
+
+  /** ¿El ojo de visibilidad está abierto? `undefined` cuenta como abierto, para
+   *  no alterar el comportamiento de los bloques creados antes de que
+   *  existieran los ojos. Solo `false` lo cierra. */
+  function eyeOpen(value) {
+    return value !== false && value !== 'false';
+  }
+
+  /** Resuelve qué imagen corresponde a cada dispositivo cuando el bloque tiene
+   *  dos slots (Horizontal / Vertical) con un ojo de visibilidad por dispositivo
+   *  en cada slot. Desktop prefiere el slot Horizontal; móvil, el Vertical; si
+   *  el preferido está oculto o vacío, cae al otro. Devuelve '' cuando ese
+   *  dispositivo no debe mostrar imagen.
+   *
+   *  Espejo de resolveSlotImages() en src/index.ts. */
+  function resolveSlotImages(slot) {
+    var h = typeof slot.horizontal === 'string' ? slot.horizontal : '';
+    var v = typeof slot.vertical === 'string' ? slot.vertical : '';
+    return {
+      desktop: (eyeOpen(slot.horizontalDesktop) && h) ? h : ((eyeOpen(slot.verticalDesktop) && v) ? v : ''),
+      mobile: (eyeOpen(slot.verticalMobile) && v) ? v : ((eyeOpen(slot.horizontalMobile) && h) ? h : '')
+    };
+  }
+
+  /** Markup <picture> para una imagen con variante móvil. El <source> con
+   *  media="(max-width: 768px)" hace que el navegador descargue solo la
+   *  variante que le corresponde. Si `desktop` está vacío el <img> sale sin
+   *  src: ese dispositivo no muestra imagen, pero el móvil sí gracias al
+   *  <source>. Si ambas URLs coinciden no se emite <source>, para no duplicar
+   *  el markup ni la descarga.
+   *
+   *  Emite la URL simple, sin srcset: las variantes -640/-1280 solo existen en
+   *  R2 para un puñado de imágenes concretas, y /api/upload no las genera. Con
+   *  srcset el navegador elige una variante que responde 404 y NO cae de vuelta
+   *  al src, así que la imagen desaparece. Sin srcset toda imagen se ve.
+   *
+   *  Espejo de pictureHtml() en src/index.ts. */
+  function pictureHtml(cfg) {
+    var desktop = cfg.desktop || '';
+    var mobile = cfg.mobile || '';
+    var html = '<picture>';
+    if (mobile && mobile !== desktop) {
+      html += '<source media="(max-width: 768px)" srcset="' + escapeAttr(mobile) + '">';
+    }
+    html += '<img';
+    if (desktop) html += ' src="' + escapeAttr(desktop) + '"';
+    if (cfg.className) html += ' class="' + cfg.className + '"';
+    html += ' alt="' + esc(cfg.alt || '') + '"';
+    if (cfg.extraAttrs) html += ' ' + cfg.extraAttrs;
+    return html + '></picture>';
   }
   /** Devuelve la clase CSS correspondiente al estilo de botón (1, 2, 3).
    *  Estilo 1 (default): sin clase extra → verde actual.

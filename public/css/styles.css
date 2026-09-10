@@ -2226,6 +2226,24 @@ section[id] {
   z-index: 0;
 }
 
+/* Imagen del hero: <picture> con variante móvil. object-fit:cover reproduce
+   exactamente el encuadre del background-size:cover anterior, y el
+   <source media="(max-width: 768px)"> evita que un teléfono descargue la
+   imagen horizontal. El color de fondo de .hero-bg-sticky sigue actuando como
+   respaldo mientras la imagen carga. */
+.hero-bg-sticky > picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.hero-bg-sticky img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
 /* Overlay semitransparente con degradado a negro para disolver la imagen
    de fondo gradualmente cuando el usuario scrollea hacia el siguiente bloque. */
 .dynamic-block.block-hero .hero-overlay {

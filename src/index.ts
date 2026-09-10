@@ -141,18 +141,103 @@ function btnStyleClassServer(style: unknown): string {
   return "";
 }
 
+/** ¿El ojo de visibilidad está abierto? `undefined` cuenta como abierto, para
+ *  no alterar el comportamiento de los bloques creados antes de que existieran
+ *  los ojos. Solo `false` lo cierra. */
+function eyeVisibleServer(value: unknown): boolean {
+  return value !== false && value !== "false";
+}
+
+/** Resuelve qué imagen corresponde a cada dispositivo cuando el bloque tiene
+ *  dos slots (Horizontal / Vertical) con un ojo de visibilidad por dispositivo
+ *  en cada slot. Desktop prefiere el slot Horizontal; móvil, el Vertical; si el
+ *  preferido está oculto o vacío, cae al otro. Devuelve "" cuando ese
+ *  dispositivo no debe mostrar imagen.
+ *
+ *  Espejo de resolveSlotImages() en public/js/app.js. */
+function resolveSlotImages(slot: {
+  horizontal: unknown;
+  horizontalDesktop: unknown;
+  horizontalMobile: unknown;
+  vertical: unknown;
+  verticalDesktop: unknown;
+  verticalMobile: unknown;
+}): { desktop: string; mobile: string } {
+  const h = typeof slot.horizontal === "string" ? slot.horizontal.trim() : "";
+  const v = typeof slot.vertical === "string" ? slot.vertical.trim() : "";
+  const desktop =
+    eyeVisibleServer(slot.horizontalDesktop) && h
+      ? h
+      : eyeVisibleServer(slot.verticalDesktop) && v
+        ? v
+        : "";
+  const mobile =
+    eyeVisibleServer(slot.verticalMobile) && v
+      ? v
+      : eyeVisibleServer(slot.horizontalMobile) && h
+        ? h
+        : "";
+  return { desktop, mobile };
+}
+
+/** Markup <picture> para una imagen con variante móvil. El <source> con
+ *  media="(max-width: 768px)" hace que el navegador descargue solo la variante
+ *  que le corresponde. Si `desktop` está vacío el <img> sale sin src: ese
+ *  dispositivo no muestra imagen, pero el móvil sí gracias al <source>. Si
+ *  ambas URLs coinciden no se emite <source>, para no duplicar el markup.
+ *
+ *  Espejo de pictureHtml() en public/js/app.js. */
+function pictureHtml(cfg: {
+  desktop: string;
+  mobile: string;
+  className?: string;
+  alt?: string;
+  extraAttrs?: string;
+}): string {
+  const desktop = cfg.desktop || "";
+  const mobile = cfg.mobile || "";
+  let html = "<picture>";
+  if (mobile && mobile !== desktop) {
+    html += `<source media="(max-width: 768px)" srcset="${escapeAttrValue(mobile)}">`;
+  }
+  html += "<img";
+  if (desktop) html += ` src="${escapeAttrValue(desktop)}"`;
+  if (cfg.className) html += ` class="${cfg.className}"`;
+  html += ` alt="${escapeHtmlText(cfg.alt || "")}"`;
+  if (cfg.extraAttrs) html += ` ${cfg.extraAttrs}`;
+  return html + "></picture>";
+}
+
 /** Espejo exacto de renderHero() en public/js/app.js, pero server-side.
  *  Produce el mismo markup (clases e inline styles) para que el CSS aplicado
  *  sea idéntico al del render client-side. */
 function renderHeroHtml(props: Record<string, unknown>): string {
   const isVideo = props.bg_type === "video" && props.bg_url;
-  const bgStyle =
-    !isVideo && props.bg_url
-      ? `background-image:url(${escapeAttrValue(props.bg_url)});`
-      : "";
-  const bgEl = isVideo
-    ? `<video class="hero-bg-video" autoplay muted loop playsinline><source src="${escapeAttrValue(props.bg_url)}" type="video/mp4"></video>`
-    : `<div class="hero-bg-sticky" style="${bgStyle}"></div>`;
+  let bgEl: string;
+
+  if (isVideo) {
+    bgEl = `<video class="hero-bg-video" autoplay muted loop playsinline><source src="${escapeAttrValue(props.bg_url)}" type="video/mp4"></video>`;
+  } else {
+    // Dos slots (Horizontal / Vertical) con un ojo de visibilidad por
+    // dispositivo en cada uno → una sola imagen por dispositivo.
+    const heroImg = resolveSlotImages({
+      horizontal: props.bg_url,
+      horizontalDesktop: props.bg_url_visible_desktop,
+      horizontalMobile: props.bg_url_visible_mobile,
+      vertical: props.bg_url_mobile,
+      verticalDesktop: props.bg_url_mobile_visible_desktop,
+      verticalMobile: props.bg_url_mobile_visible_mobile,
+    });
+    const picture =
+      heroImg.desktop || heroImg.mobile
+        ? pictureHtml({
+            desktop: heroImg.desktop,
+            mobile: heroImg.mobile,
+            extraAttrs: 'fetchpriority="high" decoding="async"',
+          })
+        : "";
+    bgEl = `<div class="hero-bg-sticky">${picture}</div>`;
+  }
 
   const heading = props.title ? `<h1>${escapeHtmlText(props.title)}</h1>` : "";
   const sub = props.subtitle ? `<p>${escapeHtmlText(props.subtitle)}</p>` : "";

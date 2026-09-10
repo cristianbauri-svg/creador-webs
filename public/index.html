@@ -122,6 +122,10 @@
     .card-link:hover { color: var(--color-accent-hover, #1ed760); }
 
     /* --- Imagen --- */
+    /* El bloque envuelve la imagen en <picture> para poder servir una variante
+       vertical en móvil. picture es inline por defecto: sin display:block
+       quedaría un hueco de línea bajo la imagen. */
+    .dynamic-block.block-image picture { display: block; }
     .block-full-image { width: 100%; border-radius: 10px; }
     .block-image-caption { text-align: center; color: var(--color-text-muted, #888); font-size: 0.9rem; margin-top: 0.5rem; }
 

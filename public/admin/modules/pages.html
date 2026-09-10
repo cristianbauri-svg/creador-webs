@@ -126,6 +126,45 @@
   .editor-block .block-body .field-row { display: flex; gap: 8px; }
   .editor-block .block-body .field-row > * { flex: 1; }
 
+  /* === Slots de imagen responsive (Hero / Imagen) ===
+     Dos slots (Horizontal / Vertical); cada uno lleva dos ojos de visibilidad
+     (Desktop / Móvil) que deciden en qué dispositivos se ve esa imagen. */
+  .img-slots { display: flex; flex-direction: column; gap: 10px; }
+  .img-slots-help { font-size: 11px; color: #888; line-height: 1.5; }
+  .img-slot {
+    background: #111; border: 1px solid #2a2a2a; border-radius: 8px;
+    padding: 10px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .img-slot-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; flex-wrap: wrap;
+  }
+  .img-slot-name {
+    font-size: 11px; color: #ccc; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .img-slot-eyes { display: flex; gap: 6px; }
+  .eye-toggle {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #1a1a1a; border: 1px solid #2a2a2a; color: #888;
+    border-radius: 100px; padding: 3px 9px; cursor: pointer;
+    font-size: 11px; font-weight: 600; line-height: 1;
+  }
+  .eye-toggle:hover { border-color: #3a3a3a; }
+  .eye-toggle.is-open { color: #1db954; border-color: #1f4a2c; background: #0f1f14; }
+  .eye-toggle.is-closed { color: #666; text-decoration: line-through; }
+  .img-slot-preview {
+    max-width: 100%; max-height: 160px; border-radius: 6px;
+    object-fit: contain; background: #0a0a0a;
+  }
+  .img-slot-clear {
+    background: none; border: 1px solid #2a2a2a; color: #aaa;
+    border-radius: 6px; padding: 4px 10px; cursor: pointer;
+    font-size: 11px; align-self: flex-start;
+  }
+  .img-slot-clear:hover { border-color: #3a3a3a; color: #fff; }
+  .img-slot-hint { font-size: 10px; color: #777; line-height: 1.4; }
+
   /* === Botones de acción (verde acento) === */
   #btnSave { background: #1db954; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
   #btnSave:hover { background: #1ed760; }
@@ -619,6 +658,16 @@
     if (type === 'testimonials') newBlock.props.testimonials = [];
     if (type === 'faq') newBlock.props.faqs = [];
     if (type === 'product-carousel') { newBlock.props.mode = 'category'; newBlock.props.slides = []; }
+    // Ojos de los slots de imagen: nacen abiertos para que un bloque nuevo se
+    // comporte igual que siempre (la imagen se ve en ambos dispositivos) hasta
+    // que el admin los cierre a propósito.
+    if (type === 'hero' || type === 'image') {
+      var prefix = type === 'hero' ? 'bg_url' : 'url';
+      newBlock.props[prefix + '_visible_desktop'] = true;
+      newBlock.props[prefix + '_visible_mobile'] = true;
+      newBlock.props[prefix + '_mobile_visible_desktop'] = true;
+      newBlock.props[prefix + '_mobile_visible_mobile'] = true;
+    }
     if (type === 'whatsapp') {
       newBlock.props.phone = '';
       newBlock.props.message = 'Hola, quiero solicitar una cotización';
@@ -668,6 +717,146 @@
     if (blockEls[index]) blockEls[index].classList.add('expanded');
   }
 
+  // ===== Slots de imagen responsive (bloques Hero e Imagen) =====
+  // Cada bloque con imagen tiene dos slots: Horizontal (para desktop) y
+  // Vertical (para móvil). Cada slot lleva DOS ojos que deciden en qué
+  // dispositivos se ve esa imagen. La resolución final la hacen
+  // resolveSlotImages() en public/js/app.js y su espejo en src/index.ts:
+  // desktop prefiere el slot Horizontal, móvil el Vertical, y si el preferido
+  // está oculto o vacío cae al otro.
+  var EYE_ICON_OPEN = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var EYE_ICON_CLOSED = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+  // Previews (dataURL) de archivos elegidos pero todavía no subidos, indexados
+  // por el propio objeto File. Al re-renderizar el cuerpo del bloque (por
+  // ejemplo al pulsar un ojo) el File sigue en props pero su vista previa se
+  // perdería; esto la conserva. Es un WeakMap, así que no fuga memoria y no
+  // se serializa nunca a content_json.
+  var pendingPreviews = new WeakMap();
+
+  /** Botón de ojo: alterna si la imagen del slot se ve en `deviceLabel`. */
+  function buildEyeToggle(idx, block, def, visibleProp, deviceLabel) {
+    var isOpen = block.props[visibleProp] !== false;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'eye-toggle ' + (isOpen ? 'is-open' : 'is-closed');
+    btn.innerHTML = (isOpen ? EYE_ICON_OPEN : EYE_ICON_CLOSED) + '<span>' + deviceLabel + '</span>';
+    btn.title = isOpen
+      ? 'Visible en ' + deviceLabel + '. Clic para ocultarlo ahí.'
+      : 'Oculto en ' + deviceLabel + '. Clic para mostrarlo ahí.';
+    btn.addEventListener('click', function() {
+      blocks[idx].props[visibleProp] = !isOpen;
+      _hasUnsavedChanges = true;
+      // Re-render solo de este cuerpo, para no perder el estado expandido
+      // de los demás bloques.
+      fillBlockBody(btn.closest('.block-body'), idx, blocks[idx], def);
+    });
+    return btn;
+  }
+
+  /** Un slot de imagen: encabezado con sus dos ojos, vista previa, selector
+   *  de archivo, botón para quitarla y una nota de tamaño recomendado. */
+  function buildImageSlot(idx, block, def, cfg) {
+    var wrap = document.createElement('div');
+    wrap.className = 'img-slot';
+
+    var head = document.createElement('div');
+    head.className = 'img-slot-head';
+
+    var name = document.createElement('span');
+    name.className = 'img-slot-name';
+    name.textContent = cfg.label;
+    head.appendChild(name);
+
+    var eyes = document.createElement('div');
+    eyes.className = 'img-slot-eyes';
+    eyes.appendChild(buildEyeToggle(idx, block, def, cfg.desktopProp, 'Desktop'));
+    eyes.appendChild(buildEyeToggle(idx, block, def, cfg.mobileProp, 'Móvil'));
+    head.appendChild(eyes);
+    wrap.appendChild(head);
+
+    var current = block.props[cfg.urlProp];
+    var existingSrc = (typeof current === 'string' && current)
+      ? current
+      : (pendingPreviews.get(current) || '');
+
+    var preview = document.createElement('img');
+    preview.className = 'img-slot-preview';
+    preview.style.display = existingSrc ? 'block' : 'none';
+    if (existingSrc) preview.src = existingSrc;
+    wrap.appendChild(preview);
+
+    var fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/png,image/jpeg,image/webp';
+    fileInput.addEventListener('change', function() {
+      var file = this.files && this.files[0];
+      if (!file) return;
+      block.props[cfg.urlProp] = file; // File object: se sube al guardar
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        pendingPreviews.set(file, e.target.result);
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+    wrap.appendChild(fileInput);
+
+    if (typeof current === 'string' && current) {
+      var clearBtn = document.createElement('button');
+      clearBtn.type = 'button';
+      clearBtn.className = 'img-slot-clear';
+      clearBtn.textContent = 'Quitar foto';
+      clearBtn.addEventListener('click', function() {
+        block.props[cfg.urlProp] = '';
+        _hasUnsavedChanges = true;
+        preview.style.display = 'none';
+        preview.src = '';
+        fileInput.value = '';
+      });
+      wrap.appendChild(clearBtn);
+    }
+
+    var hint = document.createElement('small');
+    hint.className = 'img-slot-hint';
+    hint.textContent = cfg.hint;
+    wrap.appendChild(hint);
+
+    return wrap;
+  }
+
+  /** Los dos slots (Horizontal / Vertical) de un bloque con imagen.
+   *  `variant` es 'hero' o 'image'; solo cambia el prefijo de las props. */
+  function buildImageSlotsGroup(idx, block, def, variant) {
+    var group = document.createElement('div');
+    group.className = 'img-slots';
+
+    var help = document.createElement('small');
+    help.className = 'img-slots-help';
+    help.textContent = 'Sube una imagen horizontal para desktop y otra vertical para móvil. '
+      + 'Los dos ojos de cada slot indican en qué dispositivos se ve esa imagen.';
+    group.appendChild(help);
+
+    var isHero = variant === 'hero';
+    group.appendChild(buildImageSlot(idx, block, def, {
+      label: 'Horizontal — Desktop',
+      hint: 'Recomendado 1920×1080 (16:9). Se usa en desktop y sirve de respaldo en móvil.',
+      urlProp: isHero ? 'bg_url' : 'url',
+      desktopProp: isHero ? 'bg_url_visible_desktop' : 'url_visible_desktop',
+      mobileProp: isHero ? 'bg_url_visible_mobile' : 'url_visible_mobile'
+    }));
+    group.appendChild(buildImageSlot(idx, block, def, {
+      label: 'Vertical — Móvil',
+      hint: 'Recomendado 1080×1920 (9:16). Si lo dejas vacío, el móvil usa la horizontal.',
+      urlProp: isHero ? 'bg_url_mobile' : 'url_mobile',
+      desktopProp: isHero ? 'bg_url_mobile_visible_desktop' : 'url_mobile_visible_desktop',
+      mobileProp: isHero ? 'bg_url_mobile_visible_mobile' : 'url_mobile_visible_mobile'
+    }));
+
+    return group;
+  }
+
   // Rellena el body de un bloque con sus campos de props. Se extrae de
   // renderBlocks para poder re-invocarla sola cuando cambia el modo del
   // carrusel de productos, sin reconstruir toda la lista de bloques (eso
@@ -684,9 +873,17 @@
         if (prop === 'slides' && mode !== 'manual') return;
       }
 
-      var labelEl = document.createElement('label');
-      labelEl.textContent = formatPropLabel(prop);
-      body.appendChild(labelEl);
+      // Los slots de imagen llevan sus propias etiquetas ("Horizontal — Desktop",
+      // "Vertical — Móvil"), así que no se les antepone la etiqueta genérica.
+      var usesSlots =
+        (prop === 'bg_url' && block.type === 'hero' && block.props.bg_type !== 'video') ||
+        (prop === 'url' && block.type === 'image');
+
+      if (!usesSlots) {
+        var labelEl = document.createElement('label');
+        labelEl.textContent = formatPropLabel(prop);
+        body.appendChild(labelEl);
+      }
 
       if (prop === 'mode' && block.type === 'product-carousel') {
         var modeSelect = document.createElement('select');
@@ -738,94 +935,10 @@
           urlInput.addEventListener('input', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
           body.appendChild(urlInput);
         } else {
-          // Imagen: file upload con preview
-          var bgImgWrap = document.createElement('div');
-          bgImgWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
-
-          var preview = document.createElement('img');
-          var hasExisting = block.props.bg_url && typeof block.props.bg_url === 'string';
-          preview.style.cssText = 'max-width:100%;max-height:160px;border-radius:8px;object-fit:cover;display:' + (hasExisting ? 'block' : 'none') + ';';
-          if (hasExisting) preview.src = block.props.bg_url;
-          bgImgWrap.appendChild(preview);
-
-          var fileInput = document.createElement('input');
-          fileInput.type = 'file';
-          fileInput.accept = 'image/png,image/jpeg,image/webp';
-          fileInput.addEventListener('change', (function(blockRef, previewEl) {
-            return function() {
-              var file = this.files && this.files[0];
-              if (!file) return;
-              blockRef.props.bg_url = file; // File object, se sube al guardar
-              var reader = new FileReader();
-              reader.onload = function(e) {
-                previewEl.src = e.target.result;
-                previewEl.style.display = 'block';
-              };
-              reader.readAsDataURL(file);
-            };
-          })(block, preview));
-          bgImgWrap.appendChild(fileInput);
-
-          if (hasExisting) {
-            var clearBtn = document.createElement('button');
-            clearBtn.type = 'button';
-            clearBtn.textContent = 'Quitar foto';
-            clearBtn.style.cssText = 'background:none;border:1px solid #2a2a2a;color:#aaa;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;align-self:flex-start;';
-            clearBtn.addEventListener('click', function() {
-              block.props.bg_url = '';
-              preview.style.display = 'none';
-              preview.src = '';
-              fileInput.value = '';
-            });
-            bgImgWrap.appendChild(clearBtn);
-          }
-
-          body.appendChild(bgImgWrap);
+          body.appendChild(buildImageSlotsGroup(i, block, def, 'hero'));
         }
       } else if (prop === 'url' && block.type === 'image') {
-        // Bloque Imagen: file upload con preview, igual que Hero
-        var imgWrap = document.createElement('div');
-        imgWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
-
-        var preview = document.createElement('img');
-        var hasExistingUrl = block.props.url && typeof block.props.url === 'string';
-        preview.style.cssText = 'max-width:100%;max-height:160px;border-radius:8px;object-fit:cover;display:' + (hasExistingUrl ? 'block' : 'none') + ';';
-        if (hasExistingUrl) preview.src = block.props.url;
-        imgWrap.appendChild(preview);
-
-        var fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = 'image/png,image/jpeg,image/webp';
-        fileInput.addEventListener('change', (function(blockRef, previewEl) {
-          return function() {
-            var file = this.files && this.files[0];
-            if (!file) return;
-            blockRef.props.url = file; // File object, se sube al guardar
-            var reader = new FileReader();
-            reader.onload = function(e) {
-              previewEl.src = e.target.result;
-              previewEl.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-          };
-        })(block, preview));
-        imgWrap.appendChild(fileInput);
-
-        if (hasExistingUrl) {
-          var clearBtn = document.createElement('button');
-          clearBtn.type = 'button';
-          clearBtn.textContent = 'Quitar foto';
-          clearBtn.style.cssText = 'background:none;border:1px solid #2a2a2a;color:#aaa;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;align-self:flex-start;';
-          clearBtn.addEventListener('click', function() {
-            block.props.url = '';
-            preview.style.display = 'none';
-            preview.src = '';
-            fileInput.value = '';
-          });
-          imgWrap.appendChild(clearBtn);
-        }
-
-        body.appendChild(imgWrap);
+        body.appendChild(buildImageSlotsGroup(i, block, def, 'image'));
       } else if (prop === 'alt' && block.type === 'image') {
         var altInput = document.createElement('input');
         altInput.value = block.props[prop] || '';
@@ -1024,12 +1137,79 @@
     return JSON.stringify(blocks);
   }
 
+  // Anchos de las variantes responsive. Deben coincidir con los que anuncia
+  // imgVariants() en public/js/app.js y con VARIANT_WIDTHS en src/routes/upload.ts.
+  var VARIANT_WIDTHS = [640, 1280];
+
+  // Redimensiona `file` a `targetWidth` px de ancho y lo reencoda como WebP.
+  // Nunca agranda: si el original ya es más angosto, devuelve el original tal
+  // cual (así la variante existe y el navegador no recibe un 404). Resuelve
+  // null si no se pudo generar, para que la subida siga funcionando igual que
+  // antes de este cambio.
+  function buildVariantBlob(file, targetWidth) {
+    return new Promise(function(resolve) {
+      var objectUrl = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function() {
+        var w = img.naturalWidth;
+        var h = img.naturalHeight;
+        URL.revokeObjectURL(objectUrl);
+        if (!w || !h) { resolve(null); return; }
+        if (w <= targetWidth) { resolve(file); return; }
+
+        var canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = Math.max(1, Math.round(h * (targetWidth / w)));
+        var ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(function(blob) {
+          // Algunos navegadores ignoran 'image/webp' y devuelven PNG. Servirlo
+          // como .webp rompería la imagen (las respuestas de /api/media van con
+          // X-Content-Type-Options: nosniff), así que se descarta.
+          resolve(blob && blob.type === 'image/webp' ? blob : null);
+        }, 'image/webp', 0.82);
+      };
+      img.onerror = function() { URL.revokeObjectURL(objectUrl); resolve(null); };
+      img.src = objectUrl;
+    });
+  }
+
+  // Sube una imagen y, si es .webp, sus variantes -640 / -1280.
+  //
+  // Las variantes son obligatorias para que el srcset de los bloques Cards y
+  // Galería funcione: imgVariants() (public/js/app.js) deduce las URLs de
+  // variante a partir de la del original y el navegador NO cae de vuelta al
+  // src si la variante responde 404, así que la imagen desaparecería sin aviso.
+  // Solo se generan para .webp porque es el único caso en que aquel emite
+  // srcset; el endpoint las ignora si el original no es webp.
   function uploadFile(file) {
-    var formData = new FormData();
-    formData.append('file', file);
-    return fetch('/api/upload', {
-      method: 'POST',
-      body: formData
+    var prepararVariantes = file.type === 'image/webp'
+      ? Promise.all(VARIANT_WIDTHS.map(function(width) {
+          return buildVariantBlob(file, width).then(function(blob) {
+            return { width: width, blob: blob };
+          });
+        }))
+      : Promise.resolve([]);
+
+    return prepararVariantes.then(function(variantes) {
+      var formData = new FormData();
+      formData.append('file', file);
+      variantes.forEach(function(variante) {
+        if (variante.blob) {
+          formData.append('variant_' + variante.width, variante.blob, 'variant-' + variante.width + '.webp');
+        }
+      });
+      if (variantes.some(function(variante) { return !variante.blob; })) {
+        console.warn('No se pudieron generar las variantes responsive (-640/-1280). La imagen se sube igual, pero los bloques Cards y Galería no podrán usarla en srcset.');
+      }
+
+      return fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
     }).then(function(r) {
       if (!r.ok) return r.json().then(function(err) { throw new Error(err.error || 'Error al subir imagen'); });
       return r.json();
@@ -1055,32 +1235,38 @@
   }
 
   // Sube las imágenes de fondo de los bloques Hero que aún no se han subido
-  // (File objects). Si bg_url ya es un string (URL existente), se deja igual.
+  // (File objects), en sus dos slots. Si el valor ya es un string (URL
+  // existente), se deja igual.
   function uploadPendingHeroImages() {
     var uploads = [];
     blocks.forEach(function(block) {
       if (block.type !== 'hero') return;
       if (block.props.bg_type === 'video') return;
-      if (block.props.bg_url && typeof block.props.bg_url !== 'string') {
-        uploads.push(uploadFile(block.props.bg_url).then(function(result) {
-          block.props.bg_url = result.url;
-        }));
-      }
+      ['bg_url', 'bg_url_mobile'].forEach(function(prop) {
+        if (block.props[prop] && typeof block.props[prop] !== 'string') {
+          uploads.push(uploadFile(block.props[prop]).then(function(result) {
+            block.props[prop] = result.url;
+          }));
+        }
+      });
     });
     return Promise.all(uploads);
   }
 
-  // Sube las imágenes de bloques "image" que aún no se han subido (File objects).
-  // Si props.url ya es un string (URL existente), se deja igual.
+  // Sube las imágenes de bloques "image" que aún no se han subido (File
+  // objects), en sus dos slots. Si el valor ya es un string (URL existente),
+  // se deja igual.
   function uploadPendingImageBlockImages() {
     var uploads = [];
     blocks.forEach(function(block) {
       if (block.type !== 'image') return;
-      if (block.props.url && typeof block.props.url !== 'string') {
-        uploads.push(uploadFile(block.props.url).then(function(result) {
-          block.props.url = result.url;
-        }));
-      }
+      ['url', 'url_mobile'].forEach(function(prop) {
+        if (block.props[prop] && typeof block.props[prop] !== 'string') {
+          uploads.push(uploadFile(block.props[prop]).then(function(result) {
+            block.props[prop] = result.url;
+          }));
+        }
+      });
     });
     return Promise.all(uploads);
   }
