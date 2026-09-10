@@ -98,9 +98,9 @@ async function createPage(request: Request, env: Env): Promise<Response> {
 
     const result = await execute(
       env.STRATON_DB,
-      `INSERT INTO pages (slug, title, content_json, meta_title, meta_description, status)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [body.slug, body.title || null, body.content_json || null, body.meta_title || null, body.meta_description || null, body.status || "draft"]
+      `INSERT INTO pages (slug, title, content_json, meta_title, meta_description, status, bg_color)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [body.slug, body.title || null, body.content_json || null, body.meta_title || null, body.meta_description || null, body.status || "draft", body.bg_color || null]
     );
 
     const inserted = await queryOne(env.STRATON_DB, "SELECT * FROM pages WHERE id = ?", [result.meta.last_row_id]);
@@ -118,7 +118,7 @@ async function updatePage(request: Request, env: Env, id: number): Promise<Respo
     const body = await request.json() as Record<string, unknown>;
     const sets: string[] = [];
     const params: unknown[] = [];
-    const fields = ["slug", "title", "content_json", "meta_title", "meta_description", "status"];
+    const fields = ["slug", "title", "content_json", "meta_title", "meta_description", "status", "bg_color"];
     for (const field of fields) {
       if (body[field] !== undefined) {
         sets.push(`${field} = ?`);

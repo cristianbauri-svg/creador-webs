@@ -2283,18 +2283,22 @@ section[id] {
   100% { opacity: 1; transform: translateY(0); }
 }
 
+/* Esta es la regla que manda en el hero de las páginas dinámicas (tiene más
+   especificidad que la de index.html). Los colores de título y texto elegidos
+   en el panel llegan como variables puestas en el bloque; el color de diseño
+   queda de respaldo, así que sin elección el hero se ve igual que antes. */
 .dynamic-block.block-hero .hero-content h1 {
   font-size: clamp(2rem, 5vw, 3.5rem);
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.03em;
   margin-bottom: var(--space-6);
-  color: #fff;
+  color: var(--block-title-color, #fff);
 }
 
 .dynamic-block.block-hero .hero-content p {
   font-size: var(--text-xl);
-  color: var(--color-text-secondary);
+  color: var(--block-text-color, var(--color-text-secondary));
   line-height: var(--leading-relaxed);
   margin-bottom: var(--space-8);
   max-width: 600px;
@@ -2369,7 +2373,8 @@ section[id] {
   font-size: var(--text-3xl);
   font-weight: 700;
   margin-bottom: var(--space-12);
-  color: var(--color-text);
+  /* Color del título elegido en el panel; el texto por defecto es el respaldo */
+  color: var(--block-title-color, var(--color-text));
 }
 
 /* Contenedor de burbujas */

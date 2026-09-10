@@ -90,11 +90,16 @@
     .btn-hero:hover { background: var(--color-accent-hover, #1ed760); color: #000; }
 
     /* --- Texto --- */
+    /* Los colores de título y texto que elige el panel llegan como variables
+       CSS puestas en el bloque (--block-title-color / --block-text-color). Cada
+       regla las lee con su color actual como respaldo, así que sin elección el
+       resultado es idéntico al de antes. Mismo patrón en --block-title-opacity,
+       que sube a 1 los títulos que por diseño van al 70%. */
     .block-text .block-text-title {
-      font-size: 2rem; font-weight: 700; color: var(--color-accent, #1db954); margin-bottom: 1rem; opacity: 0.70;
+      font-size: 2rem; font-weight: 700; color: var(--block-title-color, var(--color-accent, #1db954)); margin-bottom: 1rem; opacity: var(--block-title-opacity, 0.70);
     }
     .block-text .block-text-content {
-      font-size: 1.05rem; line-height: 1.8; color: var(--color-text-secondary, #b0b0b0);
+      font-size: 1.05rem; line-height: 1.8; color: var(--block-text-color, var(--color-text-secondary, #b0b0b0));
     }
 
     /* --- Cards --- */
@@ -127,7 +132,7 @@
        quedaría un hueco de línea bajo la imagen. */
     .dynamic-block.block-image picture { display: block; }
     .block-full-image { width: 100%; border-radius: 10px; }
-    .block-image-caption { text-align: center; color: var(--color-text-muted, #888); font-size: 0.9rem; margin-top: 0.5rem; }
+    .block-image-caption { text-align: center; color: var(--block-text-color, var(--color-text-muted, #888)); font-size: 0.9rem; margin-top: 0.5rem; }
 
     /* --- Galería --- */
     .gallery-grid {
@@ -204,10 +209,12 @@
     .contact-form-status.error { color: #ff4444; }
 
     /* --- CTA --- */
+    /* El h2 del CTA no fija color propio: hereda del contenedor, con el color
+       de título elegido en el panel como primera opción. */
     .block-cta .cta-inner {
-      text-align: center; padding: 3rem 2rem; border-radius: 12px; color: var(--color-text, #fff);
+      text-align: center; padding: 3rem 2rem; border-radius: 12px; color: var(--block-text-color, var(--color-text, #fff));
     }
-    .block-cta .cta-inner h2 { font-size: 2rem; margin-bottom: 0.5rem; }
+    .block-cta .cta-inner h2 { font-size: 2rem; margin-bottom: 0.5rem; color: var(--block-title-color, inherit); }
     .block-cta .cta-inner p { font-size: 1.1rem; margin-bottom: 1.5rem; }
     .btn-cta {
       display: inline-block; background: var(--color-accent, #1db954); color: #fff; padding: 12px 28px; border-radius: 6px;
@@ -286,15 +293,20 @@
       text-align: center; margin-bottom: 2rem;
     }
     .block-section-header h2 {
-      font-size: 2rem; color: var(--color-text, #fff); display: flex; align-items: center; justify-content: center; gap: 10px;
+      font-size: 2rem; color: var(--block-title-color, var(--color-text, #fff)); display: flex; align-items: center; justify-content: center; gap: 10px;
     }
     .section-header-icon { font-size: 2rem; }
 
-    /* Título de sección genérico */
+    /* Título de sección genérico (lo usan cards, galería, video, carrusel,
+       paquetes, testimonios y formulario) */
     .block-section-title {
-      font-size: 2rem; font-weight: 700; color: var(--color-accent, #1db954); margin-bottom: 1.5rem; text-align: center; opacity: 0.70;
+      font-size: 2rem; font-weight: 700; color: var(--block-title-color, var(--color-accent, #1db954)); margin-bottom: 1.5rem; text-align: center; opacity: var(--block-title-opacity, 0.70);
       font-family: var(--font-primary, system-ui, sans-serif);
     }
+
+    /* Bajada del formulario de contacto (va sobre el fondo del bloque, no
+       dentro de la tarjeta del formulario, así que sigue al color de texto) */
+    .block-contact-form .block-text-desc { color: var(--block-text-color, inherit); }
 
     .empty-text { color: var(--color-text-muted, #666); text-align: center; padding: 20px; }
 

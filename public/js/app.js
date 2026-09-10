@@ -1064,6 +1064,12 @@ ${ev.before_media_url && ev.after_media_url ? `
     if (!container) return;
     container.style.display = '';
     container.innerHTML = '';
+    // Fondo de página: va en <body>, no en #dynamic-page, porque el contenedor
+    // es una columna centrada de 960px y un fondo ahí dejaría los costados sin
+    // pintar. Se asigna con el shorthand `background` para aceptar también
+    // degradados, igual que el bg_color de los bloques; se limpia cuando no hay
+    // valor para no arrastrar el fondo de la página anterior.
+    document.body.style.background = data.bg_color || '';
 
     // Detectar formato de content_json
     var blocks;
@@ -1197,33 +1203,115 @@ ${ev.before_media_url && ev.after_media_url ? `
 
   function renderBlock(block) {
     if (!block || !block.type) return null;
+    var props = block.props || {};
+    var el;
     switch (block.type) {
-      case 'hero': return renderHero(block.props);
-      case 'text': return renderText(block.props);
-      case 'cards': return renderCards(block.props);
-      case 'image': return renderImage(block.props);
-      case 'gallery': return renderGallery(block.props);
-      case 'video': return renderVideo(block.props);
-      case 'product-carousel': return renderProductCarouselBlock(block.props);
-      case 'packages': return renderPackages(block.props);
-      case 'testimonials': return renderTestimonials(block.props);
-      case 'contact-form': return renderContactForm(block.props);
-      case 'cta': return renderCTA(block.props);
-      case 'spacer': return renderSpacer(block.props);
-      case 'section-header': return renderSectionHeader(block.props);
-      case 'faq': return renderFAQ(block.props);
-      case 'toc': return renderTOC(block.props);
-      case 'whatsapp': return renderWhatsApp(block.props);
+      case 'hero': el = renderHero(props); break;
+      case 'text': el = renderText(props); break;
+      case 'cards': el = renderCards(props); break;
+      case 'image': el = renderImage(props); break;
+      case 'gallery': el = renderGallery(props); break;
+      case 'video': el = renderVideo(props); break;
+      case 'product-carousel': el = renderProductCarouselBlock(props); break;
+      case 'packages': el = renderPackages(props); break;
+      case 'testimonials': el = renderTestimonials(props); break;
+      case 'contact-form': el = renderContactForm(props); break;
+      case 'cta': el = renderCTA(props); break;
+      case 'spacer': el = renderSpacer(props); break;
+      case 'section-header': el = renderSectionHeader(props); break;
+      case 'faq': el = renderFAQ(props); break;
+      case 'toc': el = renderTOC(props); break;
+      case 'whatsapp': el = renderWhatsApp(props); break;
       default: return null;
     }
+    el = applyBlockTextColors(el, props);
+    return applyBlockMargins(el, props, block.type);
+  }
+
+  // Un color solo se acepta con la forma que produce el selector del panel
+  // (#rgb, #rgba, #rrggbb, #rrggbbaa). El campo se guarda como texto libre en
+  // content_json, así que un valor con otra forma se ignora en vez de dejarse
+  // pasar: un valor inválido en la variable CSS dejaría el texto sin color.
+  var COLOR_HEX = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+  /** Aplica los colores de título y texto elegidos en el panel.
+   *
+   *  No se escribe `color` directamente en el elemento: se publican dos
+   *  variables CSS en el bloque y son las propias reglas de estilo las que las
+   *  consumen, con su color actual como respaldo. Así un bloque sin color
+   *  elegido se ve exactamente igual que antes, y los cuadros con fondo propio
+   *  (tarjetas, paquetes, testimonios, FAQ, TOC y los campos del formulario)
+   *  conservan sus colores porque ninguna de sus reglas lee estas variables.
+   *
+   *  `--block-title-opacity` existe porque los títulos de sección se pintan al
+   *  70% por diseño: al elegir un color a mano se sube a opaco, o el color
+   *  elegido se vería aguado. */
+  function applyBlockTextColors(el, props) {
+    if (!el || !props || !el.style) return el;
+    if (COLOR_HEX.test(props.title_color || '')) {
+      el.style.setProperty('--block-title-color', props.title_color);
+      el.style.setProperty('--block-title-opacity', '1');
+    }
+    if (COLOR_HEX.test(props.text_color || '')) {
+      el.style.setProperty('--block-text-color', props.text_color);
+    }
+    return el;
+  }
+
+  /** Pinta el fondo del bloque a sangre completa ("full bleed").
+   *
+   *  El contenedor de la página dinámica es una columna centrada de 960px
+   *  (`.dynamic-page`), así que un fondo puesto en el bloque solo cubre 920px
+   *  y deja los costados sin pintar. Aquí el bloque se estira de borde a borde
+   *  de la ventana y el mismo ancho se devuelve como padding, de modo que el
+   *  contenido queda exactamente en la misma posición que antes.
+   *
+   *  El hero no pasa por aquí: ya ocupa el ancho completo con su propia regla
+   *  CSS (`.dynamic-block.block-hero` en styles.css). El `overflow-x: hidden`
+   *  de `body` (styles.css) absorbe el desborde de ~15px que provoca `50vw`
+   *  cuando hay barra de scroll. */
+  function applyFullBleed(sec, bgColor) {
+    if (!bgColor) return sec;
+    sec.style.background = bgColor;
+    sec.style.marginLeft = 'calc(50% - 50vw)';
+    sec.style.marginRight = 'calc(50% - 50vw)';
+    sec.style.paddingLeft = 'calc(50vw - 50%)';
+    sec.style.paddingRight = 'calc(50vw - 50%)';
+    return sec;
   }
 
   function sectionWrapper(className, inner, bgColor) {
     var sec = document.createElement('section');
     sec.className = 'dynamic-block block-' + className;
-    if (bgColor) { sec.style.background = bgColor; }
+    if (className !== 'hero') applyFullBleed(sec, bgColor);
+    else if (bgColor) sec.style.background = bgColor;
     sec.innerHTML = inner;
     return sec;
+  }
+
+  /** Márgenes verticales configurables por bloque (px enteros; un valor
+   *  negativo sube el bloque y permite superponerlo al vecino). Un bloque sin
+   *  márgenes sale intacto: la función es inerte salvo que el admin los fije.
+   *
+   *  Cuando hay margen el bloque se marca como posicionado para que un valor
+   *  negativo lo dibuje por encima del vecino: sin esto quedaría oculto detrás
+   *  de un bloque anterior ya posicionado (Texto, Encabezado o FAQ), que llevan
+   *  position/z-index propios. Es el mismo tratamiento que Texto y Encabezado
+   *  aplicaban a mano. */
+  function applyBlockMargins(el, props, blockType) {
+    if (!el || !props) return el;
+    var top = props.margin_top;
+    var bottom = props.margin_bottom;
+    if (!top && !bottom) return el;
+    // WhatsApp es un botón flotante (position: fixed, anclado a la ventana): no
+    // participa del flujo, los márgenes no le aplican y forzarle position
+    // relative lo desanclaría del borde de la pantalla.
+    if (blockType === 'whatsapp') return el;
+    if (top) { el.style.marginTop = parseInt(top) + 'px'; }
+    if (bottom) { el.style.marginBottom = parseInt(bottom) + 'px'; }
+    el.style.position = 'relative';
+    el.style.zIndex = '1';
+    return el;
   }
 
   function renderHero(props) {
@@ -1278,9 +1366,8 @@ ${ev.before_media_url && ev.after_media_url ? `
       '<div class="block-text-content">' + safeHtml + '</div>',
       props.bg_color
     );
-    // Posicionamiento libre: márgenes negativos permiten superposición
-    if (props.margin_top) { sec.style.marginTop = parseInt(props.margin_top) + 'px'; }
-    if (props.margin_bottom) { sec.style.marginBottom = parseInt(props.margin_bottom) + 'px'; }
+    // Los márgenes de este bloque los aplica applyBlockMargins() en
+    // renderBlock(); aquí solo queda el apilado propio de Texto.
     sec.style.position = 'relative';
     sec.style.zIndex = '1';
     return sec;
@@ -1409,7 +1496,7 @@ ${ev.before_media_url && ev.after_media_url ? `
 
   function renderContactForm(props) {
     var title = props.title ? '<h2 class="block-section-title">' + esc(props.title) + '</h2>' : '';
-    var desc = props.description ? '<p>' + esc(props.description) + '</p>' : '';
+    var desc = props.description ? '<p class="block-text-desc">' + esc(props.description) + '</p>' : '';
     var formHtml = '<form class="contact-form-dynamic">' +
       '<input type="text" name="customer_name" placeholder="Nombre" required>' +
       '<input type="email" name="email" placeholder="Correo" required>' +
@@ -1675,8 +1762,7 @@ ${ev.before_media_url && ev.after_media_url ? `
   function renderSectionHeader(props) {
     var icon = props.icon ? '<span class="section-header-icon">' + esc(props.icon) + '</span>' : '';
     var sec = sectionWrapper('section-header', icon + '<h2>' + esc(props.title) + '</h2>', props.bg_color);
-    if (props.margin_top) { sec.style.marginTop = parseInt(props.margin_top) + 'px'; }
-    if (props.margin_bottom) { sec.style.marginBottom = parseInt(props.margin_bottom) + 'px'; }
+    // Los márgenes los aplica applyBlockMargins() en renderBlock().
     sec.style.position = 'relative';
     sec.style.zIndex = '1';
     return sec;

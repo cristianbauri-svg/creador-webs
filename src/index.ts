@@ -211,6 +211,17 @@ function pictureHtml(cfg: {
 /** Espejo exacto de renderHero() en public/js/app.js, pero server-side.
  *  Produce el mismo markup (clases e inline styles) para que el CSS aplicado
  *  sea idéntico al del render client-side. */
+
+// Un color solo se acepta con la forma que produce el selector del panel
+// (#rgb, #rgba, #rrggbb, #rrggbbaa). Mismo filtro que COLOR_HEX en
+// public/js/app.js. Un acierto no puede contener comillas ni ';', así que el
+// valor validado se puede interpolar sin escapar.
+const COLOR_HEX = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+function hexColor(value: unknown): string {
+  return typeof value === "string" && COLOR_HEX.test(value) ? value : "";
+}
+
 function renderHeroHtml(props: Record<string, unknown>): string {
   const isVideo = props.bg_type === "video" && props.bg_url;
   let bgEl: string;
@@ -245,12 +256,34 @@ function renderHeroHtml(props: Record<string, unknown>): string {
     ? `<a href="${escapeAttrValue(props.button_link || "#")}" class="btn-hero ${btnStyleClassServer(props.button_style)}">${escapeHtmlText(props.button_text)}</a>`
     : "";
 
-  const bgColorStyle = props.bg_color
-    ? ` style="background:${escapeAttrValue(props.bg_color)};"`
-    : "";
+  // Mismos estilos en línea que aplica el cliente (applyBlockMargins en
+  // public/js/app.js) para que el hero no salte de sitio cuando app.js
+  // re-renderiza el bloque. Sin márgenes la salida es idéntica a la de antes.
+  const heroStyles: string[] = [];
+  // El hero ya ocupa el ancho completo de la ventana por su propia regla CSS
+  // (.dynamic-block.block-hero en styles.css: width:100vw + margin-left
+  // calc(-50vw + 50%)), así que aquí solo se pinta el fondo: no lleva el
+  // tratamiento de applyFullBleed() que sí usan los demás bloques.
+  if (props.bg_color) heroStyles.push(`background:${escapeAttrValue(props.bg_color)}`);
+  // Colores de título y texto elegidos en el panel. Se publican como variables
+  // CSS y las leen las reglas del hero (index.html), igual que hace
+  // applyBlockTextColors() en public/js/app.js para el resto de los bloques.
+  const heroTitleColor = hexColor(props.title_color);
+  const heroTextColor = hexColor(props.text_color);
+  if (heroTitleColor) heroStyles.push(`--block-title-color:${heroTitleColor}`, "--block-title-opacity:1");
+  if (heroTextColor) heroStyles.push(`--block-text-color:${heroTextColor}`);
+  const marginTop = props.margin_top ? parseInt(String(props.margin_top), 10) : NaN;
+  const marginBottom = props.margin_bottom ? parseInt(String(props.margin_bottom), 10) : NaN;
+  if (!Number.isNaN(marginTop)) heroStyles.push(`margin-top:${marginTop}px`);
+  if (!Number.isNaN(marginBottom)) heroStyles.push(`margin-bottom:${marginBottom}px`);
+  if (!Number.isNaN(marginTop) || !Number.isNaN(marginBottom)) {
+    // Un margen negativo necesita apilar por encima del bloque vecino.
+    heroStyles.push("position:relative", "z-index:1");
+  }
+  const heroStyle = heroStyles.length ? ` style="${heroStyles.join(";")};"` : "";
 
   return (
-    `<section class="dynamic-block block-hero"${bgColorStyle}>` +
+    `<section class="dynamic-block block-hero"${heroStyle}>` +
     bgEl +
     `<div class="hero-overlay"></div>` +
     `<div class="hero-content">${heading}${sub}${button}</div>` +
@@ -294,10 +327,18 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
     } catch { /* JSON inválido — se usa objeto vacío */ }
   }
 
+  // Fondo de página: el canvas detrás de los bloques (el espacio entre uno y
+  // otro). Mismo convenio que el bg_color de los bloques — valor libre escrito
+  // con el shorthand `background`, así acepta color sólido y degradado CSS.
+  // Vacío = sin fondo propio: la página se ve sobre el fondo del body, igual
+  // que antes de existir este campo.
+  const pageBgColor = typeof page.bg_color === "string" ? page.bg_color.trim() : "";
+
   const pageData = {
     title: page.title || null,
     meta_title: page.meta_title || null,
     meta_description: page.meta_description || null,
+    bg_color: pageBgColor || null,
     content_json: contentJson,
   };
 
@@ -344,6 +385,17 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
     element(element: Element) {
       element.setInnerContent(serverHero, { html: true });
       element.setAttribute("style", "display:block;");
+    }
+  }
+
+  // El fondo de página va en <body> y no en #dynamic-page: ese contenedor es
+  // una columna centrada de 960px, así que un fondo puesto ahí dejaría los
+  // costados sin pintar. En <body> cubre el ancho completo de la ventana.
+  // Sin valor no se toca el <body>, que queda igual que antes de este campo.
+  class BodyBackgroundHandler {
+    element(element: Element) {
+      if (!pageBgColor) return;
+      element.setAttribute("style", `background:${escapeAttrValue(pageBgColor)}`);
     }
   }
 
@@ -407,6 +459,7 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
     .on('meta[property="og:description"]', new OgDescriptionHandler())
     .on('meta[property="og:url"]', new OgUrlHandler())
     .on("#dynamic-page", new DynamicPageHandler())
+    .on("body", new BodyBackgroundHandler())
     .on("#hero", new HomeHeroRemovalHandler())
     .transform(new Response(response.body, { headers, status: response.status }));
 }
