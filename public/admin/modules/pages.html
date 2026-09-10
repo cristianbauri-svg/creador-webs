@@ -224,6 +224,26 @@
     border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;
   }
   .array-editor-add:hover { background: #1ed760; }
+
+  /* === Control de fondo (color plano / degradado) ===
+     Solo se definen aquí las cajas que no existen en otra parte del panel:
+     los campos (input de color, selector, botón) llevan su estilo en línea,
+     como el resto de los campos de bloque, para no pelear con las reglas
+     generales de .block-body y de #pageMetaForm. */
+  .bg-ctrl { display: flex; flex-direction: column; gap: 8px; }
+  .bg-ctrl-modos { display: flex; gap: 14px; flex-wrap: wrap; }
+  .bg-ctrl-panel { display: flex; flex-direction: column; gap: 8px; }
+  .bg-ctrl-fila { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .bg-ctrl-preview {
+    height: 34px; border: 1px solid #2a2a2a; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #777; background: #111;
+  }
+  .bg-ctrl-nota { font-size: 10px; color: #777; line-height: 1.5; }
+  .bg-ctrl-aviso { font-size: 10px; color: #ff8a5c; line-height: 1.5; }
+  .bg-ctrl-avanzado { font-size: 11px; color: #888; }
+  .bg-ctrl-avanzado summary { cursor: pointer; }
+  .bg-ctrl-avanzado input { margin-top: 6px; }
 </style>
 
 <!-- ==================== HTML ==================== -->
@@ -271,6 +291,11 @@
           <label>Meta Description</label>
           <textarea id="pageMetaDescription" placeholder="Descripción SEO"></textarea>
         </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label>Fondo de la página</label>
+        <div id="pageBgControl"></div>
+        <div style="font-size:11px;color:#888;margin-top:4px;">Pinta el espacio detrás de los bloques (el que se ve entre uno y otro).</div>
       </div>
     </div>
 
@@ -320,6 +345,7 @@
     pageStatus: mod.querySelector('#pageStatus'),
     pageMetaTitle: mod.querySelector('#pageMetaTitle'),
     pageMetaDescription: mod.querySelector('#pageMetaDescription'),
+    pageBgControl: mod.querySelector('#pageBgControl'),
     palette: mod.querySelector('#blockPalette'),
     blockList: mod.querySelector('#blockList'),
     emptyBlocks: mod.querySelector('#emptyBlocks'),
@@ -331,21 +357,21 @@
 
   // Definición de tipos de bloques
   var BLOCK_TYPES = [
-    { type: 'hero', icon: '🦸', label: 'Hero', desc: 'Fondo con título, subtítulo y botón', thumb: '<div class="line wide"></div><div class="line medium"></div><div class="line short"></div><div class="btn-fake"></div>', props: ['bg_color','bg_type','bg_url','title','subtitle','button_text','button_link','button_style'] },
-    { type: 'text', icon: '📝', label: 'Texto', desc: 'Título y contenido enriquecido', thumb: '<div class="line wide"></div><div class="line medium"></div><div class="line medium"></div><div class="line short"></div>', props: ['bg_color','title','content','margin_top','margin_bottom'] },
-    { type: 'cards', icon: '🃏', label: 'Cards', desc: '2-4 tarjetas con imagen y texto', thumb: '<div class="line wide" style="width:40%"></div><div class="card-grid"><div class="card-fake"><div class="line"></div><div class="line"></div></div><div class="card-fake"><div class="line"></div><div class="line"></div></div><div class="card-fake"><div class="line"></div><div class="line"></div></div></div>', props: ['bg_color','section_title','cards','button_style'] },
-    { type: 'image', icon: '🖼️', label: 'Imagen', desc: 'Imagen a ancho completo con pie', thumb: '<div class="img-fake"></div><div class="line short" style="margin-top:4px"></div>', props: ['bg_color','url','alt','caption'] },
-    { type: 'gallery', icon: '🖼️', label: 'Galería', desc: 'Galería de imágenes en grilla', thumb: '<div class="grid-2x2"><div></div><div></div><div></div><div></div></div>', props: ['bg_color','section_title','images'] },
-    { type: 'video', icon: '🎬', label: 'Video', desc: 'Video de YouTube o Vimeo', thumb: '<div class="video-bar"><div class="play-triangle"></div></div>', props: ['bg_color','url','title'] },
-    { type: 'product-carousel', icon: '🎵', label: 'Carrusel Productos', desc: '1 card, autoplay, textos grandes. Imagen recomendada: 800×600px (proporción 4:3)', thumb: '<div class="carousel-single"><div class="line" style="width:60%"></div><div class="line" style="width:80%"></div></div>', props: ['bg_color','section_title','mode','category','max_items','slides'] },
-    { type: 'packages', icon: '📦', label: 'Paquetes', desc: 'Parrilla de paquetes con precios', thumb: '<div class="line wide" style="width:30%"></div><div class="package-col"><div></div><div style="border:1px solid #1db954"></div><div></div></div>', props: ['bg_color','section_title','button_style'] },
-    { type: 'testimonials', icon: '💬', label: 'Testimonios', desc: 'Carrusel de testimonios', thumb: '<div class="line wide" style="width:30%"></div><div class="testimonial-bar"><div class="avatar"></div><div class="form-lines"><div class="line"></div><div class="line"></div></div></div>', props: ['bg_color','section_title','testimonials'] },
-    { type: 'contact-form', icon: '📬', label: 'Formulario', desc: 'Formulario de contacto', thumb: '<div class="line wide" style="width:40%"></div><div class="form-lines"><div class="line" style="width:90%"></div><div class="line" style="width:70%"></div><div class="line" style="width:50%"></div></div>', props: ['bg_color','title','description','button_style'] },
-    { type: 'cta', icon: '📢', label: 'CTA', desc: 'Llamado a la acción con fondo', thumb: '<div style="position:relative;flex:1"><div class="cta-bg"></div><div style="position:relative;z-index:1;display:flex;flex-direction:column;gap:4px;padding:8px"><div class="line wide" style="background:#fff3"></div><div class="btn-fake"></div></div></div>', props: ['bg_color','title','subtitle','button_text','button_link','button_style'] },
-    { type: 'spacer', icon: '↕️', label: 'Espaciador', desc: 'Separador vertical ajustable', thumb: '<div class="spacer-bar"></div>', props: ['bg_color','style','height'] },
-    { type: 'section-header', icon: '🏷️', label: 'Encabezado', desc: 'Título de sección con ícono', thumb: '<div style="display:flex;align-items:center;gap:8px"><div class="icon-circle"></div><div class="line wide"></div></div>', props: ['bg_color','title','icon','margin_top','margin_bottom'] },
-    { type: 'faq', icon: '❓', label: 'FAQ', desc: 'Preguntas frecuentes con despliegue animado al hacer scroll', thumb: '<div style="display:flex;flex-direction:column;gap:7px;flex:1;padding:4px"><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#1db954;flex-shrink:0"></div><div class="line" style="width:65%;height:7px"></div></div><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#2a2a2a;flex-shrink:0"></div><div class="line" style="width:50%;height:7px"></div></div><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#2a2a2a;flex-shrink:0"></div><div class="line" style="width:55%;height:7px"></div></div></div>', props: ['bg_color','section_title','faqs'] },
-    { type: 'toc', icon: '📑', label: 'Tabla de contenido', desc: 'Índice desplegable con los títulos (H1/H2) de la página', thumb: '<div style="display:flex;flex-direction:column;gap:5px;flex:1;padding:6px;border:1px solid #2a2a2a;border-radius:6px"><div style="display:flex;align-items:center;justify-content:space-between"><div class="line" style="width:55%;height:9px;background:#D0FAE5"></div><div style="width:14px;height:14px;border:1px solid #3a3a3a;border-radius:3px;flex-shrink:0"></div></div><div class="line" style="width:80%;height:6px"></div><div class="line" style="width:65%;height:6px"></div><div class="line" style="width:50%;height:6px"></div></div>', props: ['bg_color'] },
+    { type: 'hero', icon: '🦸', label: 'Hero', desc: 'Fondo con título, subtítulo y botón', thumb: '<div class="line wide"></div><div class="line medium"></div><div class="line short"></div><div class="btn-fake"></div>', props: ['bg_color','title_color','text_color','bg_type','bg_url','title','subtitle','button_text','button_link','button_style','margin_top','margin_bottom'] },
+    { type: 'text', icon: '📝', label: 'Texto', desc: 'Título y contenido enriquecido', thumb: '<div class="line wide"></div><div class="line medium"></div><div class="line medium"></div><div class="line short"></div>', props: ['bg_color','title_color','text_color','title','content','margin_top','margin_bottom'] },
+    { type: 'cards', icon: '🃏', label: 'Cards', desc: '2-4 tarjetas con imagen y texto', thumb: '<div class="line wide" style="width:40%"></div><div class="card-grid"><div class="card-fake"><div class="line"></div><div class="line"></div></div><div class="card-fake"><div class="line"></div><div class="line"></div></div><div class="card-fake"><div class="line"></div><div class="line"></div></div></div>', props: ['bg_color','title_color','section_title','cards','button_style','margin_top','margin_bottom'] },
+    { type: 'image', icon: '🖼️', label: 'Imagen', desc: 'Imagen a ancho completo con pie', thumb: '<div class="img-fake"></div><div class="line short" style="margin-top:4px"></div>', props: ['bg_color','text_color','url','alt','caption','margin_top','margin_bottom'] },
+    { type: 'gallery', icon: '🖼️', label: 'Galería', desc: 'Galería de imágenes en grilla', thumb: '<div class="grid-2x2"><div></div><div></div><div></div><div></div></div>', props: ['bg_color','title_color','section_title','images','margin_top','margin_bottom'] },
+    { type: 'video', icon: '🎬', label: 'Video', desc: 'Video de YouTube o Vimeo', thumb: '<div class="video-bar"><div class="play-triangle"></div></div>', props: ['bg_color','title_color','url','title','margin_top','margin_bottom'] },
+    { type: 'product-carousel', icon: '🎵', label: 'Carrusel Productos', desc: '1 card, autoplay, textos grandes. Imagen recomendada: 800×600px (proporción 4:3)', thumb: '<div class="carousel-single"><div class="line" style="width:60%"></div><div class="line" style="width:80%"></div></div>', props: ['bg_color','title_color','section_title','mode','category','max_items','slides','margin_top','margin_bottom'] },
+    { type: 'packages', icon: '📦', label: 'Paquetes', desc: 'Parrilla de paquetes con precios', thumb: '<div class="line wide" style="width:30%"></div><div class="package-col"><div></div><div style="border:1px solid #1db954"></div><div></div></div>', props: ['bg_color','title_color','section_title','button_style','margin_top','margin_bottom'] },
+    { type: 'testimonials', icon: '💬', label: 'Testimonios', desc: 'Carrusel de testimonios', thumb: '<div class="line wide" style="width:30%"></div><div class="testimonial-bar"><div class="avatar"></div><div class="form-lines"><div class="line"></div><div class="line"></div></div></div>', props: ['bg_color','title_color','section_title','testimonials','margin_top','margin_bottom'] },
+    { type: 'contact-form', icon: '📬', label: 'Formulario', desc: 'Formulario de contacto', thumb: '<div class="line wide" style="width:40%"></div><div class="form-lines"><div class="line" style="width:90%"></div><div class="line" style="width:70%"></div><div class="line" style="width:50%"></div></div>', props: ['bg_color','title_color','text_color','title','description','button_style','margin_top','margin_bottom'] },
+    { type: 'cta', icon: '📢', label: 'CTA', desc: 'Llamado a la acción con fondo', thumb: '<div style="position:relative;flex:1"><div class="cta-bg"></div><div style="position:relative;z-index:1;display:flex;flex-direction:column;gap:4px;padding:8px"><div class="line wide" style="background:#fff3"></div><div class="btn-fake"></div></div></div>', props: ['bg_color','title_color','text_color','title','subtitle','button_text','button_link','button_style','margin_top','margin_bottom'] },
+    { type: 'spacer', icon: '↕️', label: 'Espaciador', desc: 'Separador vertical ajustable', thumb: '<div class="spacer-bar"></div>', props: ['bg_color','style','height','margin_top','margin_bottom'] },
+    { type: 'section-header', icon: '🏷️', label: 'Encabezado', desc: 'Título de sección con ícono', thumb: '<div style="display:flex;align-items:center;gap:8px"><div class="icon-circle"></div><div class="line wide"></div></div>', props: ['bg_color','title_color','title','icon','margin_top','margin_bottom'] },
+    { type: 'faq', icon: '❓', label: 'FAQ', desc: 'Preguntas frecuentes con despliegue animado al hacer scroll', thumb: '<div style="display:flex;flex-direction:column;gap:7px;flex:1;padding:4px"><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#1db954;flex-shrink:0"></div><div class="line" style="width:65%;height:7px"></div></div><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#2a2a2a;flex-shrink:0"></div><div class="line" style="width:50%;height:7px"></div></div><div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border-radius:50%;background:#2a2a2a;flex-shrink:0"></div><div class="line" style="width:55%;height:7px"></div></div></div>', props: ['bg_color','title_color','section_title','faqs','margin_top','margin_bottom'] },
+    { type: 'toc', icon: '📑', label: 'Tabla de contenido', desc: 'Índice desplegable con los títulos (H1/H2) de la página', thumb: '<div style="display:flex;flex-direction:column;gap:5px;flex:1;padding:6px;border:1px solid #2a2a2a;border-radius:6px"><div style="display:flex;align-items:center;justify-content:space-between"><div class="line" style="width:55%;height:9px;background:#D0FAE5"></div><div style="width:14px;height:14px;border:1px solid #3a3a3a;border-radius:3px;flex-shrink:0"></div></div><div class="line" style="width:80%;height:6px"></div><div class="line" style="width:65%;height:6px"></div><div class="line" style="width:50%;height:6px"></div></div>', props: ['bg_color','margin_top','margin_bottom'] },
     { type: 'whatsapp', icon: '💬', label: 'WhatsApp', desc: 'Botón flotante de WhatsApp con número y mensaje personalizables', thumb: '<div style="position:relative;flex:1;display:flex;align-items:flex-end;justify-content:flex-end"><div style="width:36px;height:36px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(37,211,102,0.3)">💬</div></div>', props: ['bg_color','phone','message'] }
   ];
 
@@ -857,6 +883,337 @@
     return group;
   }
 
+  // === Control de fondo: color plano o degradado ===
+  //
+  // Lo que se guarda sigue siendo exactamente el mismo texto de siempre en
+  // bg_color (un color "#rrggbb" o un "linear-gradient(...)"), así que no hay
+  // migración ni cambios en el render: solo cambia la forma de escribirlo. El
+  // campo de texto libre no desaparece: queda dentro de "Avanzado" para los
+  // fondos que este control no sabe armar (degradados radiales, tres colores o
+  // valores ya guardados con otra forma), de modo que nada se pierda.
+
+  /** Direcciones del degradado. A la izquierda lo que se lee en el panel; a la
+   *  derecha lo que se escribe en el CSS. Ninguna opción menciona términos de
+   *  CSS ni nombres de funciones. */
+  var DIRECCIONES_FONDO = [
+    ['De arriba hacia abajo', 'to bottom'],
+    ['De abajo hacia arriba', 'to top'],
+    ['De izquierda a derecha', 'to right'],
+    ['De derecha a izquierda', 'to left'],
+    ['En diagonal ↘', 'to bottom right'],
+    ['En diagonal ↙', 'to bottom left']
+  ];
+
+  /** Lee un degradado lineal de dos colores: devuelve [dirección, color A,
+   *  color B] o null si el valor no tiene esa forma.
+   *
+   *  Es tolerante a propósito. Un valor escrito a mano puede venir sin el
+   *  paréntesis final, sin los porcentajes de las paradas o con espacios de más
+   *  (en la página "sonido" hay uno al que le falta el paréntesis), y el
+   *  navegador lo perdona; aquí también, para poder mostrarlo en el control en
+   *  vez de relegarlo a "Avanzado". Solo acepta colores de seis dígitos, que
+   *  son los que produce el selector de color. */
+  var RE_FONDO_DEGRADADO = /^\s*linear-gradient\s*\(\s*(?:([a-z ]+?)\s*,\s*)?(#[0-9a-fA-F]{6})\s*(?:[\d.]+%)?\s*,\s*(#[0-9a-fA-F]{6})\s*(?:[\d.]+%)?\s*\)?\s*;?\s*$/;
+
+  /** ¿El navegador aceptaría este valor como fondo? Se prueba en un elemento
+   *  suelto: la CSSOM descarta en silencio los valores inválidos, así que si el
+   *  valor no queda escrito es que no se aplicaría y el bloque saldría sin
+   *  fondo. Es el aviso que hasta ahora no existía en ninguna parte del panel:
+   *  un tipo mal escrito se guardaba y el fondo desaparecía sin explicación. */
+  function fondoAplicable(valor) {
+    if (!valor) return true;
+    var prueba = document.createElement('div');
+    prueba.style.background = valor;
+    return !!prueba.style.background;
+  }
+
+  var bgCtrlSeq = 0;
+
+  /** Construye el control de fondo. Devuelve { el, set }:
+   *    el  → el nodo que se inserta en el panel
+   *    set → carga un valor guardado sin avisar a alCambiar, para que abrir una
+   *          página no reescriba nada por sí solo
+   *  `alCambiar(nuevoValor)` se llama en cada interacción del usuario, nunca al
+   *  construir el control. */
+  function crearControlFondo(valorInicial, alCambiar) {
+    var modo = 'plano';              // 'plano' | 'degradado'
+    var colorPlano = '';             // vacío = sin fondo
+    var colorA = '#0a0a0a';
+    var colorB = '#e0e3de';
+    var direccion = 'to bottom';
+    // Cuando el valor guardado no se puede representar con las muestras, manda
+    // el campo "Avanzado" y las muestras no lo tocan hasta que alguien las
+    // cambie: así un fondo con otra forma nunca se altera por abrir el editor.
+    var usarAvanzado = false;
+    var avanzado = '';
+
+    function direccionConocida(d) {
+      var elegida = (d || 'to bottom').trim();
+      return DIRECCIONES_FONDO.some(function(p) { return p[1] === elegida; });
+    }
+
+    /** Deduce el estado del control a partir de un valor guardado. */
+    function cargar(v) {
+      var valor = (typeof v === 'string' ? v : '').trim();
+      modo = 'plano';
+      colorPlano = '';
+      colorA = '#0a0a0a';
+      colorB = '#e0e3de';
+      direccion = 'to bottom';
+      usarAvanzado = false;
+      avanzado = '';
+
+      var partes = RE_FONDO_DEGRADADO.exec(valor);
+      if (/^#[0-9a-fA-F]{6}$/.test(valor)) {
+        colorPlano = valor;
+      } else if (partes && direccionConocida(partes[1])) {
+        modo = 'degradado';
+        direccion = (partes[1] || 'to bottom').trim();
+        colorA = partes[2];
+        colorB = partes[3];
+      } else if (valor) {
+        usarAvanzado = true;
+        avanzado = valor;
+        // Un degradado guardado que no se pudo leer se muestra en su pestaña,
+        // no en la de color plano.
+        if (/gradient\s*\(/.test(valor)) modo = 'degradado';
+      }
+    }
+
+    function valorEfectivo() {
+      if (usarAvanzado) return avanzado.trim();
+      if (modo === 'plano') return colorPlano;
+      return 'linear-gradient(' + direccion + ', ' + colorA + ' 0%, ' + colorB + ' 100%)';
+    }
+
+    var wrap = document.createElement('div');
+    wrap.className = 'bg-ctrl';
+
+    var ESTILO_SWATCH = 'width:40px;height:34px;border:1px solid #2a2a2a;border-radius:6px;'
+      + 'cursor:pointer;padding:2px;background:#111;flex:0 0 auto;';
+
+    /** Una muestra de color con su etiqueta ("Desde", "Hasta") y su valor. */
+    function crearCampoColor(texto, alElegir) {
+      var label = document.createElement('label');
+      // El estilo va en línea porque la regla general de .block-body pone las
+      // etiquetas en bloque y en mayúsculas, y aquí van en línea y en minúscula.
+      label.style.cssText = 'display:inline-flex;align-items:center;gap:6px;margin:0;'
+        + 'font-size:11px;color:#aaa;text-transform:none;letter-spacing:0;';
+
+      var input = document.createElement('input');
+      input.type = 'color';
+      input.style.cssText = ESTILO_SWATCH;
+      input.addEventListener('input', function() { alElegir(this.value); });
+
+      var hex = document.createElement('span');
+      hex.style.cssText = 'font-family:monospace;font-size:11px;color:#aaa;';
+
+      label.appendChild(document.createTextNode(texto));
+      label.appendChild(input);
+      label.appendChild(hex);
+      return { el: label, input: input, hex: hex };
+    }
+
+    function crearRadio(valorModo, texto) {
+      var label = document.createElement('label');
+      label.style.cssText = 'display:inline-flex;align-items:center;gap:6px;margin:0;'
+        + 'font-size:12px;color:#ccc;text-transform:none;letter-spacing:0;cursor:pointer;';
+
+      var input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'bg-ctrl-modo-' + (++bgCtrlSeq);
+      input.value = valorModo;
+      input.style.cssText = 'width:auto;margin:0;accent-color:#1db954;cursor:pointer;';
+      input.addEventListener('change', function() {
+        if (!this.checked) return;
+        modo = valorModo;
+        usarAvanzado = false;
+        // Al pasar a degradado, el color plano que hubiera se convierte en la
+        // primera parada: el color elegido no se pierde.
+        if (modo === 'degradado' && colorPlano) colorA = colorPlano;
+        refrescar(true);
+      });
+
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(texto));
+      return { label: label, input: input };
+    }
+
+    // --- Color plano o degradado
+    var modosEl = document.createElement('div');
+    modosEl.className = 'bg-ctrl-modos';
+    var radioPlano = crearRadio('plano', 'Color plano');
+    var radioDeg = crearRadio('degradado', 'Degradado');
+    modosEl.appendChild(radioPlano.label);
+    modosEl.appendChild(radioDeg.label);
+    wrap.appendChild(modosEl);
+
+    // --- Panel de color plano
+    var panelPlano = document.createElement('div');
+    panelPlano.className = 'bg-ctrl-panel';
+    var filaPlano = document.createElement('div');
+    filaPlano.className = 'bg-ctrl-fila';
+
+    var swatchPlano = document.createElement('input');
+    swatchPlano.type = 'color';
+    swatchPlano.value = '#0a0a0a';
+    swatchPlano.style.cssText = ESTILO_SWATCH;
+    swatchPlano.addEventListener('input', function() {
+      colorPlano = this.value;
+      usarAvanzado = false;
+      refrescar(true);
+    });
+
+    var hexPlano = document.createElement('span');
+    hexPlano.style.cssText = 'font-family:monospace;font-size:12px;color:#aaa;';
+
+    filaPlano.appendChild(swatchPlano);
+    filaPlano.appendChild(hexPlano);
+    panelPlano.appendChild(filaPlano);
+    wrap.appendChild(panelPlano);
+
+    // --- Panel de degradado
+    var panelDeg = document.createElement('div');
+    panelDeg.className = 'bg-ctrl-panel';
+    var filaColores = document.createElement('div');
+    filaColores.className = 'bg-ctrl-fila';
+
+    var campoA = crearCampoColor('Desde', function(v) { colorA = v; usarAvanzado = false; refrescar(true); });
+    var campoB = crearCampoColor('Hasta', function(v) { colorB = v; usarAvanzado = false; refrescar(true); });
+    filaColores.appendChild(campoA.el);
+    filaColores.appendChild(campoB.el);
+
+    var selectDir = document.createElement('select');
+    selectDir.style.cssText = 'width:auto;padding:6px 8px;font-size:12px;';
+    DIRECCIONES_FONDO.forEach(function(p) {
+      var opt = document.createElement('option');
+      opt.value = p[1];
+      opt.textContent = p[0];
+      selectDir.appendChild(opt);
+    });
+    selectDir.addEventListener('change', function() {
+      direccion = this.value;
+      usarAvanzado = false;
+      refrescar(true);
+    });
+
+    var filaDir = document.createElement('div');
+    filaDir.className = 'bg-ctrl-fila';
+    var labelDir = document.createElement('label');
+    labelDir.style.cssText = 'display:inline-flex;align-items:center;gap:6px;margin:0;'
+      + 'font-size:11px;color:#aaa;text-transform:none;letter-spacing:0;';
+    labelDir.appendChild(document.createTextNode('Dirección'));
+    labelDir.appendChild(selectDir);
+    filaDir.appendChild(labelDir);
+
+    panelDeg.appendChild(filaColores);
+    panelDeg.appendChild(filaDir);
+    wrap.appendChild(panelDeg);
+
+    // --- Vista previa: el degradado tal como se verá, antes de guardar
+    var preview = document.createElement('div');
+    preview.className = 'bg-ctrl-preview';
+    wrap.appendChild(preview);
+
+    var btnSinFondo = document.createElement('button');
+    btnSinFondo.type = 'button';
+    btnSinFondo.textContent = 'Sin fondo';
+    btnSinFondo.style.cssText = 'background:none;border:1px solid #2a2a2a;color:#aaa;'
+      + 'border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;align-self:flex-start;';
+    btnSinFondo.addEventListener('click', function() {
+      // Se conservan las paradas y la dirección: si vuelve a elegir Degradado,
+      // recupera el mismo degradado que tenía armado.
+      modo = 'plano';
+      colorPlano = '';
+      usarAvanzado = false;
+      avanzado = '';
+      refrescar(true);
+    });
+    wrap.appendChild(btnSinFondo);
+
+    // --- Avanzado: el campo de texto de siempre, para lo que el control no arma
+    var detalles = document.createElement('details');
+    detalles.className = 'bg-ctrl-avanzado';
+    var resumen = document.createElement('summary');
+    resumen.textContent = 'Avanzado (pegar CSS a mano)';
+    detalles.appendChild(resumen);
+
+    var notaAvanzado = document.createElement('small');
+    notaAvanzado.className = 'bg-ctrl-nota';
+    notaAvanzado.textContent = 'Solo para fondos que las opciones de arriba no pueden armar '
+      + '(degradados radiales, tres colores o valores guardados con otra forma). '
+      + 'Lo que se escriba aquí reemplaza lo de arriba.';
+
+    var inputAvanzado = document.createElement('input');
+    inputAvanzado.type = 'text';
+    inputAvanzado.placeholder = 'linear-gradient(to bottom, #0A0A0A, #E0E3DE)';
+    inputAvanzado.addEventListener('input', function() {
+      usarAvanzado = true;
+      avanzado = this.value;
+      refrescar(true);
+    });
+
+    var aviso = document.createElement('small');
+    aviso.className = 'bg-ctrl-aviso';
+    aviso.hidden = true;
+    aviso.textContent = '⚠ Este valor no es un color ni un degradado que el navegador '
+      + 'pueda aplicar: el fondo quedaría vacío.';
+
+    detalles.appendChild(notaAvanzado);
+    detalles.appendChild(inputAvanzado);
+    detalles.appendChild(aviso);
+    wrap.appendChild(detalles);
+
+    function refrescar(notificar) {
+      radioPlano.input.checked = modo === 'plano';
+      radioDeg.input.checked = modo === 'degradado';
+      panelPlano.style.display = modo === 'plano' ? 'flex' : 'none';
+      panelDeg.style.display = modo === 'degradado' ? 'flex' : 'none';
+
+      swatchPlano.value = colorPlano || '#0a0a0a';
+      hexPlano.textContent = colorPlano || 'Sin fondo';
+      campoA.input.value = colorA;
+      campoA.hex.textContent = colorA;
+      campoB.input.value = colorB;
+      campoB.hex.textContent = colorB;
+      selectDir.value = direccion;
+
+      var v = valorEfectivo();
+      var aplica = fondoAplicable(v);
+
+      if (!v) {
+        preview.style.background = '';
+        preview.textContent = 'Sin fondo';
+      } else if (aplica) {
+        preview.style.background = v;
+        preview.textContent = '';
+      } else {
+        preview.style.background = '';
+        preview.textContent = 'Este valor no se puede aplicar';
+      }
+
+      // El campo Avanzado refleja el valor vigente, lo generen las muestras o
+      // se haya escrito ahí. Solo se reescribe si cambió, para no mover el
+      // cursor mientras se escribe.
+      var textoAvanzado = usarAvanzado ? avanzado : v;
+      if (inputAvanzado.value !== textoAvanzado) inputAvanzado.value = textoAvanzado;
+      aviso.hidden = aplica;
+      // Al abrir el editor con un valor que las muestras no pueden mostrar, el
+      // apartado Avanzado aparece desplegado para que se vea de dónde sale.
+      if (usarAvanzado) detalles.open = true;
+
+      if (notificar && alCambiar) alCambiar(v);
+    }
+
+    cargar(valorInicial);
+    refrescar(false);
+
+    return {
+      el: wrap,
+      set: function(v) { cargar(v); refrescar(false); }
+    };
+  }
+
   // Rellena el body de un bloque con sus campos de props. Se extrae de
   // renderBlocks para poder re-invocarla sola cuando cambia el modo del
   // carrusel de productos, sin reconstruir toda la lista de bloques (eso
@@ -965,65 +1322,55 @@
         styleSelect.addEventListener('change', (function(idx, p) { return function() { blocks[idx].props[p] = this.value; }; })(i, prop));
         body.appendChild(styleSelect);
       } else if (prop === 'bg_color') {
-        var colorWrap = document.createElement('div');
-        colorWrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
+        // El fondo se elige con dos muestras de color y una dirección en
+        // palabras, con vista previa; el texto libre queda en "Avanzado".
+        var fondoCtrl = crearControlFondo(block.props[prop] || '', (function(idx, p) {
+          return function(nuevo) { blocks[idx].props[p] = nuevo; };
+        })(i, prop));
+        body.appendChild(fondoCtrl.el);
+      } else if (prop === 'title_color' || prop === 'text_color') {
+        // Mismo control que el fondo, pero sin el campo de degradado: un color
+        // de texto es siempre un color plano. El selector nativo no admite
+        // "vacío", así que mientras no haya una elección la etiqueta lo dice y
+        // el color que muestre el recuadro no se aplica — la variable CSS solo
+        // se escribe cuando hay un color elegido.
+        var txtWrap = document.createElement('div');
+        txtWrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
 
-        var colorInput = document.createElement('input');
-        colorInput.type = 'color';
-        colorInput.value = block.props[prop] || '#0a0a0a';
-        colorInput.style.cssText = 'width:40px;height:34px;border:1px solid #2a2a2a;border-radius:6px;cursor:pointer;padding:2px;background:#111;';
+        var txtDefault = prop === 'title_color' ? '#ffffff' : '#b0b0b0';
 
-        var hexLabel = document.createElement('span');
-        hexLabel.textContent = block.props[prop] || 'Sin fondo';
-        hexLabel.style.cssText = 'font-size:12px;color:#aaa;font-family:monospace;';
+        var txtInput = document.createElement('input');
+        txtInput.type = 'color';
+        txtInput.value = block.props[prop] || txtDefault;
+        txtInput.style.cssText = 'width:40px;height:34px;border:1px solid #2a2a2a;border-radius:6px;cursor:pointer;padding:2px;background:#111;';
 
-        // Campo de texto para degradado CSS
-        var gradInput = document.createElement('input');
-        gradInput.type = 'text';
-        gradInput.placeholder = 'O pega un degradado CSS… ej: linear-gradient(to bottom, #0A0A0A, #E0E3DE)';
-        gradInput.style.cssText = 'margin-top:6px;font-size:11px;';
-        // Si el valor actual no empieza con #, es un degradado → mostrarlo
-        var currentVal = block.props[prop] || '';
-        if (currentVal && currentVal.indexOf('#') !== 0) {
-          gradInput.value = currentVal;
-        }
+        var txtLabel = document.createElement('span');
+        txtLabel.textContent = block.props[prop] || 'Sin color';
+        txtLabel.style.cssText = 'font-size:12px;color:#aaa;font-family:monospace;';
 
-        colorInput.addEventListener('input', (function(idx, p, label, gradEl) {
+        txtInput.addEventListener('input', (function(idx, p, label) {
           return function() {
             blocks[idx].props[p] = this.value;
             label.textContent = this.value;
-            // El swatch nativo no puede representar un degradado: si había
-            // uno guardado, se pisa por el color plano — limpiar el campo
-            // de texto para que la UI no siga mostrando el degradado viejo.
-            gradEl.value = '';
           };
-        })(i, prop, hexLabel, gradInput));
+        })(i, prop, txtLabel));
 
-        gradInput.addEventListener('input', (function(idx, p, label) {
-          return function() {
-            blocks[idx].props[p] = this.value;
-            label.textContent = this.value || 'Sin fondo';
-          };
-        })(i, prop, hexLabel));
-
-        var clearBtn = document.createElement('button');
-        clearBtn.type = 'button';
-        clearBtn.textContent = 'Sin color';
-        clearBtn.style.cssText = 'background:none;border:1px solid #2a2a2a;color:#aaa;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;';
-        clearBtn.addEventListener('click', (function(idx, p, inputEl, gradEl, labelEl) {
+        var txtClearBtn = document.createElement('button');
+        txtClearBtn.type = 'button';
+        txtClearBtn.textContent = 'Sin color';
+        txtClearBtn.style.cssText = 'background:none;border:1px solid #2a2a2a;color:#aaa;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;';
+        txtClearBtn.addEventListener('click', (function(idx, p, inputEl, labelEl, fallback) {
           return function() {
             blocks[idx].props[p] = '';
-            inputEl.value = '#0a0a0a';
-            gradEl.value = '';
-            labelEl.textContent = 'Sin fondo';
+            inputEl.value = fallback;
+            labelEl.textContent = 'Sin color';
           };
-        })(i, prop, colorInput, gradInput, hexLabel));
+        })(i, prop, txtInput, txtLabel, txtDefault));
 
-        colorWrap.appendChild(colorInput);
-        colorWrap.appendChild(hexLabel);
-        colorWrap.appendChild(clearBtn);
-        colorWrap.appendChild(gradInput);
-        body.appendChild(colorWrap);
+        txtWrap.appendChild(txtInput);
+        txtWrap.appendChild(txtLabel);
+        txtWrap.appendChild(txtClearBtn);
+        body.appendChild(txtWrap);
       } else if (prop === 'style' && block.type === 'spacer') {
         var styleSelect = document.createElement('select');
         [
@@ -1125,7 +1472,7 @@
     return val ? String(val).substring(0, 50) : '(sin configurar)';
   }
 
-  var PROP_LABEL_OVERRIDES = { category: 'Categoría', mode: 'Modo', slides: 'Slides (Manual)', bg_url: 'Fondo (BG)', bg_type: 'Tipo de fondo', url: 'Imagen', alt: 'Texto alternativo (ALT)', section_title: 'Título de sección', faqs: 'Preguntas', button_style: 'Estilo de botón' };
+  var PROP_LABEL_OVERRIDES = { category: 'Categoría', mode: 'Modo', slides: 'Slides (Manual)', bg_url: 'Fondo (BG)', bg_type: 'Tipo de fondo', url: 'Imagen', alt: 'Texto alternativo (ALT)', section_title: 'Título de sección', faqs: 'Preguntas', button_style: 'Estilo de botón', title_color: 'Color del título', text_color: 'Color del texto' };
   function formatPropLabel(prop) {
     if (PROP_LABEL_OVERRIDES[prop]) return PROP_LABEL_OVERRIDES[prop];
     return prop.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
@@ -1313,6 +1660,7 @@
         content_json: collectContentJson(),
         meta_title: els.pageMetaTitle.value.trim() || null,
         meta_description: els.pageMetaDescription.value.trim() || null,
+        bg_color: (pageBgValor || '').trim() || null,
         status: els.pageStatus.value
       };
       var url = currentId ? '/api/pages/' + currentId : '/api/pages';
@@ -1389,6 +1737,12 @@
         els.pageTitle.value = page.title || '';
         els.pageMetaTitle.value = page.meta_title || '';
         els.pageMetaDescription.value = page.meta_description || '';
+        // El control de fondo se refresca con el valor guardado, tal cual. Si
+        // no encaja en las muestras (un degradado radial, tres colores), se
+        // conserva íntegro en "Avanzado" y no se reescribe por abrir la página.
+        var savedBg = page.bg_color || '';
+        pageBgCtrl.set(savedBg);
+        pageBgValor = savedBg;
         els.pageStatus.value = page.status || 'draft';
 
         // Parsear content_json
@@ -1443,6 +1797,8 @@
     els.pageTitle.value = '';
     els.pageMetaTitle.value = '';
     els.pageMetaDescription.value = '';
+    pageBgCtrl.set('');
+    pageBgValor = '';
     els.pageStatus.value = 'draft';
     blocks = [];
     els.editor.style.display = 'block';
@@ -1468,6 +1824,13 @@
   }
 
   // Eventos
+  // Fondo de página: se construye una sola vez, con el mismo control que usan
+  // los bloques. El valor vigente vive en pageBgValor y es el que envía
+  // savePage(); al cargar una página se refresca con pageBgCtrl.set().
+  var pageBgValor = '';
+  var pageBgCtrl = crearControlFondo('', function(v) { pageBgValor = v; });
+  els.pageBgControl.appendChild(pageBgCtrl.el);
+
   els.btnNew.addEventListener('click', showNewForm);
   els.btnSave.addEventListener('click', savePage);
   els.btnCancel.addEventListener('click', hideForm);
