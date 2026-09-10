@@ -1,0 +1,23 @@
+# Salidas regenerables de auditoría.
+#
+# Estas carpetas y capturas son duplicados de lo que ya vive en R2 o en
+# producción (imágenes generadas, renders locales, snapshots de HTML). Se
+# reproducen con los scripts de este directorio, así que no se versionan:
+# solo agregarían ~19 MB sin aportar nada al historial.
+tmp/
+demo/
+img-check/
+img-variants/
+img-sonido-opt/
+heroes-variantes/
+variantes-backfill/
+png-a-webp/
+renombre-webp/
+*.html
+prod-app.js
+lh-*.json
+
+# Excepción: los respaldos de D1 en d1-backup/ SÍ se versionan.
+# Son el punto de restauración de las migraciones de contenido (la regla
+# "*.json" del .gitignore raíz los dejaría fuera, y son el rollback).
+!d1-backup/*.json
