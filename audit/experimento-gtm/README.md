@@ -13,6 +13,8 @@ pueda publicarlos.
 | `proxy.mjs` | Banco de pruebas. Sirve producción real reescribiendo solo el fragmento de GTM. Variantes: `actual`, `defer3s`, `deferload`, `deferblank`. |
 | `pruebas-conversion.mjs` | Batería de conversión: cola de eventos, interacción, clic tardío y formulario. |
 | `prueba-gclid.mjs` | Cuándo se escribe el cookie de atribución `_gcl_aw` en cada rama. |
+| `ventana-conversion.mjs` | Barrido de siete instantes de toque (800, 1500, 1800, 2500, 3000, 3500 y 5000 ms) en las tres ramas. |
+| `informe-fase2b-experimento-gtm.html` | **El informe completo**, autocontenido: se abre con doble clic y sin conexión. |
 
 ## Cómo se corre
 
@@ -21,6 +23,7 @@ node audit/experimento-gtm/proxy.mjs --variante=actual    --puerto=8798 &
 node audit/experimento-gtm/proxy.mjs --variante=defer3s   --puerto=8799 &
 node audit/experimento-gtm/proxy.mjs --variante=deferblank --puerto=8796 &
 
+node audit/experimento-gtm/ventana-conversion.mjs 2
 node audit/experimento-gtm/pruebas-conversion.mjs http://127.0.0.1:8798 "ACTUAL"
 node audit/experimento-gtm/pruebas-conversion.mjs http://127.0.0.1:8799 "DEFER"
 node audit/experimento-gtm/prueba-gclid.mjs       http://127.0.0.1:8799 "DEFER"
@@ -34,9 +37,12 @@ cotizaciones reales.
 
 - Ganancia: `/sonido` pasa de 92 a 97 en móvil con GTM fuera de la ventana de
   carga (LCP −874 ms, TBT a cero en las tres páginas).
+- Con CPU 10×, el escenario más cercano a PageSpeed Insights, ganan las tres
+  páginas: home 91→99, /sonido 89→95, /pantallas-led 93→98, con el TBT cayendo
+  de ~250 ms a menos de 45 ms.
 - Riesgo: el diferimiento **solo** pierde la conversión de WhatsApp cuando el
-  usuario toca el CTA entre ~1,5 y ~3,3 s, porque esos botones navegan en la
-  misma pestaña y matan el documento. Medido 4 de 4.
+  usuario toca el CTA en los primeros ~3,5 s, porque esos botones navegan en la
+  misma pestaña y matan el documento. Medido: 10 fallos de 14 observaciones.
 - Mitigación: abrir los CTA de WhatsApp en pestaña nueva, como ya hace el botón
   flotante. Con ella la conversión sale en los cinco instantes probados,
   incluido uno que **hoy ya falla**.
