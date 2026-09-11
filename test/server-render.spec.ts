@@ -54,10 +54,10 @@ const PAGE = {
   ]),
 };
 
-function mockEnv() {
+function mockEnv(page: Record<string, unknown> = PAGE) {
   const mockDb = {
     prepare: () => ({
-      bind: () => ({ first: async () => PAGE }),
+      bind: () => ({ first: async () => page }),
     }),
   };
   const mockAssets = {
@@ -69,6 +69,17 @@ function mockEnv() {
     ASSETS: mockAssets,
     STRATON_DB: mockDb,
   } as unknown as typeof env;
+}
+
+/** Pide /sonido al Worker con la página indicada en D1. */
+async function render(page: Record<string, unknown> = PAGE): Promise<Response> {
+  const request = new Request("https://stratonaudio.com.co/sonido", {
+    headers: { Accept: "text/html" },
+  });
+  const ctx = createExecutionContext();
+  const response = await worker.fetch(request, mockEnv(page), ctx);
+  await waitOnExecutionContext(ctx);
+  return response;
 }
 
 describe("server-render del hero dinámico (punto 1)", () => {
@@ -99,8 +110,12 @@ describe("server-render del hero dinámico (punto 1)", () => {
     // El H1 de la home fue eliminado (se elimina la sección #hero completa).
     expect(html).not.toContain('id="hero"');
 
-    // La regla que oculta las secciones de la home está presente.
-    expect(html).toContain("#statsBanner,#servicios");
+    // El markup exclusivo de la landing no viaja en una página dinámica.
+    expect(html).not.toContain('id="statsBanner"');
+    expect(html).not.toContain('id="servicios"');
+
+    // El contenedor dinámico sí se muestra.
+    expect(html).toContain("#dynamic-page{display:block!important}");
 
     // El JSON-LD y el script de página se inyectan.
     expect(html).toContain("window.__PAGE__");
@@ -108,5 +123,45 @@ describe("server-render del hero dinámico (punto 1)", () => {
 
     // El title server-side usa el meta_title.
     expect(html).toContain("Alquiler de Sonido Profesional | Straton Audio");
+  });
+
+  it("no inventa variantes para una URL que ya es una variante", async () => {
+    // El hero de PAGE apunta a "…-1600.webp": derivar "-1600-640.webp" daría
+    // 404 y el navegador no vuelve al src, así que la imagen desaparecería.
+    const response = await render(PAGE);
+    const html = await response.text();
+
+    expect(html).not.toContain("-1600-640.webp");
+    expect(html).not.toContain("srcset=");
+    // Aun sin variantes, el hero conserva la prioridad de carga.
+    expect(html).toContain('fetchpriority="high"');
+  });
+
+  it("sirve el hero con variantes responsive y solo prioriza el primero", async () => {
+    const base = "/api/media/products/9d40c561-e02f-4881-a621-644863b6d044.webp";
+    const page = {
+      ...PAGE,
+      content_json: JSON.stringify([
+        { type: "hero", props: { bg_url: base, title: "Primer hero" } },
+        { type: "hero", props: { bg_url: base, title: "Segundo hero" } },
+      ]),
+    };
+
+    const response = await render(page);
+    const html = await response.text();
+
+    // Las dos variantes pre-generadas más el original como candidata ancha.
+    expect(html).toContain(
+      `srcset="${base.replace(".webp", "-640.webp")} 640w, ${base.replace(".webp", "-1280.webp")} 1280w, ${base} 1920w"`
+    );
+    expect(html).toContain('sizes="100vw"');
+
+    // Server-side solo se dibuja un hero —el primero— y es el que lleva
+    // prioridad de carga. (El segundo llega en window.__PAGE__ y lo dibuja
+    // app.js, ya en diferido.)
+    expect(html.match(/class="dynamic-block block-hero"/g)).toHaveLength(1);
+    expect(html).toContain("<h1>Primer hero</h1>");
+    expect(html).toContain('fetchpriority="high"');
+    expect(html).not.toContain('loading="lazy"');
   });
 });

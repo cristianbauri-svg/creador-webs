@@ -34,13 +34,18 @@ export async function handleSettings(request: Request, env: Env, _pathname: stri
 
 async function getSettings(env: Env): Promise<Response> {
   try {
+    // Las 12 claves se piden a la vez: en serie cada lectura arrastraba su
+    // propio viaje al almacén de KV y la respuesta llegaba a tardar ~1,5 s en
+    // frío, justo cuando la home la necesita para pintar el hero.
+    const values = await Promise.all(KNOWN_KEYS.map((key) => env.STRATON_KV.get(key)));
+
     const settings: Record<string, string> = {};
-    for (const key of KNOWN_KEYS) {
-      const value = await env.STRATON_KV.get(key);
+    KNOWN_KEYS.forEach((key, index) => {
+      const value = values[index];
       if (value !== null) {
         settings[key] = value;
       }
-    }
+    });
 
     return json(settings);
   } catch (e) {

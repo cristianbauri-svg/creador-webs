@@ -23,7 +23,15 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://stratonaudio.com.co" />
 
-  <link rel="stylesheet" href="/css/styles.css?v=20260628" />
+  <!-- Póster del hero: es lo primero que se ve en la home, así que se pide
+       cuanto antes. El Worker retira este enlace en las páginas dinámicas,
+       donde el hero de la home no existe. -->
+  <link rel="preload" as="image" href="/images/hero-poster.webp" fetchpriority="high" id="heroPosterPreload" />
+  <link rel="stylesheet" href="/css/styles.css?v=20260911" />
+  <!-- Estilos que solo usa la landing. El Worker retira este enlace en las
+       páginas dinámicas, que comparten el mismo shell pero ninguna de estas
+       reglas. -->
+  <link rel="stylesheet" href="/css/home.css?v=20260911" id="homeStylesheet" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔊</text></svg>" />
 
   <!-- Estilos del carrito de cotización y página dinámica -->
@@ -601,7 +609,11 @@
   <!-- ============================================= -->
   <section class="hero" id="hero">
     <div class="hero-bg">
-      <video autoplay muted loop playsinline>
+      <!-- El póster es el primer fotograma del video: se ve exactamente lo
+           mismo mientras el video llega. app.js (initHeroVideo) lo arranca
+           cuando la página ya terminó de cargar, así sus ~1,2 MB dejan de
+           competir con el texto y las imágenes del inicio. -->
+      <video poster="/images/hero-poster.webp" preload="none" data-deferred muted loop playsinline>
         <source src="/videos/video_hero.webm" type="video/webm" />
         <source src="/videos/video_hero_compressed.mp4" type="video/mp4" />
       </video>
@@ -725,7 +737,9 @@
     <div class="eq-console-measure"></div>
     <div class="eq-console-bars" id="eqBars"></div>
   </div>
-  <script>
+  <!-- id: permite al Worker retirar este script en las páginas dinámicas, donde
+       la consola de audio está oculta y sus 50 barras no se llegan a ver. -->
+  <script id="eqConsoleScript">
     (function() {
       var container = document.getElementById('eqBars');
       if (!container) return;
@@ -993,7 +1007,7 @@
   <!-- Overlay del panel -->
   <div id="cartOverlay" class="cart-overlay"></div>
 
-  <script defer src="/js/app.js?v=20260908"></script>
+  <script defer src="/js/app.js?v=20260911"></script>
 
   <!-- Sticky Cotización Bar -->
   <div id="cart-bar" class="cart-bar hidden">

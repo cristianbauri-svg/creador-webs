@@ -718,7 +718,12 @@
       products.forEach(function(p) {
         var card = document.createElement('div');
         card.className = 'pc-card';
-        card.innerHTML = '<img src="' + escapeAttr(p.image_url || '') + '" alt="' + esc(p.title) + '">' +
+        // El carrusel vive muy por debajo del pliegue: sus imágenes se cargan
+        // en diferido y en la variante que corresponde al ancho de la tarjeta,
+        // en vez de descargarse enteras durante la carga inicial.
+        card.innerHTML = '<img src="' + escapeAttr(p.image_url || '') + '" ' +
+          imgSrcsetAttrs(p.image_url, '(max-width: 768px) 92vw, 700px') +
+          ' alt="' + esc(p.title) + '" loading="lazy" decoding="async">' +
           '<div class="pc-info"><h3>' + esc(p.title) + '</h3><p>' + esc(p.description || '') + '</p></div>';
         track.appendChild(card);
       });
@@ -1091,6 +1096,7 @@ ${ev.before_media_url && ev.after_media_url ? `
       return;
     }
 
+    heroAlreadyRendered = false;
     blocks.forEach(function(block) {
       var el = renderBlock(block);
       if (el) container.appendChild(el);
@@ -1201,12 +1207,21 @@ ${ev.before_media_url && ev.after_media_url ? `
   // Renderizador de bloques dinámicos
   // =========================================================
 
+  // Se pone a false al empezar cada página: marca si ya se dibujó un hero, para
+  // dar prioridad de carga solo al primero (el que puede ser el LCP).
+  var heroAlreadyRendered = false;
+
   function renderBlock(block) {
     if (!block || !block.type) return null;
     var props = block.props || {};
     var el;
     switch (block.type) {
-      case 'hero': el = renderHero(props); break;
+      case 'hero': {
+        var isFirstHero = !heroAlreadyRendered;
+        heroAlreadyRendered = true;
+        el = renderHero(props, isFirstHero);
+        break;
+      }
       case 'text': el = renderText(props); break;
       case 'cards': el = renderCards(props); break;
       case 'image': el = renderImage(props); break;
@@ -1314,7 +1329,7 @@ ${ev.before_media_url && ev.after_media_url ? `
     return el;
   }
 
-  function renderHero(props) {
+  function renderHero(props, priority) {
     var isVideo = props.bg_type === 'video' && props.bg_url;
 
     var bgEl;
@@ -1331,12 +1346,18 @@ ${ev.before_media_url && ev.after_media_url ? `
         verticalDesktop: props.bg_url_mobile_visible_desktop,
         verticalMobile: props.bg_url_mobile_visible_mobile
       });
+      // Solo el primer hero de la página es candidato a LCP y merece prioridad
+      // alta. Los siguientes quedan fuera de la ventana visible: con `lazy`
+      // dejan de competir por ancho de banda con la imagen que sí se pinta.
       bgEl = '<div class="hero-bg-sticky">' +
         ((heroImg.desktop || heroImg.mobile)
           ? pictureHtml({
               desktop: heroImg.desktop,
               mobile: heroImg.mobile,
-              extraAttrs: 'fetchpriority="high" decoding="async"'
+              sizes: '100vw',
+              extraAttrs: priority
+                ? 'fetchpriority="high" decoding="async"'
+                : 'loading="lazy" decoding="async"'
             })
           : '') +
         '</div>';
@@ -1435,6 +1456,9 @@ ${ev.before_media_url && ev.after_media_url ? `
           mobile: imgSlots.mobile,
           className: 'block-full-image',
           alt: props.alt || '',
+          // La imagen vive en la columna de 960px de .dynamic-page (920px de
+          // contenido); en móvil ocupa casi todo el ancho de la ventana.
+          sizes: '(max-width: 768px) 92vw, 920px',
           extraAttrs: 'loading="lazy" decoding="async"'
         })
       : '';
@@ -1901,7 +1925,9 @@ ${ev.before_media_url && ev.after_media_url ? `
         items.forEach(function(prod) {
           var card = document.createElement('div');
           card.className = 'pc-card';
-          card.innerHTML = '<img src="' + escapeAttr(prod.image_url || '') + '" alt="' + esc(prod.title) + '" loading="lazy" decoding="async">' +
+          card.innerHTML = '<img src="' + escapeAttr(prod.image_url || '') + '" ' +
+            imgSrcsetAttrs(prod.image_url, '(max-width: 768px) 92vw, 700px') +
+            ' alt="' + esc(prod.title) + '" loading="lazy" decoding="async">' +
             '<div class="pc-info"><h3>' + esc(prod.title) + '</h3><p>' + esc(prod.description || '') + '</p></div>';
           track.appendChild(card);
         });
@@ -1944,7 +1970,9 @@ ${ev.before_media_url && ev.after_media_url ? `
       var tag = slide.link ? 'a' : 'div';
       var hrefAttr = slide.link ? ' href="' + escapeAttr(slide.link) + '"' : '';
       html += '<' + tag + ' class="pc-card"' + hrefAttr + '>' +
-        '<img src="' + escapeAttr(slide.image || '') + '" alt="' + esc(slide.title || '') + '" loading="lazy" decoding="async">' +
+        '<img src="' + escapeAttr(slide.image || '') + '" ' +
+        imgSrcsetAttrs(slide.image, '(max-width: 768px) 92vw, 700px') +
+        ' alt="' + esc(slide.title || '') + '" loading="lazy" decoding="async">' +
         '<div class="pc-info"><h3>' + esc(slide.title || '') + '</h3><p>' + esc(slide.description || '') + '</p></div>' +
         '</' + tag + '>';
     });
@@ -2000,15 +2028,31 @@ ${ev.before_media_url && ev.after_media_url ? `
     return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  /** Variantes responsive pre-generadas en R2 para una URL de producto.
-   *  Solo aplica a /api/media/products/*.webp, que tiene las variantes -640 y
-   *  -1280. Para cualquier otra imagen devuelve '' (sin srcset). */
+  /** Claves de producto con variantes responsive garantizadas en R2.
+   *  Es el nombre exacto que produce /api/upload (`products/<uuid>.webp`), el
+   *  único caso en el que -640 y -1280 existen con certeza. Una clave con otra
+   *  extensión (p. ej. un .png heredado) no las tiene: anunciarlas daría 404 y
+   *  el navegador NO cae de vuelta al `src`, así que la imagen desaparecería.
+   *  Espejo de PRODUCT_IMAGE_KEY en src/index.ts. */
+  var PRODUCT_IMAGE_KEY = /^\/api\/media\/products\/[A-Za-z0-9._-]+\.webp$/;
+
+  /** Una URL que ya apunta a una variante no puede engendrar otra: de
+   *  `…-1600.webp` saldría `…-1600-640.webp`, que no existe. */
+  var ALREADY_A_VARIANT = /-(?:640|1280|1600)\.webp$/;
+
+  /** Candidatas responsive para una imagen de producto: las dos variantes
+   *  pre-generadas más el original.
+   *
+   *  El original se declara como 1920w para que las pantallas grandes sigan
+   *  recibiendo el mismo archivo que hoy (sin pérdida de nitidez), mientras que
+   *  un móvil —que con DPR ≈2.6 necesita ~1080 px reales— se queda en la
+   *  variante de 1280. Devuelve '' si la imagen no tiene variantes. */
   function imgVariants(url) {
     if (!url) return '';
     var s = String(url);
-    if (!/^\/api\/media\/products\/.+\.webp$/i.test(s)) return '';
-    var base = s.replace(/\.webp$/i, '');
-    return base + '-640.webp 640w, ' + base + '-1280.webp 1280w';
+    if (!PRODUCT_IMAGE_KEY.test(s) || ALREADY_A_VARIANT.test(s)) return '';
+    var base = s.replace(/\.webp$/, '');
+    return base + '-640.webp 640w, ' + base + '-1280.webp 1280w, ' + s + ' 1920w';
   }
 
   /** Genera los atributos `srcset` y `sizes` para imágenes de producto.
@@ -2050,21 +2094,29 @@ ${ev.before_media_url && ev.after_media_url ? `
    *  <source>. Si ambas URLs coinciden no se emite <source>, para no duplicar
    *  el markup ni la descarga.
    *
-   *  Emite la URL simple, sin srcset: las variantes -640/-1280 solo existen en
-   *  R2 para un puñado de imágenes concretas, y /api/upload no las genera. Con
-   *  srcset el navegador elige una variante que responde 404 y NO cae de vuelta
-   *  al src, así que la imagen desaparece. Sin srcset toda imagen se ve.
+   *  Cada slot lleva su propio srcset/sizes cuando la imagen tiene variantes
+   *  pre-generadas (imgVariants comprueba que la clave sea una de las que
+   *  /api/upload acompaña con -640 y -1280). Si no las tiene sale la URL
+   *  simple, como antes: nunca se anuncia una variante que podría dar 404.
    *
    *  Espejo de pictureHtml() en src/index.ts. */
   function pictureHtml(cfg) {
     var desktop = cfg.desktop || '';
     var mobile = cfg.mobile || '';
+    var sizes = cfg.sizes || '100vw';
     var html = '<picture>';
     if (mobile && mobile !== desktop) {
-      html += '<source media="(max-width: 768px)" srcset="' + escapeAttr(mobile) + '">';
+      var mobileSet = imgVariants(mobile);
+      html += '<source media="(max-width: 768px)" srcset="' + (mobileSet || escapeAttr(mobile)) + '"';
+      if (mobileSet) html += ' sizes="' + sizes + '"';
+      html += '>';
     }
     html += '<img';
-    if (desktop) html += ' src="' + escapeAttr(desktop) + '"';
+    if (desktop) {
+      html += ' src="' + escapeAttr(desktop) + '"';
+      var desktopSet = imgVariants(desktop);
+      if (desktopSet) html += ' srcset="' + desktopSet + '" sizes="' + sizes + '"';
+    }
     if (cfg.className) html += ' class="' + cfg.className + '"';
     html += ' alt="' + esc(cfg.alt || '') + '"';
     if (cfg.extraAttrs) html += ' ' + cfg.extraAttrs;
@@ -2105,6 +2157,63 @@ ${ev.before_media_url && ev.after_media_url ? `
   }
 
   // =========================================================
+  // Animaciones decorativas: solo mientras se ven
+  // =========================================================
+
+  /** Detiene las animaciones infinitas de una sección mientras está fuera de
+   *  pantalla y las reanuda al volver a entrar. El aspecto no cambia —cuando
+   *  se ve, se mueve igual— pero el navegador deja de recalcular estilo y
+   *  repintar un ecualizador, un marquee o unas burbujas que nadie está
+   *  mirando. */
+  function initOffscreenAnimationPause() {
+    if (!('IntersectionObserver' in window)) return;
+    var targets = $$('.eq-console, .logo-marquee, .packages-glow, .faq-container, .bio-grid');
+    if (!targets.length) return;
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        entry.target.classList.toggle('anim-idle', !entry.isIntersecting);
+      });
+    }, { rootMargin: '200px' });
+
+    targets.forEach(function (el) { observer.observe(el); });
+  }
+
+  // =========================================================
+  // Video del hero (home): póster primero, video después
+  // =========================================================
+
+  /** El video del hero pesa más que el resto de la página junta. Se marca
+   *  `preload="none"` en el HTML y se empieza a cargar cuando la página ya
+   *  terminó: hasta entonces se ve el póster, que es su primer fotograma, así
+   *  que el resultado visual es el mismo. Si el navegador avisa de ahorro de
+   *  datos o de una conexión lenta, se queda en el póster. */
+  function initHeroVideo() {
+    var video = $('.hero-bg video[data-deferred]');
+    if (!video) return;
+
+    var connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (connection && (connection.saveData || /(^|-)2g$/.test(connection.effectiveType || ''))) return;
+
+    function start() {
+      video.preload = 'auto';
+      video.load();
+      var played = video.play();
+      // play() rechaza si el navegador bloquea la reproducción automática; el
+      // póster se queda en su sitio y no hay error en consola.
+      if (played && played.catch) played.catch(function () {});
+    }
+
+    function whenIdle() {
+      if (window.requestIdleCallback) window.requestIdleCallback(start, { timeout: 2000 });
+      else setTimeout(start, 500);
+    }
+
+    if (document.readyState === 'complete') whenIdle();
+    else window.addEventListener('load', whenIdle, { once: true });
+  }
+
+  // =========================================================
   // Inicialización
   // =========================================================
 
@@ -2140,6 +2249,7 @@ ${ev.before_media_url && ev.after_media_url ? `
     if (window.__PAGE__) {
       renderDynamicPage(window.__PAGE__);
       initNav();
+      initOffscreenAnimationPause();
       return;
     }
 
@@ -2147,6 +2257,8 @@ ${ev.before_media_url && ev.after_media_url ? `
     initCounters();
     initStatsBanner();
     initCartBarEvents();
+    initHeroVideo();
+    initOffscreenAnimationPause();
 
     // Limitar fecha del evento a hoy en adelante
     var today = new Date().toISOString().split('T')[0];

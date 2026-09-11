@@ -180,11 +180,43 @@ function resolveSlotImages(slot: {
   return { desktop, mobile };
 }
 
+/** Claves de producto con variantes responsive garantizadas en R2.
+ *
+ *  El patrón es estricto a propósito: solo el nombre que produce /api/upload
+ *  (`products/<uuid>.webp`), que es el único caso en el que existen con
+ *  certeza `-640` y `-1280`. Una clave con otra extensión (p. ej. la `.png`
+ *  heredada de una subida antigua) no tiene variantes: anunciarlas daría 404 y
+ *  el navegador NO cae de vuelta al `src`, así que la imagen desaparecería.
+ *  Al restringir los caracteres permitidos, además, el valor es seguro de
+ *  interpolar dentro del atributo sin escapar. */
+const PRODUCT_IMAGE_KEY = /^\/api\/media\/products\/[A-Za-z0-9._-]+\.webp$/;
+
+/** Una URL que ya apunta a una variante no puede engendrar otra: de
+ *  `…-1600.webp` saldría `…-1600-640.webp`, que no existe. */
+const ALREADY_A_VARIANT = /-(?:640|1280|1600)\.webp$/;
+
+/** Candidatas responsive para una imagen de producto: las dos variantes
+ *  pre-generadas más el original.
+ *
+ *  El original se declara como 1920w para que las pantallas grandes sigan
+ *  recibiendo exactamente el mismo archivo que hoy (sin pérdida de nitidez),
+ *  mientras que un móvil —que con DPR ≈2.6 necesita ~1080 px reales— se queda
+ *  en la variante de 1280. Devuelve "" si la imagen no tiene variantes. */
+function imgVariantsServer(url: unknown): string {
+  if (typeof url !== "string" || !PRODUCT_IMAGE_KEY.test(url)) return "";
+  if (ALREADY_A_VARIANT.test(url)) return "";
+  const base = url.replace(/\.webp$/, "");
+  return `${base}-640.webp 640w, ${base}-1280.webp 1280w, ${url} 1920w`;
+}
+
 /** Markup <picture> para una imagen con variante móvil. El <source> con
  *  media="(max-width: 768px)" hace que el navegador descargue solo la variante
  *  que le corresponde. Si `desktop` está vacío el <img> sale sin src: ese
  *  dispositivo no muestra imagen, pero el móvil sí gracias al <source>. Si
  *  ambas URLs coinciden no se emite <source>, para no duplicar el markup.
+ *
+ *  Cada slot lleva su propio `srcset`/`sizes` cuando la imagen tiene variantes;
+ *  si no las tiene, sale la URL simple, igual que antes.
  *
  *  Espejo de pictureHtml() en public/js/app.js. */
 function pictureHtml(cfg: {
@@ -192,16 +224,25 @@ function pictureHtml(cfg: {
   mobile: string;
   className?: string;
   alt?: string;
+  sizes?: string;
   extraAttrs?: string;
 }): string {
   const desktop = cfg.desktop || "";
   const mobile = cfg.mobile || "";
+  const sizes = cfg.sizes || "100vw";
   let html = "<picture>";
   if (mobile && mobile !== desktop) {
-    html += `<source media="(max-width: 768px)" srcset="${escapeAttrValue(mobile)}">`;
+    const mobileSet = imgVariantsServer(mobile);
+    html += `<source media="(max-width: 768px)" srcset="${mobileSet || escapeAttrValue(mobile)}"`;
+    if (mobileSet) html += ` sizes="${sizes}"`;
+    html += ">";
   }
   html += "<img";
-  if (desktop) html += ` src="${escapeAttrValue(desktop)}"`;
+  if (desktop) {
+    html += ` src="${escapeAttrValue(desktop)}"`;
+    const desktopSet = imgVariantsServer(desktop);
+    if (desktopSet) html += ` srcset="${desktopSet}" sizes="${sizes}"`;
+  }
   if (cfg.className) html += ` class="${cfg.className}"`;
   html += ` alt="${escapeHtmlText(cfg.alt || "")}"`;
   if (cfg.extraAttrs) html += ` ${cfg.extraAttrs}`;
@@ -222,7 +263,7 @@ function hexColor(value: unknown): string {
   return typeof value === "string" && COLOR_HEX.test(value) ? value : "";
 }
 
-function renderHeroHtml(props: Record<string, unknown>): string {
+function renderHeroHtml(props: Record<string, unknown>, opts: { priority?: boolean } = {}): string {
   const isVideo = props.bg_type === "video" && props.bg_url;
   let bgEl: string;
 
@@ -239,12 +280,18 @@ function renderHeroHtml(props: Record<string, unknown>): string {
       verticalDesktop: props.bg_url_mobile_visible_desktop,
       verticalMobile: props.bg_url_mobile_visible_mobile,
     });
+    // Solo el primer hero de la página es candidato a LCP y merece prioridad
+    // alta. Los siguientes quedan fuera de la ventana visible: con `lazy` dejan
+    // de competir por ancho de banda con la imagen que sí se está pintando.
     const picture =
       heroImg.desktop || heroImg.mobile
         ? pictureHtml({
             desktop: heroImg.desktop,
             mobile: heroImg.mobile,
-            extraAttrs: 'fetchpriority="high" decoding="async"',
+            sizes: "100vw",
+            extraAttrs: opts.priority
+              ? 'fetchpriority="high" decoding="async"'
+              : 'loading="lazy" decoding="async"',
           })
         : "";
     bgEl = `<div class="hero-bg-sticky">${picture}</div>`;
@@ -305,24 +352,56 @@ function buildServerHero(contentJson: Record<string, unknown>, pageTitle?: strin
     const b = block as { type?: unknown; props?: unknown };
     if (b.type !== "hero" || !b.props || typeof b.props !== "object") continue;
     const props = b.props as Record<string, unknown>;
-    if (props.title) return renderHeroHtml(props);
+    if (props.title) return renderHeroHtml(props, { priority: true });
     if (!firstHeroProps) firstHeroProps = props;
   }
   if (firstHeroProps && pageTitle) {
-    return renderHeroHtml({ ...firstHeroProps, title: pageTitle });
+    return renderHeroHtml({ ...firstHeroProps, title: pageTitle }, { priority: true });
   }
   return "";
 }
 
-/** Oculta el contenido de la landing (home) y muestra la página dinámica.
- *  Aplicado server-side para que no haya parpadeo de la home antes de que
- *  app.js corra, y para que el HTML sin JS ya no muestre la home. */
+/** Muestra la página dinámica y oculta lo que queda de la landing.
+ *
+ *  Las secciones de la home ya no llegan al HTML de una página dinámica: las
+ *  retira HOME_ONLY_SELECTORS más abajo. Aquí solo quedan los elementos que sí
+ *  se siguen enviando —el botón flotante de WhatsApp de la home— para que su
+ *  comportamiento sea exactamente el de antes. */
 const HIDE_LANDING_STYLE =
   `<style>` +
-  `#hero,#statsBanner,#servicios,#productos,#paquetes,#portafolio,#testimonios,#contacto,` +
-  `.logo-marquee,.eq-console,.cart-toggle,.whatsapp-float,#cart-bar{display:none!important}` +
+  `.cart-toggle,.whatsapp-float{display:none!important}` +
   `#dynamic-page{display:block!important}` +
   `</style>`;
+
+/** Bloques que solo existen para la landing y que en una página dinámica se
+ *  enviaban ocultos: ~250 nodos, su CSS de sección y el script que dibuja las
+ *  50 barras del ecualizador, todo descargado, parseado y estilado para no
+ *  mostrarse nunca. Se recortan en el edge con HTMLRewriter.
+ *
+ *  No se incluye `.whatsapp-float`: es un CTA de conversión y se deja tal cual
+ *  (oculto por CSS, como hasta ahora). El panel de cotización tampoco hace
+ *  falta —ningún bloque dinámico añade productos al carrito— y app.js ya
+ *  tolera su ausencia: renderCartBar() sale si no encuentra #cart-bar y
+ *  initCartBarEvents() solo corre en la rama de la home. */
+const HOME_ONLY_SELECTORS = [
+  "#homeStylesheet",
+  "#heroPosterPreload",
+  "#hero",
+  "#statsBanner",
+  ".logo-marquee",
+  "#servicios",
+  "#productos",
+  ".eq-console",
+  "#eqConsoleScript",
+  "#paquetes",
+  "#portafolio",
+  "#testimonios",
+  "#contacto",
+  "#cartPanel",
+  "#cartOverlay",
+  "#cart-bar",
+  "#clientModal",
+];
 
 /**
  * Inyecta window.__PAGE__ con los datos de la página dinámica, el JSON-LD
@@ -409,10 +488,10 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
     }
   }
 
-  // Elimina el hero de la home (que incluye el <video> autoplay) para que no
-  // se descargue ni muestre en las páginas dinámicas. También evita el H1
-  // duplicado de la home en el HTML crudo.
-  class HomeHeroRemovalHandler {
+  // Elimina el markup exclusivo de la home (empezando por el hero con su
+  // <video> autoplay) para que no se descargue, no se parsee y no aporte el H1
+  // duplicado al HTML crudo de las páginas dinámicas.
+  class HomeOnlyRemovalHandler {
     element(element: Element) {
       element.remove();
     }
@@ -461,7 +540,7 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
   headers.delete("ETag");
   headers.delete("If-None-Match");
 
-  return new HTMLRewriter()
+  let rewriter = new HTMLRewriter()
     .on("head", new HeadHandler())
     .on("title", new TitleHandler())
     .on('meta[name="description"]', new MetaDescriptionHandler())
@@ -469,9 +548,14 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
     .on('meta[property="og:description"]', new OgDescriptionHandler())
     .on('meta[property="og:url"]', new OgUrlHandler())
     .on("#dynamic-page", new DynamicPageHandler())
-    .on("body", new BodyBackgroundHandler())
-    .on("#hero", new HomeHeroRemovalHandler())
-    .transform(new Response(response.body, { headers, status: response.status }));
+    .on("body", new BodyBackgroundHandler());
+
+  const removeHomeOnly = new HomeOnlyRemovalHandler();
+  for (const selector of HOME_ONLY_SELECTORS) {
+    rewriter = rewriter.on(selector, removeHomeOnly);
+  }
+
+  return rewriter.transform(new Response(response.body, { headers, status: response.status }));
 }
 
 async function handleApi(request: Request, env: Env, pathname: string, ctx: ExecutionContext): Promise<Response> {
