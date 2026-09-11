@@ -384,8 +384,6 @@ const HIDE_LANDING_STYLE =
  *  tolera su ausencia: renderCartBar() sale si no encuentra #cart-bar y
  *  initCartBarEvents() solo corre en la rama de la home. */
 const HOME_ONLY_SELECTORS = [
-  "#homeStylesheet",
-  "#heroPosterPreload",
   "#hero",
   "#statsBanner",
   ".logo-marquee",
@@ -497,6 +495,18 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
     }
   }
 
+  // La hoja de estilos de la landing trae reglas que aquí no aplican nunca.
+  // Se cambia el href por el subconjunto compartido, sin añadir una segunda
+  // petición: sigue siendo una sola descarga bloqueante, pero más pequeña.
+  class StylesheetHandler {
+    element(element: Element) {
+      const href = element.getAttribute("href") || "";
+      if (href.includes("/css/styles.css")) {
+        element.setAttribute("href", href.replace("/css/styles.css", "/css/core.css"));
+      }
+    }
+  }
+
   class TitleHandler {
     element(element: Element) {
       if (seoTitle) element.setInnerContent(seoTitle);
@@ -548,6 +558,7 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
     .on('meta[property="og:description"]', new OgDescriptionHandler())
     .on('meta[property="og:url"]', new OgUrlHandler())
     .on("#dynamic-page", new DynamicPageHandler())
+    .on("#mainStylesheet", new StylesheetHandler())
     .on("body", new BodyBackgroundHandler());
 
   const removeHomeOnly = new HomeOnlyRemovalHandler();

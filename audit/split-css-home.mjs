@@ -27,8 +27,8 @@ const { chromium } = createRequire(import.meta.url)(
 const MODE = process.argv[2] || "analizar";
 const BASE = process.argv[3] || "https://stratonaudio.com.co";
 const CSS_PATH = "public/css/styles.css";
-const OUT_SHARED = "public/css/styles.css";
-const OUT_HOME = "public/css/home.css";
+const OUT_SHARED = "public/css/core.css";
+const OUT_HOME = "audit/tmp/home-only.css"; // solo para revisar el recorte
 const DYNAMIC_ROUTES = ["/sonido", "/pantallas-led"];
 
 // Selectores que nunca se mueven: cimientos del documento y piezas que el
@@ -240,7 +240,7 @@ if (movedPreludes.length > 60) console.log(`   … y ${movedPreludes.length - 60
 if (MODE === "aplicar") {
   writeFileSync(OUT_HOME, homeCss);
   writeFileSync(OUT_SHARED, sharedCss);
-  console.log("\nEscritos public/css/styles.css y public/css/home.css");
+  console.log("\nEscrito public/css/core.css (styles.css queda intacto)");
 } else {
   console.log("\n(modo análisis: no se escribió nada)");
 }

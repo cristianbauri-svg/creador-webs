@@ -23,15 +23,10 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://stratonaudio.com.co" />
 
-  <!-- Póster del hero: es lo primero que se ve en la home, así que se pide
-       cuanto antes. El Worker retira este enlace en las páginas dinámicas,
-       donde el hero de la home no existe. -->
-  <link rel="preload" as="image" href="/images/hero-poster.webp" fetchpriority="high" id="heroPosterPreload" />
-  <link rel="stylesheet" href="/css/styles.css?v=20260911" />
-  <!-- Estilos que solo usa la landing. El Worker retira este enlace en las
-       páginas dinámicas, que comparten el mismo shell pero ninguna de estas
-       reglas. -->
-  <link rel="stylesheet" href="/css/home.css?v=20260911" id="homeStylesheet" />
+  <!-- En una página dinámica el Worker cambia este href por /css/core.css, que
+       es el mismo archivo sin las reglas exclusivas de la landing: 41 KB en vez
+       de 57 KB, y sigue siendo una sola petición bloqueante. -->
+  <link rel="stylesheet" href="/css/styles.css?v=20260911" id="mainStylesheet" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔊</text></svg>" />
 
   <!-- Estilos del carrito de cotización y página dinámica -->
