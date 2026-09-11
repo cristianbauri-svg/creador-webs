@@ -8,7 +8,15 @@
  *
  * Producción no se toca en ningún momento.
  *
- *   node audit/experimento-gtm/proxy.mjs [--variante=actual|defer3s|deferload] [--puerto=8799]
+ *   node audit/experimento-gtm/proxy.mjs [--variante=VAR] [--puerto=8799]
+ *
+ * Variantes:
+ *   actual        producción sin tocar
+ *   defer3s       diferido, temporizador de 3 s
+ *   defer15       diferido, temporizador de 1,5 s
+ *   deferblank    diferido a 3 s   + CTA de WhatsApp en pestaña nueva
+ *   deferblank15  diferido a 1,5 s + CTA de WhatsApp en pestaña nueva
+ *   deferload     diferido, el contador arranca tras el evento load (descartada)
  */
 import http from "node:http";
 import https from "node:https";
@@ -29,16 +37,26 @@ const PUERTO = Number(arg("puerto", 8799));
 // El fragmento tal como está hoy en producción, delimitado por sus comentarios.
 const FRAGMENTO_ACTUAL = /<!-- Google Tag Manager -->[\s\S]*?<!-- End Google Tag Manager -->/;
 
-const snippetDefer = readFileSync(join(AQUI, "snippet-defer.html"), "utf8")
-  .replace(/^<!--[\s\S]*?-->\s*/, "") // fuera la cabecera explicativa del archivo
+// Se usa la forma compacta, que es la que se desplegaría: la versión comentada
+// añade ~480 bytes comprimidos y eso basta para cruzar la ventana inicial de
+// congestión TCP, lo que cuesta un viaje de red entero de FCP.
+const snippetDefer = readFileSync(join(AQUI, "snippet-defer.min.html"), "utf8")
+  .replace(/^<!-- =+[\s\S]*?=+ -->\s*/, "") // fuera la cabecera explicativa del archivo
   .trim();
+
+/** Milisegundos de la red de seguridad según la variante. */
+const MS_RED_SEGURIDAD = VARIANTE.endsWith("15") ? 1500 : 3000;
+const snippetConTemporizador = snippetDefer.replace("w.setTimeout(g,3000)", `w.setTimeout(g,${MS_RED_SEGURIDAD})`);
+
+/** ¿Esta variante lleva además los CTA en pestaña nueva? */
+const CON_PESTANA_NUEVA = VARIANTE.startsWith("deferblank");
 
 /** Variante "deferload": igual que defer3s pero el contador de 3 s arranca
  *  cuando termina de cargar la página, no al parsear el fragmento. */
-const snippetDeferLoad = snippetDefer.replace(
-  "w.setTimeout(cargar,3000);",
-  "if(d.readyState==='complete')w.setTimeout(cargar,3000);" +
-    "else w.addEventListener('load',function(){w.setTimeout(cargar,3000)},{once:true});"
+const snippetDeferLoad = snippetConTemporizador.replace(
+  `w.setTimeout(g,${MS_RED_SEGURIDAD})`,
+  `if(d.readyState==='complete')w.setTimeout(g,${MS_RED_SEGURIDAD});` +
+    `else w.addEventListener('load',function(){w.setTimeout(g,${MS_RED_SEGURIDAD})},{once:true})`
 );
 
 /** Variante "deferblank": el diferimiento más la mitigación que se propone
@@ -62,8 +80,8 @@ const PARCHE_PESTAÑA_NUEVA = `<script>
 
 function transformarHtml(html) {
   if (VARIANTE === "actual") return html;
-  const reemplazo = VARIANTE === "deferload" ? snippetDeferLoad : snippetDefer;
-  if (VARIANTE === "deferblank") html = html.replace("</head>", PARCHE_PESTAÑA_NUEVA + "</head>");
+  const reemplazo = VARIANTE === "deferload" ? snippetDeferLoad : snippetConTemporizador;
+  if (CON_PESTANA_NUEVA) html = html.replace("</head>", PARCHE_PESTAÑA_NUEVA + "</head>");
   if (!FRAGMENTO_ACTUAL.test(html)) {
     console.error("  ¡aviso! no se encontró el fragmento de GTM en el HTML");
     return html;
@@ -139,5 +157,8 @@ const servidor = http.createServer(async (peticion, respuesta) => {
 });
 
 servidor.listen(PUERTO, "127.0.0.1", () => {
-  console.log(`banco de pruebas en http://127.0.0.1:${PUERTO} — variante: ${VARIANTE}`);
+  console.log(
+    `banco de pruebas en http://127.0.0.1:${PUERTO} — variante: ${VARIANTE}` +
+      (VARIANTE === "actual" ? "" : ` (red de seguridad ${MS_RED_SEGURIDAD} ms, pestaña nueva: ${CON_PESTANA_NUEVA ? "sí" : "no"})`)
+  );
 });

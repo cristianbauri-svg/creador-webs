@@ -16,7 +16,10 @@
  * de relleno y los POST a /api/quotations se interceptan. No se abre ningún
  * chat ni se crea ninguna cotización. Producción no se modifica.
  *
- *   node audit/experimento-gtm/ventana-conversion.mjs [repeticiones]
+ *   node audit/experimento-gtm/ventana-conversion.mjs [repeticiones] [--ramas=nombre:puerto,...]
+ *
+ * Sin --ramas usa las tres por defecto. Ejemplo para comparar temporizadores:
+ *   node ... 2 --ramas=actual:8798,3 s + pestaña:8796,1,5 s + pestaña:8795
  */
 import { createRequire } from "node:module";
 const { chromium } = createRequire(import.meta.url)(
@@ -26,9 +29,20 @@ const { chromium } = createRequire(import.meta.url)(
 // Etiqueta de la conversión de WhatsApp en el contenedor GTM-5VQGJ3Z8.
 const ETIQUETA_WHATSAPP = "g2ljCOHE7eMcEPzh5qNE";
 
-const RAMAS = { actual: 8798, defer: 8799, "defer+pestaña": 8796 };
+const argRamas = process.argv.find((a) => a.startsWith("--ramas="));
+const RAMAS = argRamas
+  ? Object.fromEntries(
+      argRamas
+        .slice(8)
+        .split(",")
+        .map((par) => {
+          const corte = par.lastIndexOf(":");
+          return [par.slice(0, corte), Number(par.slice(corte + 1))];
+        })
+    )
+  : { actual: 8798, defer: 8799, "defer+pestaña": 8796 };
 const INSTANTES = [800, 1500, 1800, 2500, 3000, 3500, 5000];
-const REPETICIONES = Number(process.argv[2] || 2);
+const REPETICIONES = Number((process.argv[2] || "").startsWith("--") ? 2 : process.argv[2] || 2);
 
 const MOVIL = {
   viewport: { width: 412, height: 823 },
