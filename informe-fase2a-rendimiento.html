@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Straton Audio — Informe Fase 2A de rendimiento (11 sep 2026)</title>
+<meta name="description" content="Informe completo y autocontenido de la Fase 2A de optimización de rendimiento de stratonaudio.com.co: metodología, métricas antes/después, diagnóstico, cambios y verificaciones de producción.">
+<style>
+  :root {
+    --paper:#F6F8F5; --paper-2:#EDF1EC; --paper-3:#E3E9E4;
+    --ink:#16201B; --ink-2:#3E4B44; --muted:#64746B; --line:#D3DBD5;
+    --accent:#177A43; --accent-ink:#0F5A31; --accent-soft:#DDF0E4; --gold:#8F6E2C;
+    --up:#177A43; --up-soft:#DDF0E4; --down:#B42318; --down-soft:#FBE9E7; --flat:#64746B;
+    --code:#EBF0EC;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:#0F1412; --paper-2:#161D19; --paper-3:#1D2622;
+      --ink:#E6ECE7; --ink-2:#BFCAC2; --muted:#8E9C94; --line:#2A3530;
+      --accent:#3FD683; --accent-ink:#7DE8AC; --accent-soft:#143423; --gold:#D6B36A;
+      --up:#3FD683; --up-soft:#123020; --down:#FF8A80; --down-soft:#3A1512; --flat:#8E9C94;
+      --code:#182019;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:#0F1412; --paper-2:#161D19; --paper-3:#1D2622;
+    --ink:#E6ECE7; --ink-2:#BFCAC2; --muted:#8E9C94; --line:#2A3530;
+    --accent:#3FD683; --accent-ink:#7DE8AC; --accent-soft:#143423; --gold:#D6B36A;
+    --up:#3FD683; --up-soft:#123020; --down:#FF8A80; --down-soft:#3A1512; --flat:#8E9C94;
+    --code:#182019;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--paper); color: var(--ink); font-family: var(--sans);
+    font-size: 15px; line-height: 1.62; margin: 0;
+    padding-inline: clamp(16px, 4vw, 48px); padding-block: 28px 90px;
+  }
+  .wrap { max-width: 78rem; margin: 0 auto; }
+  h1, h2, h3, h4 { line-height: 1.2; text-wrap: balance; margin: 0; font-weight: 700; }
+  h1 { font-size: clamp(1.8rem, 4vw, 2.7rem); letter-spacing: -0.02em; }
+  h2 {
+    font-size: 1.42rem; margin-top: 3.2rem; padding-top: 1rem;
+    border-top: 2px solid var(--ink); letter-spacing: -0.01em;
+  }
+  h3 { font-size: 1.08rem; margin-top: 1.9rem; }
+  h4 { font-size: 0.95rem; margin-top: 1.3rem; color: var(--ink-2); }
+  p, li { max-width: 74ch; }
+  p { margin: 0.7rem 0; }
+  ul, ol { padding-left: 1.3rem; margin: 0.6rem 0; }
+  li { margin: 0.35rem 0; }
+  li::marker { color: var(--muted); }
+  a { color: var(--accent-ink); }
+  code, .mono { font-family: var(--mono); font-size: 0.88em; }
+  code { background: var(--code); padding: 0.06em 0.36em; border-radius: 3px; word-break: break-word; }
+  pre {
+    background: var(--code); border: 1px solid var(--line); border-radius: 6px;
+    padding: 12px 14px; overflow-x: auto; font-size: 0.82rem; line-height: 1.5;
+    font-family: var(--mono);
+  }
+  pre code { background: none; padding: 0; font-size: 1em; }
+  .eyebrow { font-size: 0.7rem; letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .lede { font-size: 1.07rem; color: var(--ink-2); max-width: 68ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 16px; font-size: 0.84rem; color: var(--muted); }
+  .meta b { color: var(--ink); font-weight: 600; }
+  .headline { display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 12px; margin: 26px 0 4px; }
+  .headline > div { background: var(--paper-2); border-left: 3px solid var(--line); padding: 11px 14px; }
+  .headline > div.win { border-left-color: var(--accent); }
+  .headline .k { font-size: 0.7rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .headline .v { font-size: 1.55rem; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .headline .s { font-size: 0.83rem; color: var(--ink-2); }
+  .tablewrap { overflow-x: auto; margin: 14px 0 18px; border: 1px solid var(--line); border-radius: 6px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--paper-2); font-weight: 700; font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-2); white-space: nowrap; }
+  td.num, th.num { text-align: right; font-family: var(--mono); white-space: nowrap; }
+  td.wrap-ok { white-space: normal; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: color-mix(in srgb, var(--paper-2) 45%, transparent); }
+  .d { display: inline-block; min-width: 3em; text-align: right; font-family: var(--mono); font-size: 0.82em; padding: 1px 5px; border-radius: 3px; margin-left: 6px; }
+  .d.up { background: var(--up-soft); color: var(--up); }
+  .d.down { background: var(--down-soft); color: var(--down); }
+  .d.flat { color: var(--flat); }
+  .note { background: var(--paper-2); border-left: 3px solid var(--gold); padding: 10px 14px; margin: 14px 0; font-size: 0.92rem; }
+  .note.ok { border-left-color: var(--accent); }
+  .note.bad { border-left-color: var(--down); }
+  .note p { max-width: 70ch; }
+  .note > :first-child { margin-top: 0; }
+  .note > :last-child { margin-bottom: 0; }
+  dl.kv { display: grid; grid-template-columns: 12rem 1fr; gap: 7px 18px; margin: 10px 0; font-size: 0.92rem; }
+  dl.kv dt { color: var(--muted); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 3px; }
+  dl.kv dd { margin: 0; max-width: 76ch; }
+  @media (max-width: 680px) { dl.kv { grid-template-columns: 1fr; } dl.kv dt { padding-top: 9px; } }
+  .check { list-style: none; padding-left: 0; }
+  .check li { padding-left: 1.55rem; position: relative; }
+  .check li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--accent); font-weight: 700; }
+  .cause { border: 1px solid var(--line); border-radius: 6px; margin: 14px 0; overflow: hidden; }
+  .cause > header { background: var(--paper-2); padding: 10px 14px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+  .cause > header h3 { margin: 0; font-size: 1.02rem; }
+  .cause .body { padding: 4px 14px 12px; }
+  .chip { display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+  .chip.crit { background: var(--down-soft); color: var(--down); }
+  .chip.alto { background: #FCEEDF; color: #B4530A; }
+  .chip.medio { background: #FBF3D6; color: #8A6A00; }
+  .chip.ok { background: var(--accent-soft); color: var(--accent-ink); }
+  .chip.pend { background: var(--paper-3); color: var(--ink-2); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .chip.alto { background: #3A2210; color: #FFAB70; }
+    :root:not([data-theme="light"]) .chip.medio { background: #33290A; color: #F0D26A; }
+  }
+  :root[data-theme="dark"] .chip.alto { background: #3A2210; color: #FFAB70; }
+  :root[data-theme="dark"] .chip.medio { background: #33290A; color: #F0D26A; }
+  nav.toc { columns: 2; column-gap: 34px; font-size: 0.9rem; margin: 20px 0 0; padding: 14px 16px; background: var(--paper-2); border-radius: 6px; }
+  nav.toc ol { margin: 0; padding-left: 1.2rem; }
+  nav.toc li { break-inside: avoid; margin: 0.22rem 0; }
+  nav.toc a { text-decoration: none; color: var(--ink-2); }
+  nav.toc a:hover { color: var(--accent-ink); text-decoration: underline; }
+  @media (max-width: 680px) { nav.toc { columns: 1; } }
+  small.src { color: var(--muted); font-size: 0.78rem; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  hr.soft { border: 0; border-top: 1px solid var(--line); margin: 26px 0; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media print {
+    body { background: #fff; color: #000; padding: 0; font-size: 10.5pt; }
+    h2 { break-before: auto; page-break-inside: avoid; }
+    .tablewrap, .cause, .note { break-inside: avoid; }
+    nav.toc { break-after: page; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Straton Audio · stratonaudio.com.co · informe autocontenido</div>
+  <h1>Fase 2A de optimización de rendimiento</h1>
+  <p class="lede">Ocho grupos de cambios de bajo riesgo ejecutados y desplegados en producción el 11 de septiembre de 2026, sin tocar Google Tag Manager, el HTML cacheado, la arquitectura de D1 ni el dashboard. Todo lo que sigue está medido, no estimado.</p>
+  <div class="meta">
+    <span><b>Fecha</b> 11 sep 2026</span>
+    <span><b>Commits</b> bd95663 · e914b85</span>
+    <span><b>Worker</b> straton-audio, versión 65b825a5</span>
+    <span><b>Rama</b> straton-audio-web (pusheada)</span>
+    <span><b>Herramientas</b> Lighthouse 13.4.1 · Playwright/CDP · curl · sharp · ffmpeg</span>
+  </div>
+
+  <div class="headline">
+    <div class="win"><div class="k">/pantallas-led móvil</div><div class="v">92 → 98</div><div class="s">LCP 3275 → 2269 ms</div></div>
+    <div class="win"><div class="k">/sonido móvil</div><div class="v">89 → 92</div><div class="s">LCP 3690 → 3333 ms</div></div>
+    <div><div class="k">Home móvil</div><div class="v">99 → 99</div><div class="s">2,8 MB fuera de la carga inicial</div></div>
+    <div class="win"><div class="k">Peso /pantallas-led</div><div class="v">−32 %</div><div class="s">1198 → 809 KB</div></div>
+  </div>
+
+  <nav class="toc" aria-label="Contenido del informe">
+    <ol>
+      <li><a href="#resumen">Resumen ejecutivo</a></li>
+      <li><a href="#metodologia">Metodología de pruebas</a></li>
+      <li><a href="#metricas">Métricas antes / después</a></li>
+      <li><a href="#cpu10">Lighthouse con CPU 10×</a></li>
+      <li><a href="#diagnostico">Diagnóstico de cada causa</a></li>
+      <li><a href="#imagenes">Cambios de imágenes</a></li>
+      <li><a href="#r2d1kv">Cambios en R2, D1 y KV</a></li>
+      <li><a href="#cssjs">Cambios de CSS y JavaScript</a></li>
+      <li><a href="#video">Cambios del video</a></li>
+      <li><a href="#archivos">Archivos modificados y commits</a></li>
+      <li><a href="#whatsapp">Pruebas de tracking whatsapp_click</a></li>
+      <li><a href="#ads">Pruebas de Google Ads</a></li>
+      <li><a href="#admin">Pruebas de /admin y API</a></li>
+      <li><a href="#errores">Errores y 404</a></li>
+      <li><a href="#verificaciones">Verificaciones de producción</a></li>
+      <li><a href="#fallos">Lo que no funcionó</a></li>
+      <li><a href="#conclusiones">Conclusiones</a></li>
+      <li><a href="#pendientes">Pendientes y recomendaciones</a></li>
+    </ol>
+  </nav>
+</header>
+
+<!-- ============================================================ -->
+<h2 id="resumen">1. Resumen ejecutivo</h2>
+
+<p>El objetivo de la fase era acercar las tres páginas públicas a 95 puntos de rendimiento sin tocar Google Tag Manager, para medir cuánto se consigue antes de decidir sobre el tracking. El resultado en laboratorio, con la mediana de tres corridas por página y dispositivo:</p>
+
+<div class="tablewrap">
+<table>
+  <caption class="sr-only">Puntaje de rendimiento antes y después</caption>
+  <thead><tr><th>Página</th><th class="num">Móvil antes</th><th class="num">Móvil después</th><th class="num">Escritorio antes</th><th class="num">Escritorio después</th></tr></thead>
+  <tbody>
+    <tr><td><code>/</code></td><td class="num">99</td><td class="num">99 <span class="d flat">=</span></td><td class="num">97</td><td class="num">96 <span class="d down">−1</span></td></tr>
+    <tr><td><code>/sonido</code></td><td class="num">89</td><td class="num">92 <span class="d up">+3</span></td><td class="num">97</td><td class="num">97 <span class="d flat">=</span></td></tr>
+    <tr><td><code>/pantallas-led</code></td><td class="num">92</td><td class="num">98 <span class="d up">+6</span></td><td class="num">97</td><td class="num">97 <span class="d flat">=</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>Qué se hizo.</strong> Se restauró el <code>srcset</code> de las imágenes de hero con salvaguardas que impiden repetir el 404 histórico; se quitó la prioridad alta al segundo hero de cada página; se dejó de enviar el markup de la landing dentro de las páginas dinámicas; se paralelizaron las lecturas de KV de <code>/api/settings</code>; se separó el CSS que una página dinámica no puede usar; se cambió la animación del ecualizador de <code>height</code> a <code>transform</code> y se pausan las animaciones fuera de pantalla; y el video del hero de la home pasó a cargarse después del evento <code>load</code>, con un póster que es su primer fotograma.</p>
+
+<p><strong>El hallazgo determinante.</strong> Emitir <code>srcset</code> no habría ahorrado un solo byte en <code>/sonido</code>. Con densidad de píxel 2,6 —la de un teléfono de gama media— el navegador pide la candidata de 1280w, y en esa página las variantes <code>-1280</code> de los dos heroes verticales eran una <em>copia byte a byte del original</em>: el script de backfill no reduce cuando el original mide menos de 1280 px de ancho. Hubo que regenerarlas en R2 para que el <code>srcset</code> sirviera de algo.</p>
+
+<p><strong>Qué no se tocó.</strong> Google Tag Manager, Google Ads, el evento <code>whatsapp_click</code>, el tracking del formulario, la caché del HTML dinámico, Cloudflare Web Analytics, la arquitectura de D1, el dashboard, la API y la lógica de publicación. Ninguna escritura en D1 ni en KV.</p>
+
+<p><strong>Estado de las conversiones y del sistema.</strong> Verificado en producción tras el despliegue: <code>whatsapp_click</code> se dispara en las tres páginas, GTM lo procesa y Google Ads recibe las peticiones de conversión; <code>/admin</code> sigue protegido por Cloudflare Access; las escrituras de la API sin credenciales siguen devolviendo 401; cero errores de consola y cero respuestas 4xx o 5xx.</p>
+
+<div class="note">
+  <p><strong>Advertencia de interpretación.</strong> Estos números no son los de PageSpeed Insights. El equipo donde se midió tiene un índice de referencia de 4097 puntos y las máquinas de PSI son tres o cuatro veces más lentas: por eso las referencias que manejabas eran 89 / 74 / 75 donde el laboratorio marcaba 99 / 89 / 92 antes de tocar nada. Lo que se traslada a PSI es la mejora relativa, no el valor absoluto. La sección <a href="#cpu10">Lighthouse con CPU 10×</a> incluye el escenario más parecido a PSI.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="metodologia">2. Metodología de pruebas</h2>
+
+<h3>Medición de rendimiento</h3>
+<dl class="kv">
+  <dt>Herramienta</dt>
+  <dd>Lighthouse 13.4.1 por línea de comandos, contra la URL pública de producción, con el Chromium headless de Playwright (build 1234) como navegador.</dd>
+  <dt>Perfil móvil</dt>
+  <dd><code>--form-factor=mobile</code> con el throttling por defecto de PageSpeed: método <em>simulate</em> (Lantern), latencia de red 150 ms, ancho de banda de bajada 1638,4 kbps, latencia de petición 562,5 ms, subida 675 kbps y CPU cuatro veces más lenta.</dd>
+  <dt>Perfil escritorio</dt>
+  <dd><code>--preset=desktop</code>: 10 Mbps, 40 ms de latencia, sin ralentización de CPU.</dd>
+  <dt>Repeticiones</dt>
+  <dd>Tres corridas por página y dispositivo; se reporta la mediana. Se listan también las corridas individuales para que se vea la dispersión.</dd>
+  <dt>Escenario lento</dt>
+  <dd>Una corrida adicional por página con <code>--throttling.cpuSlowdownMultiplier=10</code>, que aproxima el hardware de PageSpeed Insights.</dd>
+  <dt>Índice del equipo</dt>
+  <dd><code>benchmarkIndex</code> 4097,5. Es la referencia para entender por qué los puntajes locales salen por encima de los de PSI.</dd>
+  <dt>Estado de caché</dt>
+  <dd>Antes de la medición final se comprobó por HTTP que el edge de Cloudflare ya servía las variantes de imagen regeneradas y no la copia anterior. Sin esa comprobación, la medición de <code>/sonido</code> habría salido pesimista.</dd>
+</dl>
+
+<h3>Verificación funcional</h3>
+<dl class="kv">
+  <dt>Navegador real</dt>
+  <dd>Playwright sobre Chromium con dos perfiles: móvil 412×823 con densidad 2,625 y user agent de Android, y escritorio 1350×940 con densidad 1. Cada página se carga hasta el evento <code>load</code>, se espera, se recorre hasta el final para forzar la carga diferida y se vuelve arriba.</dd>
+  <dt>Qué se registra</dt>
+  <dd>Errores de consola y de página, respuestas con código 400 o superior, imágenes rotas, qué variante eligió el navegador para cada imagen, elemento y tiempo de LCP, desplazamientos de diseño, tareas largas, H1, <code>title</code>, canonical, número de bloques JSON-LD, contenedores de GTM cargados, eventos en <code>dataLayer</code> y número de enlaces de WhatsApp.</dd>
+  <dt>Inventario de red</dt>
+  <dd>Chrome DevTools Protocol con caché desactivada, para obtener cada petición con su tamaño, prioridad, estado de caché del edge, cabecera <code>Cache-Control</code> y quién la originó.</dd>
+  <dt>Comparación de diseño</dt>
+  <dd>Se sirvió el HTML anterior interceptando la petición del documento, dejando que el resto de recursos vinieran de producción, y se comparó la geometría de hero, imagen del hero, H1, títulos de bloque, cuadrículas de tarjetas, galería, CTA y pie, más la altura total del documento.</dd>
+  <dt>Comparación de estilos</dt>
+  <dd>Huella de 43 propiedades computadas de cada elemento de las tres páginas en ambos dispositivos —1642 elementos— antes y después del recorte de CSS, con las animaciones congeladas.</dd>
+  <dt>Calidad de imagen</dt>
+  <dd>Error medio absoluto por canal entre el original y cada re-codificación, calculado con sharp sobre los píxeles en crudo.</dd>
+  <dt>Calidad de video</dt>
+  <dd>SSIM con ffmpeg contra el archivo original, para cada nivel de compresión probado.</dd>
+</dl>
+
+<h3>Pruebas ejecutadas en cada grupo de cambios</h3>
+<ol>
+  <li><code>npx tsc --noEmit</code> sobre todo el proyecto.</li>
+  <li><code>npx vitest run test/server-render.spec.ts</code> (el suite completo falla por una plantilla del starter y por copias en carpetas de respaldo, ajeno a este trabajo).</li>
+  <li>Prueba local con <code>wrangler dev</code>, sembrando en la base local las dos páginas reales traídas de producción.</li>
+  <li><code>npx wrangler deploy</code>.</li>
+  <li>Verificación funcional en producción sobre las tres páginas y dos dispositivos.</li>
+  <li>Comprobación del HTML inicial servido, del tracking y del dashboard.</li>
+  <li>Medición con Lighthouse y comparación contra la línea base.</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 id="metricas">3. Métricas antes / después</h2>
+
+<h3>Móvil — mediana de tres corridas</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr>
+    <th>Página</th><th class="num">Perf.</th><th class="num">LCP</th><th class="num">FCP</th><th class="num">TBT</th>
+    <th class="num">CLS</th><th class="num">Speed Index</th><th class="num">TTFB</th><th class="num">Peso total</th><th class="num">Requests</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td><code>/</code></td>
+      <td class="num">99 → 99</td><td class="num">1894 → 1798</td><td class="num">1444 → 1383</td><td class="num">60 → 52</td>
+      <td class="num">0,024 → 0,024</td><td class="num">2382 → 2608</td><td class="num">107 → 118</td><td class="num">3814 → 3784 KB</td><td class="num">32 → 34</td>
+    </tr>
+    <tr>
+      <td><code>/sonido</code></td>
+      <td class="num">89 → 92</td><td class="num">3690 → 3333</td><td class="num">1469 → 1392</td><td class="num">56 → 54</td>
+      <td class="num">0 → 0</td><td class="num">1479 → 1392</td><td class="num">132 → 132</td><td class="num">1236 → 1106 KB</td><td class="num">29 → 29</td>
+    </tr>
+    <tr>
+      <td><code>/pantallas-led</code></td>
+      <td class="num">92 → 98</td><td class="num">3275 → 2269</td><td class="num">1409 → 1403</td><td class="num">52 → 65</td>
+      <td class="num">0,008 → 0,008</td><td class="num">1539 → 1435</td><td class="num">136 → 136</td><td class="num">1198 → 809 KB</td><td class="num">23 → 22</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p style="font-size:0.86rem;color:var(--muted)">Tiempos en milisegundos. CLS no tiene unidad. El peso de la home sigue incluyendo el video porque Lighthouse continúa observando después del evento <code>load</code>; la diferencia es que ya no compite con el contenido inicial.</p>
+
+<h3>Escritorio — mediana de tres corridas</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr>
+    <th>Página</th><th class="num">Perf.</th><th class="num">LCP</th><th class="num">FCP</th><th class="num">TBT</th>
+    <th class="num">CLS</th><th class="num">Speed Index</th><th class="num">TTFB</th><th class="num">Peso total</th><th class="num">Requests</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td><code>/</code></td>
+      <td class="num">97 → 96</td><td class="num">924 → 1096</td><td class="num">696 → 669</td><td class="num">0 → 0</td>
+      <td class="num">0,005 → 0,005</td><td class="num">1574 → 1481</td><td class="num">94 → 132</td><td class="num">3814 → 3784 KB</td><td class="num">32 → 34</td>
+    </tr>
+    <tr>
+      <td><code>/sonido</code></td>
+      <td class="num">97 → 97</td><td class="num">1222 → 1237</td><td class="num">691 → 723</td><td class="num">0 → 0</td>
+      <td class="num">0 → 0</td><td class="num">691 → 723</td><td class="num">124 → 150</td><td class="num">1324 → 1320 KB</td><td class="num">32 → 32</td>
+    </tr>
+    <tr>
+      <td><code>/pantallas-led</code></td>
+      <td class="num">97 → 97</td><td class="num">1250 → 1254</td><td class="num">682 → 684</td><td class="num">0 → 0</td>
+      <td class="num">0,009 → 0,009</td><td class="num">715 → 718</td><td class="num">130 → 134</td><td class="num">1198 → 1056 KB</td><td class="num">23 → 23</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>En escritorio no había nada que ganar: las tres páginas ya estaban en 97. Los cambios de LCP y TTFB están dentro de la variación normal entre corridas; el TTFB lo fija la red y el arranque del Worker, no el código de la página. La única diferencia consistente es el peso de <code>/pantallas-led</code>, que baja 142 KB porque el segundo hero dejó de descargarse con prioridad alta.</p>
+
+<h3>Dispersión entre corridas</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Página</th><th>Dispositivo</th><th class="num">Corridas (puntaje)</th><th class="num">Mediana</th></tr></thead>
+  <tbody>
+    <tr><td><code>/</code></td><td>Móvil</td><td class="num">98, 99, 99</td><td class="num">99</td></tr>
+    <tr><td><code>/sonido</code></td><td>Móvil</td><td class="num">91, 92, 94</td><td class="num">92</td></tr>
+    <tr><td><code>/pantallas-led</code></td><td>Móvil</td><td class="num">98, 98, 98</td><td class="num">98</td></tr>
+    <tr><td><code>/</code></td><td>Escritorio</td><td class="num">96, 97, 96</td><td class="num">96</td></tr>
+    <tr><td><code>/sonido</code></td><td>Escritorio</td><td class="num">97, 95, 97</td><td class="num">97</td></tr>
+    <tr><td><code>/pantallas-led</code></td><td>Escritorio</td><td class="num">96, 97, 98</td><td class="num">97</td></tr>
+  </tbody>
+</table>
+</div>
+<p><code>/sonido</code> es la página con más dispersión, entre 91 y 94. Su LCP depende de una imagen grande que compite con las 311 KB de Google Tag Manager, y el reparto de ancho de banda varía entre corridas. <code>/pantallas-led</code>, en cambio, salió 98 en las tres.</p>
+
+<h3>Carga transferida por página</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Recurso</th><th class="num">Antes</th><th class="num">Después</th><th class="wrap-ok">Comentario</th></tr></thead>
+  <tbody>
+    <tr><td>HTML de <code>/sonido</code></td><td class="num">16 422 B</td><td class="num">13 774 B</td><td class="wrap-ok">Comprimido con brotli; en crudo, de 65 358 a 51 292 bytes</td></tr>
+    <tr><td>HTML de <code>/pantallas-led</code></td><td class="num">17 301 B</td><td class="num">14 638 B</td><td class="wrap-ok">En crudo, de 67 479 a 53 484 bytes</td></tr>
+    <tr><td>HTML de <code>/</code></td><td class="num">14 018 B</td><td class="num">14 316 B</td><td class="wrap-ok">Sube por el atributo <code>poster</code> y los comentarios del markup</td></tr>
+    <tr><td>CSS de páginas dinámicas</td><td class="num">13 200 B</td><td class="num">9 696 B</td><td class="wrap-ok"><code>core.css</code> en lugar de <code>styles.css</code>; sigue siendo una sola petición</td></tr>
+    <tr><td>CSS de la home</td><td class="num">13 200 B</td><td class="num">12 427 B</td><td class="wrap-ok">Mismo archivo, con la animación del ecualizador reescrita</td></tr>
+    <tr><td>Imagen LCP de <code>/sonido</code> en móvil</td><td class="num">212 738 B</td><td class="num">135 600 B</td><td class="wrap-ok">Variante <code>-1280</code> regenerada</td></tr>
+    <tr><td>Imagen LCP de <code>/pantallas-led</code> en móvil</td><td class="num">130 702 B</td><td class="num">64 244 B</td><td class="wrap-ok">Ahora se elige la variante <code>-1280</code> existente</td></tr>
+    <tr><td>Video de la home en la carga inicial</td><td class="num">2 887 357 B</td><td class="num">0 B</td><td class="wrap-ok">Se pide después del evento <code>load</code>; antes, un póster de 48 870 B</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="cpu10">4. Lighthouse con CPU 10×</h2>
+
+<p>Una corrida por página con la CPU diez veces más lenta, que es el escenario más cercano al hardware de PageSpeed Insights. Al ser una sola corrida, el puntaje tiene ruido; los tiempos son más fiables.</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Página</th><th class="num">Perf.</th><th class="num">LCP</th><th class="num">FCP</th><th class="num">TBT</th><th class="num">Speed Index</th></tr></thead>
+  <tbody>
+    <tr><td><code>/</code></td><td class="num">94 → 93</td><td class="num">1909 → 2383</td><td class="num">1516 → 1553</td><td class="num">256 → 244</td><td class="num">2677 → 2604</td></tr>
+    <tr><td><code>/sonido</code></td><td class="num">84 → 92 <span class="d up">+8</span></td><td class="num">3657 → 2743</td><td class="num">1462 → 1501</td><td class="num">264 → 206</td><td class="num">1462 → 1501</td></tr>
+    <tr><td><code>/pantallas-led</code></td><td class="num">90 → 92 <span class="d up">+2</span></td><td class="num">3146 → 2237</td><td class="num">1399 → 1410</td><td class="num">214 → 290</td><td class="num">1399 → 1451</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Este es el escenario donde más se nota el trabajo: <code>/sonido</code> sube ocho puntos y su LCP baja casi un segundo. El TBT sube en <code>/pantallas-led</code>, pero al abrir la traza se ve que la tarea dominante sigue siendo la etiqueta de Google Ads —396 ms, prácticamente igual que los 390 ms de antes— y que la diferencia es reatribución: trabajo que antes se contabilizaba al documento ahora aparece bajo <code>app.js</code>.</p>
+
+<h3>Trabajo en el hilo principal</h3>
+<p>La medida más representativa de lo que cambió, porque es lo que un teléfono de gama media siente aunque el puntaje no lo refleje entero.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Página</th><th class="num">Style &amp; Layout</th><th class="num">Rendering</th><th class="num">Otros</th><th class="num">Evaluación de scripts</th></tr></thead>
+  <tbody>
+    <tr><td><code>/pantallas-led</code></td><td class="num">1188 → 765 ms <span class="d up">−36 %</span></td><td class="num">1143 → 709 ms <span class="d up">−38 %</span></td><td class="num">2020 → 1376 ms</td><td class="num">628 → 639 ms</td></tr>
+    <tr><td><code>/sonido</code></td><td class="num">764 → 686 ms <span class="d up">−10 %</span></td><td class="num">453 → 458 ms</td><td class="num">1267 → 1170 ms</td><td class="num">724 → 606 ms</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Viene de tres sitios: 250 nodos menos que estilar en cada página dinámica, una hoja de estilos con 109 reglas menos que evaluar, y las animaciones decorativas detenidas mientras no se ven.</p>
+
+<!-- ============================================================ -->
+<h2 id="diagnostico">5. Diagnóstico de cada causa</h2>
+
+<div class="cause">
+  <header><span class="chip crit">Crítico</span><h3>C1 · El hero se servía en tamaño original, sin <code>srcset</code></h3></header>
+  <div class="body">
+    <p><strong>Síntoma.</strong> La imagen LCP de <code>/sonido</code> pesaba 208 KB (1080×1920) y la de <code>/pantallas-led</code> 128 KB (1687×932), en un hueco de 372×823 px lógicos.</p>
+    <p><strong>Causa raíz.</strong> <code>pictureHtml()</code> —espejada en <code>src/index.ts</code> y en <code>public/js/app.js</code>— omitía el <code>srcset</code> deliberadamente. El comentario del código explicaba por qué: se habían anunciado variantes que no existían en R2, el navegador recibía un 404 y, a diferencia de lo que ocurre con un <code>src</code>, no vuelve atrás: la imagen desaparecía del bloque. La decisión era correcta cuando se tomó, pero dejó de serlo cuando <code>/api/upload</code> empezó a generar las variantes y el backfill cubrió las existentes.</p>
+    <p><strong>Cómo se corrigió sin repetir el fallo.</strong> El <code>srcset</code> solo se emite para claves con la forma exacta que produce <code>/api/upload</code>, <code>products/&lt;uuid&gt;.webp</code>, que son las únicas acompañadas con certeza de <code>-640</code> y <code>-1280</code>; nunca para una clave con otra extensión, y nunca para una URL que ya es una variante, porque de <code>…-1600.webp</code> saldría <code>…-1600-640.webp</code>, que no existe. Antes de desplegar se comprobó por HTTP que las 22 imágenes afectadas tienen ambas variantes.</p>
+  </div>
+</div>
+
+<div class="cause">
+  <header><span class="chip crit">Crítico</span><h3>C1b · Las variantes <code>-1280</code> de <code>/sonido</code> eran copias del original</h3></header>
+  <div class="body">
+    <p><strong>Síntoma.</strong> Tras habilitar el <code>srcset</code>, <code>/sonido</code> apenas mejoró: de 89 a 90 puntos.</p>
+    <p><strong>Causa raíz.</strong> Dos hechos que solo juntos explican el problema. Primero: con densidad de píxel 2,625 y <code>sizes="100vw"</code>, un móvil de 412 px lógicos necesita 1082 px reales, así que elige la candidata de <strong>1280w</strong>, no la de 640w. Segundo: las variantes <code>-1280</code> de los dos heroes verticales de esa página eran idénticas al original byte a byte —212 738 y 137 986 bytes exactos— porque el script de backfill no reduce cuando el original mide menos de 1280 px de ancho, y se limitó a duplicarlo. El navegador pedía la variante correcta y recibía el archivo grande.</p>
+    <p><strong>Corrección.</strong> Ambas variantes regeneradas con sharp a calidad 74, manteniendo la resolución nativa de 1080×1920. Detalle en <a href="#r2d1kv">Cambios en R2, D1 y KV</a>.</p>
+  </div>
+</div>
+
+<div class="cause">
+  <header><span class="chip crit">Crítico</span><h3>C2 · El segundo hero competía con la imagen que se estaba pintando</h3></header>
+  <div class="body">
+    <p><strong>Síntoma.</strong> En <code>/sonido</code> se descargaban 135 KB y en <code>/pantallas-led</code> 183 KB con prioridad alta y sin carga diferida, para un bloque situado muy por debajo del pliegue.</p>
+    <p><strong>Causa raíz.</strong> <code>renderHero()</code> aplicaba <code>fetchpriority="high"</code> a todo bloque de tipo hero. El Worker solo dibuja el primero, pero <code>app.js</code> vuelve a dibujar todos al ejecutarse, y todos heredaban la prioridad.</p>
+    <p><strong>Corrección.</strong> Solo el primer hero de la página es candidato a LCP y conserva la prioridad alta. Los siguientes pasan a <code>loading="lazy"</code>. En el servidor la distinción es directa, porque solo se renderiza uno; en el cliente se lleva la cuenta con una marca que se reinicia al empezar cada página.</p>
+  </div>
+</div>
+
+<div class="cause">
+  <header><span class="chip alto">Alto</span><h3>A1 · El video del hero ocupaba la red durante toda la carga</h3></header>
+  <div class="body">
+    <p><strong>Síntoma.</strong> 2,82 MB, el 74 % del peso de la home, descargándose en paralelo con el CSS, la fuente y las seis llamadas a la API. El Speed Index oscilaba entre 2,4 y 3,2 segundos según cuándo terminara.</p>
+    <p><strong>Causa raíz.</strong> El elemento llevaba <code>autoplay</code>, que obliga al navegador a empezar a descargar en cuanto puede, sin importar el atributo <code>preload</code>.</p>
+    <p><strong>Corrección.</strong> Detalle en <a href="#video">Cambios del video</a>.</p>
+  </div>
+</div>
+
+<div class="cause">
+  <header><span class="chip alto">Alto</span><h3>A2 y A3 · Carruseles y bloque Imagen sin variantes</h3></header>
+  <div class="body">
+    <p><strong>Síntoma.</strong> El carrusel de la home descargaba 520 KB (216 + 133 + 110 + 49) para un hueco de 340×200 px, sin carga diferida. En <code>/pantallas-led</code>, 195 KB y 104 KB para dos slides de 332×200 y 59 KB para una imagen de 372×194.</p>
+    <p><strong>Causa raíz.</strong> <code>loadProducts()</code>, <code>initDynamicProductCarousel()</code>, <code>renderManualCarousel()</code> y <code>renderImage()</code> emitían solo <code>src</code>, sin usar el ayudante <code>imgSrcsetAttrs()</code> que ya existía y que sí usaban las tarjetas y la galería.</p>
+    <p><strong>Corrección.</strong> Los cuatro usan ahora las variantes con un <code>sizes</code> acorde al ancho real de su contenedor, y las imágenes del carrusel de la home cargan en diferido por estar muy por debajo del pliegue.</p>
+  </div>
+</div>
+
+<div class="cause">
+  <header><span class="chip alto">Alto</span><h3>A4 · CSS bloqueante y mayormente sin uso en las páginas dinámicas</h3></header>
+  <div class="body">
+    <p><strong>Síntoma.</strong> <code>styles.css</code> bloqueaba el render entre 235 y 260 ms, y entre el 79 % y el 81 % de sus reglas no se usaba en una página dinámica.</p>
+    <p><strong>Causa raíz.</strong> Las páginas dinámicas comparten el mismo shell HTML que la landing, así que heredan su hoja de estilos completa.</p>
+    <p><strong>Corrección.</strong> Detalle en <a href="#cssjs">Cambios de CSS y JavaScript</a>. Importante: el primer intento empeoró la home y hubo que rehacerlo, ver <a href="#fallos">Lo que no funcionó</a>.</p>
+  </div>
+</div>
+
+<div class="cause">
+  <header><span class="chip alto">Alto</span><h3>A6 · <code>/api/settings</code> tardaba hasta 1,55 s en frío</h3></header>
+  <div class="body">
+    <p><strong>Síntoma.</strong> Dos de seis muestras dieron 1,55 y 1,57 segundos; el resto rondaba los 330 ms. Es la llamada de la que dependen el subtítulo del hero de la home y el número de WhatsApp del botón flotante.</p>
+    <p><strong>Causa raíz.</strong> El endpoint recorría sus 12 claves conocidas con un <code>await</code> dentro del bucle: cada lectura esperaba a la anterior y arrastraba su propio viaje al almacén de KV.</p>
+    <p><strong>Corrección.</strong> Las 12 lecturas se lanzan a la vez con <code>Promise.all</code> y se recomponen por índice. Medido en producción después del despliegue: 0,291 · 0,303 · 0,300 · 0,307 segundos.</p>
+  </div>
+</div>
+
+<div class="cause">
+  <header><span class="chip medio">Medio</span><h3>M1 · Animaciones que fuerzan recálculo de diseño</h3></header>
+  <div class="body">
+    <p><strong>Síntoma.</strong> En la home, «Style &amp; Layout» sumaba 632 ms y «Rendering» 247 ms; en <code>/pantallas-led</code>, «Rendering» llegaba a 449 ms.</p>
+    <p><strong>Causa raíz.</strong> Las 50 barras del ecualizador animaban la propiedad <code>height</code>, que obliga al navegador a recalcular el diseño en cada fotograma. A eso se sumaban un marquee infinito, dos manchas con desenfoque de 80 px en movimiento, un barrido luminoso en cada tarjeta de servicio en móvil y, en las preguntas frecuentes, hasta diez botones con una sombra pulsante: todo ello corriendo también cuando su sección estaba fuera de pantalla.</p>
+    <p><strong>Corrección.</strong> Las barras animan <code>transform: scaleY()</code>, que resuelve el compositor sin tocar el diseño, con el mismo dibujo exacto. Y un observador de intersección marca las secciones que no están a la vista para pausar sus animaciones, que se reanudan al volver a entrar.</p>
+  </div>
+</div>
+
+<div class="cause">
+  <header><span class="chip medio">Medio</span><h3>M2 · Las páginas dinámicas arrastraban la home oculta</h3></header>
+  <div class="body">
+    <p><strong>Síntoma.</strong> El DOM de <code>/sonido</code> tenía 440 nodos y el de <code>/pantallas-led</code> 518, cuando el contenido real era bastante menor. Todo ese markup se descargaba, se parseaba y se estilaba para no mostrarse nunca.</p>
+    <p><strong>Causa raíz.</strong> El shell es el mismo <code>index.html</code> de la landing. El Worker ya eliminaba la sección del hero para evitar el video y el H1 duplicado, y el resto se ocultaba con una regla CSS.</p>
+    <p><strong>Corrección.</strong> Se retiran en el edge, con HTMLRewriter, todas las secciones de la landing, el marquee, la consola de audio con el script que dibuja sus 50 barras, el panel de cotización, su superposición, la barra inferior y el modal de datos del cliente. Se conservó a propósito el botón flotante de WhatsApp de la home, oculto por CSS igual que antes, para no alterar ningún elemento de conversión.</p>
+  </div>
+</div>
+
+<div class="cause">
+  <header><span class="chip pend">Sin tocar</span><h3>C3 · Google Tag Manager y la etiqueta de Google Ads</h3></header>
+  <div class="body">
+    <p><strong>Estado.</strong> Fuera del alcance de esta fase por indicación expresa, para medir primero cuánto se consigue sin tocarlo.</p>
+    <p><strong>Lo que sigue costando.</strong> 152 KB de <code>gtm.js</code> más 159 KB de <code>gtag</code> para el contenedor de Ads, y las únicas tareas largas del sitio: 378 a 396 ms de la etiqueta de Ads y 123 a 136 ms del contenedor, medidos con CPU 10×. En <code>/sonido</code> esas 311 KB compiten directamente con la imagen del hero durante la ventana crítica, y es la razón principal de que esa página se quede en 92.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="imagenes">6. Cambios de imágenes</h2>
+
+<h3>Reglas de emisión del <code>srcset</code></h3>
+<p>La lógica vive duplicada a propósito, en el Worker y en el cliente, porque el servidor dibuja el primer hero y <code>app.js</code> vuelve a dibujar todos los bloques. Las dos copias aplican las mismas reglas:</p>
+<ul>
+  <li>Solo se emiten variantes para claves que encajan exactamente con <code>/api/media/products/&lt;uuid&gt;.webp</code>, con el conjunto de caracteres restringido a letras, dígitos, punto, guion y guion bajo. Cualquier otra extensión queda fuera.</li>
+  <li>Una URL que ya termina en <code>-640</code>, <code>-1280</code> o <code>-1600</code> no genera variantes.</li>
+  <li>Las candidatas son las dos variantes más el original declarado como <code>1920w</code>. Ese tercer candidato es lo que garantiza que las pantallas grandes sigan recibiendo exactamente el mismo archivo que antes: solo el móvil baja de escalón.</li>
+</ul>
+
+<h3>Valores de <code>sizes</code> por tipo de bloque</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Bloque</th><th><code>sizes</code></th><th class="wrap-ok">Motivo</th></tr></thead>
+  <tbody>
+    <tr><td>Hero (ambos slots)</td><td><code>100vw</code></td><td class="wrap-ok">Ocupa el ancho completo de la ventana</td></tr>
+    <tr><td>Imagen</td><td><code>(max-width: 768px) 92vw, 920px</code></td><td class="wrap-ok">Columna central de 960 px con 20 px de margen interior</td></tr>
+    <tr><td>Carruseles</td><td><code>(max-width: 768px) 92vw, 700px</code></td><td class="wrap-ok">Ancho máximo de la tarjeta en escritorio</td></tr>
+    <tr><td>Tarjetas</td><td><code>(max-width: 900px) 50vw, 25vw</code></td><td class="wrap-ok">Sin cambios respecto a lo que ya había</td></tr>
+    <tr><td>Galería</td><td><code>(max-width: 600px) 50vw, 25vw</code></td><td class="wrap-ok">Sin cambios respecto a lo que ya había</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Prioridades de carga</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Elemento</th><th>Antes</th><th>Después</th></tr></thead>
+  <tbody>
+    <tr><td>Primer hero de la página</td><td><code>fetchpriority="high"</code></td><td><code>fetchpriority="high"</code> (sin cambios)</td></tr>
+    <tr><td>Heroes siguientes</td><td><code>fetchpriority="high"</code></td><td><code>loading="lazy"</code></td></tr>
+    <tr><td>Carrusel de la home</td><td>Sin atributos</td><td><code>loading="lazy" decoding="async"</code> + variantes</td></tr>
+    <tr><td>Carrusel dinámico y manual</td><td><code>loading="lazy"</code></td><td>Igual, más variantes</td></tr>
+    <tr><td>Bloque Imagen</td><td><code>loading="lazy"</code></td><td>Igual, más variantes</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Qué elige realmente el navegador ahora</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Página y dispositivo</th><th>Archivo elegido</th><th class="num">Peso</th></tr></thead>
+  <tbody>
+    <tr><td><code>/sonido</code> móvil</td><td class="mono">4184cd47…-1280.webp</td><td class="num">135 600 B</td></tr>
+    <tr><td><code>/sonido</code> escritorio</td><td class="mono">b903b25e….png (sin variantes, ver pendientes)</td><td class="num">93 348 B</td></tr>
+    <tr><td><code>/pantallas-led</code> móvil</td><td class="mono">f8db6469…-1280.webp</td><td class="num">64 244 B</td></tr>
+    <tr><td><code>/pantallas-led</code> escritorio</td><td class="mono">f8db6469….webp (el original, candidato 1920w)</td><td class="num">130 702 B</td></tr>
+  </tbody>
+</table>
+</div>
+<p>La última fila es la prueba de que la nitidez en escritorio quedó intacta: la pantalla grande sigue recibiendo el archivo original, no una versión reducida.</p>
+
+<h3>Comprobación previa al despliegue</h3>
+<p>Se verificó una por una, con peticiones HTTP a producción, que las 22 imágenes que pasarían a anunciar variantes tuvieran las dos en R2. Todas respondieron 200. Las claves comprobadas fueron <span class="mono">4184cd47, 0cfbccb2, 6a02749a, f8db6469, 1edf0c65, 05cff664, 6d8faa51, b2ce9edf, 6c5908f4, 38eb5d39, 66ab4fda, 5ba89932, 388f0104, cbe9bcef, 599ffa9e, 481eead0, 963cd0b3, 93d3cdc7, bea30d1a, f35d3ef3, 46224921</span> y <span class="mono">fc4f0be4</span>.</p>
+
+<!-- ============================================================ -->
+<h2 id="r2d1kv">7. Cambios en R2, D1 y KV</h2>
+
+<h3>R2 — dos objetos reescritos</h3>
+<p>Es la única escritura externa de toda la fase.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Objeto</th><th class="num">Antes</th><th class="num">Después</th><th class="num">Dimensiones</th><th class="num">Error medio</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">products/4184cd47-eb95-4df2-b375-f33a2bcaffef-1280.webp</td><td class="num">212 738 B</td><td class="num">135 600 B <span class="d up">−36 %</span></td><td class="num">1080×1920</td><td class="num">2,12 / 255</td></tr>
+    <tr><td class="mono">products/0cfbccb2-4c81-4252-953d-25a032ed5988-1280.webp</td><td class="num">137 986 B</td><td class="num">86 438 B <span class="d up">−37 %</span></td><td class="num">1080×1920</td><td class="num">1,50 / 255</td></tr>
+  </tbody>
+</table>
+</div>
+<dl class="kv">
+  <dt>Por qué es seguro</dt>
+  <dd>El contenido anterior de ambos objetos era una copia byte a byte del original correspondiente, así que no se perdió ninguna información: la fuente de la re-codificación es ese mismo original, que no se tocó. Ningún archivo original fue modificado.</dd>
+  <dt>Método</dt>
+  <dd>sharp 0.34.5, WebP calidad 74, esfuerzo 6, submuestreo inteligente, resolución nativa sin ampliar, y se descarta el canal alfa cuando es completamente opaco. El script queda versionado en <code>audit/reencode-variantes-hero.mjs</code>.</dd>
+  <dt>Control de calidad</dt>
+  <dd>Se probaron las calidades 70, 74, 78 y 82 y se eligió la que mantiene el error medio por píxel en torno a 2 sobre 255, imperceptible en una fotografía y más aún bajo el velo oscuro al 50 % que lleva el hero encima.</dd>
+  <dt>Respaldo</dt>
+  <dd>El contenido anterior de las ocho variantes <code>-1280</code> de las páginas dinámicas está guardado en <code>audit/tmp/backup-variantes/</code>. Revertir es volver a subir el archivo correspondiente.</dd>
+  <dt>Nota sobre la caché</dt>
+  <dd>Sin permiso de purga en la zona, el edge siguió sirviendo la copia anterior durante la hora de vida que marca el <code>Cache-Control</code> del propio Worker. Se esperó a que expirara y se confirmó por HTTP que ya se servían los archivos nuevos antes de tomar la medición final.</dd>
+</dl>
+
+<h3>D1 — sin cambios</h3>
+<p>Ninguna escritura. No se modificó ningún esquema, ninguna migración ni ninguna fila. El contenido de las páginas, incluido <code>content_json</code>, quedó exactamente igual. Durante las pruebas locales se sembró la base emulada con las dos páginas reales traídas de la API pública de producción, lo que no afecta a la base remota.</p>
+
+<h3>KV — sin cambios de datos</h3>
+<p>Ninguna escritura. Lo único que cambió es cómo se leen las claves en <code>/api/settings</code>: las mismas 12 claves conocidas, con los mismos valores y el mismo formato de respuesta, pero pedidas en paralelo en vez de una tras otra. La lista de claves permitidas y la validación del <code>PUT</code> quedan idénticas.</p>
+
+<!-- ============================================================ -->
+<h2 id="cssjs">8. Cambios de CSS y JavaScript</h2>
+
+<h3>CSS — un archivo por página, no dos</h3>
+<p>La landing pide <code>styles.css</code> completo. Cuando el Worker sirve una página dinámica, cambia el <code>href</code> de esa misma etiqueta a <code>core.css</code>, que es el mismo archivo sin las 109 reglas que allí no pueden aplicar. En ambos casos hay una sola petición bloqueante.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Archivo</th><th>Quién lo pide</th><th class="num">Sin comprimir</th><th class="num">Brotli</th></tr></thead>
+  <tbody>
+    <tr><td><code>styles.css</code></td><td>La home</td><td class="num">56 960 B</td><td class="num">12 427 B</td></tr>
+    <tr><td><code>core.css</code></td><td><code>/sonido</code> y <code>/pantallas-led</code></td><td class="num">41 321 B</td><td class="num">9 696 B</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h4>Cómo se decidió qué reglas sobran</h4>
+<p>No a ojo. El script <code>audit/split-css-home.mjs</code> trocea la hoja en reglas, incluidas las que viven dentro de cada <code>@media</code>, y comprueba contra el DOM real de las dos páginas dinámicas —en móvil y en escritorio— si cada selector puede llegar a coincidir. Con tres salvaguardas, porque una comprobación ingenua rompería estados que no se dan durante la prueba:</p>
+<ul>
+  <li>Antes de comprobar un selector se le quitan las pseudoclases de estado y las clases momentáneas, como <code>.open</code>, <code>.expanded</code> o <code>.scrolled</code>. Lo que se prueba es el elemento base. Así, <code>.nav-links.open</code> se conserva porque <code>.nav-links</code> existe, aunque el menú móvil nunca se abriera durante la comprobación.</li>
+  <li>Un selector sin clase ni identificador, como <code>input, textarea, select</code>, es una base del documento y se conserva siempre. Esta regla es la que evitó un error real: en la primera pasada, esa línea iba a salir del archivo compartido, y el bloque de formulario de contacto del editor la necesita aunque hoy ninguna página publicada lo use.</li>
+  <li>Las clases que el renderizador de bloques puede emitir se leen del propio código, cliente y servidor, en lugar de mantener una lista a mano. Cualquier bloque que se añada mañana a una página desde el panel encontrará sus estilos.</li>
+</ul>
+<p>Se conservan además <code>:root</code>, los reinicios, <code>@font-face</code> y todos los <code>@keyframes</code>.</p>
+
+<h4>Animación del ecualizador</h4>
+<p>Las cuatro secuencias de onda pasaron de animar <code>height</code> en porcentaje a animar <code>transform: scaleY()</code> con el factor equivalente. La barra ocupa ahora toda la altura de su contenedor y la escala la modula desde abajo, con el mismo origen de transformación que ya tenía. Comprobado en el navegador: con la animación en el mismo punto, la altura dibujada es de 32 px en los dos casos, sobre un contenedor de 80 px.</p>
+
+<h4>Pausa de animaciones fuera de pantalla</h4>
+<p>Una regla nueva detiene las animaciones de un contenedor marcado, incluidas las de sus pseudoelementos. <code>app.js</code> observa cinco contenedores —consola de audio, marquee, manchas de los paquetes, preguntas frecuentes y cuadrícula de servicios— y les pone o quita la marca según entren o salgan de la pantalla, con un margen de 200 px para que nunca se vea el arranque.</p>
+
+<h3>JavaScript</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Función</th><th class="wrap-ok">Qué hace</th></tr></thead>
+  <tbody>
+    <tr><td><code>imgVariants()</code></td><td class="wrap-ok">Reescrita: patrón estricto de clave, rechazo de URLs que ya son variantes, y el original como candidato de 1920w</td></tr>
+    <tr><td><code>pictureHtml()</code></td><td class="wrap-ok">Acepta <code>sizes</code> y emite <code>srcset</code> en el <code>&lt;source&gt;</code> móvil y en el <code>&lt;img&gt;</code> de escritorio por separado</td></tr>
+    <tr><td><code>renderHero()</code></td><td class="wrap-ok">Recibe si es el primer hero de la página y reparte prioridad o carga diferida</td></tr>
+    <tr><td><code>renderBlock()</code></td><td class="wrap-ok">Lleva la cuenta del primer hero; la marca se reinicia al empezar cada página</td></tr>
+    <tr><td><code>renderImage()</code>, <code>loadProducts()</code>, <code>initDynamicProductCarousel()</code>, <code>renderManualCarousel()</code></td><td class="wrap-ok">Usan las variantes con el <code>sizes</code> que corresponde a su contenedor</td></tr>
+    <tr><td><code>initOffscreenAnimationPause()</code></td><td class="wrap-ok">Nueva. Observador de intersección que pausa y reanuda las animaciones decorativas</td></tr>
+    <tr><td><code>initHeroVideo()</code></td><td class="wrap-ok">Nueva. Arranca el video de la home después del evento <code>load</code>, respetando el ahorro de datos</td></tr>
+  </tbody>
+</table>
+</div>
+<p>El archivo pasa de 99 168 a 104 578 bytes sin comprimir, y de 27 727 a 29 560 con brotli: unos 1,8 KB más en la red, a cambio de retirar 2,8 MB de la carga inicial y de que las páginas dinámicas dejen de recibir 14 KB de HTML.</p>
+
+<h3>Worker</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Pieza</th><th class="wrap-ok">Cambio</th></tr></thead>
+  <tbody>
+    <tr><td><code>PRODUCT_IMAGE_KEY</code>, <code>ALREADY_A_VARIANT</code>, <code>imgVariantsServer()</code></td><td class="wrap-ok">Nuevos. Espejo exacto de las reglas del cliente</td></tr>
+    <tr><td><code>pictureHtml()</code>, <code>renderHeroHtml()</code>, <code>buildServerHero()</code></td><td class="wrap-ok">Emiten <code>srcset</code>, <code>sizes</code> y la prioridad del primer hero</td></tr>
+    <tr><td><code>HOME_ONLY_SELECTORS</code></td><td class="wrap-ok">Nuevo. Los quince selectores de la landing que se retiran en una página dinámica</td></tr>
+    <tr><td><code>HIDE_LANDING_STYLE</code></td><td class="wrap-ok">Reducido: ya solo oculta lo que se sigue enviando, el botón flotante de WhatsApp</td></tr>
+    <tr><td><code>StylesheetHandler</code></td><td class="wrap-ok">Nuevo. Cambia el <code>href</code> de la hoja principal a <code>core.css</code>, conservando el parámetro de versión</td></tr>
+    <tr><td><code>getSettings()</code></td><td class="wrap-ok">Las 12 lecturas de KV en paralelo</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="video">9. Cambios del video</h2>
+
+<h3>Lo que se hizo</h3>
+<p>El elemento perdió el atributo <code>autoplay</code> y ganó <code>preload="none"</code>, un <code>poster</code> y una marca para que el script lo reconozca. Conserva <code>muted</code>, <code>loop</code> y <code>playsinline</code>, y las dos fuentes, webm y mp4, intactas.</p>
+<pre><code>&lt;video poster="/images/hero-poster.webp" preload="none" data-deferred muted loop playsinline&gt;
+  &lt;source src="/videos/video_hero.webm" type="video/webm" /&gt;
+  &lt;source src="/videos/video_hero_compressed.mp4" type="video/mp4" /&gt;
+&lt;/video&gt;</code></pre>
+<p><code>initHeroVideo()</code> espera al evento <code>load</code> y, dentro del primer hueco de inactividad del navegador —con un tope de dos segundos—, cambia la precarga a automática, llama a <code>load()</code> y reproduce. Si el navegador declara ahorro de datos o una conexión 2G, no se carga y se queda el póster. Si la reproducción automática está bloqueada, la promesa se captura y no queda ningún error en consola.</p>
+
+<h3>El póster</h3>
+<p>Es el fotograma cero del propio video, extraído con ffmpeg y codificado en WebP de calidad 70: 48 870 bytes. Se eligió el fotograma cero tras comprobar que no es negro —su brillo medio es 60 sobre 255— para que la transición al video no se note.</p>
+
+<h3>Comprobación en producción</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Dispositivo</th><th class="num">Evento load</th><th>Estado en ese momento</th><th class="num">Video pedido</th><th>A los 5 s</th></tr></thead>
+  <tbody>
+    <tr><td>Móvil</td><td class="num">1944 ms</td><td><code>paused</code>, <code>readyState 0</code>, <code>preload none</code></td><td class="num">1955 ms</td><td>Reproduciendo, segundo 4,8</td></tr>
+    <tr><td>Escritorio</td><td class="num">1837 ms</td><td><code>paused</code>, <code>readyState 0</code>, <code>preload none</code></td><td class="num">1844 ms</td><td>Reproduciendo, segundo 4,8</td></tr>
+  </tbody>
+</table>
+</div>
+<p><code>readyState 0</code> en el momento del <code>load</code> significa cero bytes de video descargados hasta entonces. Es la prueba de que la carga inicial quedó limpia.</p>
+
+<h3>Por qué no se re-codificó</h3>
+<p>Se midió antes de decidir. El material es de alta entropía —luces en movimiento sobre escenario— y el archivo actual ya está bien comprimido: VP9 a 1,36 Mbps para 1280×720 a 30 fotogramas.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Ajuste probado</th><th class="num">Tamaño</th><th class="num">SSIM</th><th class="wrap-ok">Veredicto</th></tr></thead>
+  <tbody>
+    <tr><td>Original, sin tocar</td><td class="num">2 887 357 B</td><td class="num">1,000</td><td class="wrap-ok">Es lo que se mantiene</td></tr>
+    <tr><td>Remux sin pista de audio</td><td class="num">2 879 455 B</td><td class="num">1,000</td><td class="wrap-ok">El audio pesa 2 kbps: ahorra 8 KB, no compensa el cambio</td></tr>
+    <tr><td>VP9 CRF 38</td><td class="num">3 110 677 B</td><td class="num">0,9898</td><td class="wrap-ok">Más grande que el original</td></tr>
+    <tr><td>VP9 CRF 42</td><td class="num">2 647 560 B</td><td class="num">0,9862</td><td class="wrap-ok">8 % menos, con pérdida ya visible en un hero a pantalla completa</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Reducirlo de verdad exigiría recortar la duración o bajar la resolución, que son decisiones de contenido y no técnicas. Como el archivo ya no está en la ruta crítica, el beneficio restante sería solo de datos móviles.</p>
+
+<!-- ============================================================ -->
+<h2 id="archivos">10. Archivos modificados y commits</h2>
+
+<h3>Commits</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Hash</th><th>Fecha</th><th class="wrap-ok">Asunto</th><th class="num">Archivos</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">bd95663</td><td class="mono">11 sep 09:55</td><td class="wrap-ok">perf: imágenes responsive, hero prioritario y menos trabajo en la carga inicial</td><td class="num">10</td></tr>
+    <tr><td class="mono">e914b85</td><td class="mono">11 sep 10:09</td><td class="wrap-ok">perf: una sola hoja de estilos por página en vez de dos bloqueantes</td><td class="num">6</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Ambos en la rama <code>straton-audio-web</code>, pusheados a <code>origin</code>. El punto de partida era <code>0ba2450</code>.</p>
+
+<h3>Archivos, sumando los dos commits</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Archivo</th><th class="num">Cambio</th><th class="wrap-ok">Qué contiene</th></tr></thead>
+  <tbody>
+    <tr><td><code>src/index.ts</code></td><td class="num">+133 / −16</td><td class="wrap-ok">Variantes en el servidor, prioridad del primer hero, recorte del markup de la landing, sustitución de la hoja de estilos</td></tr>
+    <tr><td><code>src/routes/settings.ts</code></td><td class="num">+11 / −4</td><td class="wrap-ok">Lecturas de KV en paralelo</td></tr>
+    <tr><td><code>public/js/app.js</code></td><td class="num">+148 / −26</td><td class="wrap-ok">Variantes en el cliente, prioridades, pausa de animaciones, arranque diferido del video</td></tr>
+    <tr><td><code>public/index.html</code></td><td class="num">+17 / −8</td><td class="wrap-ok">Markup del video con póster, identificador en el script del ecualizador y en la hoja de estilos, nueva versión de <code>app.js</code></td></tr>
+    <tr><td><code>public/css/styles.css</code></td><td class="num">+50 / −11</td><td class="wrap-ok">Ecualizador con <code>transform</code> y regla de pausa de animaciones</td></tr>
+    <tr><td><code>public/css/core.css</code></td><td class="num">+1921 (nuevo)</td><td class="wrap-ok">Subconjunto compartido, generado</td></tr>
+    <tr><td><code>public/images/hero-poster.webp</code></td><td class="num">48 870 B (nuevo)</td><td class="wrap-ok">Primer fotograma del video</td></tr>
+    <tr><td><code>test/server-render.spec.ts</code></td><td class="num">+63 / −10</td><td class="wrap-ok">Dos pruebas nuevas y ayudante de renderizado</td></tr>
+    <tr><td><code>audit/reencode-variantes-hero.mjs</code></td><td class="num">+68 (nuevo)</td><td class="wrap-ok">Re-codificación de variantes con control de calidad</td></tr>
+    <tr><td><code>audit/split-css-home.mjs</code></td><td class="num">+246 (nuevo)</td><td class="wrap-ok">Generador de <code>core.css</code> con las salvaguardas descritas</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Pruebas automatizadas</h3>
+<p><code>test/server-render.spec.ts</code> pasa con 3 de 3. Las dos pruebas nuevas cubren exactamente los dos modos de fallo que más preocupaban:</p>
+<ul>
+  <li>Que una URL que ya es una variante no genere otra, es decir, que de <code>…-1600.webp</code> no salga nunca <code>…-1600-640.webp</code>, y que aun sin variantes el hero conserve su prioridad de carga.</li>
+  <li>Que el hero emita las tres candidatas correctas con <code>sizes="100vw"</code>, que solo se dibuje un hero en el servidor y que sea el primero el que lleva la prioridad.</li>
+</ul>
+<p>La prueba existente se actualizó para comprobar que el markup exclusivo de la landing ya no viaja en una página dinámica. <code>npx tsc --noEmit</code> termina sin errores.</p>
+
+<!-- ============================================================ -->
+<h2 id="whatsapp">11. Pruebas de tracking <code>whatsapp_click</code></h2>
+
+<p>Ejecutadas sobre producción después del despliegue, con las navegaciones a WhatsApp bloqueadas para no perder el contexto de la página. En cada caso se cuentan los eventos <code>whatsapp_click</code> presentes en <code>dataLayer</code> antes y después de un clic sintético sobre el primer enlace de WhatsApp encontrado.</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Página</th><th class="num">Antes</th><th class="num">Después</th><th class="wrap-ok">Evento registrado</th></tr></thead>
+  <tbody>
+    <tr><td><code>/sonido</code></td><td class="num">0</td><td class="num">1</td><td class="wrap-ok">Texto del enlace «Cotizar mi evento», URL de <code>api.whatsapp.com</code> con el teléfono y el mensaje</td></tr>
+    <tr><td><code>/pantallas-led</code></td><td class="num">0</td><td class="num">1</td><td class="wrap-ok">Texto «Cotizar vía WhatsApp», con <code>gtm.uniqueEventId 11</code></td></tr>
+    <tr><td><code>/</code></td><td class="num">0</td><td class="num">1</td><td class="wrap-ok">Enlace del botón flotante, <code>wa.me</code>, con <code>gtm.uniqueEventId 11</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>La presencia de <code>gtm.uniqueEventId</code> en el objeto del evento es la confirmación de que no solo se empujó a <code>dataLayer</code>: Google Tag Manager lo recogió y lo procesó.</p>
+
+<p>El número de enlaces de WhatsApp por página también se verificó y coincide con el estado previo: cuatro en cada página dinámica y uno en la home. Ni el mecanismo de escucha ni el contenido del evento se modificaron en esta fase; la función que los emite quedó intacta.</p>
+
+<h3>Estructura del evento</h3>
+<pre><code>{
+  event: "whatsapp_click",
+  url:   "https://api.whatsapp.com/send/?phone=573102646751&text=Hola%2C+quiero+…",
+  text:  "Cotizar mi evento"
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="ads">12. Pruebas de Google Ads</h2>
+
+<p>El contenedor GTM-5VQGJ3Z8 y la cuenta de Google Ads AW-18328695036 cargan en las tres páginas, igual que antes del despliegue. Tras el clic sintético en el enlace de WhatsApp se contaron las peticiones salientes a los dominios de Google Ads y DoubleClick:</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Página</th><th class="num">Peticiones tras el clic</th><th>Contenedores cargados</th><th>Eventos en dataLayer</th></tr></thead>
+  <tbody>
+    <tr><td><code>/pantallas-led</code></td><td class="num">8</td><td>GTM-5VQGJ3Z8, AW-18328695036</td><td><code>gtm.js</code>, <code>gtm.dom</code>, <code>gtm.load</code></td></tr>
+    <tr><td><code>/</code></td><td class="num">9</td><td>GTM-5VQGJ3Z8, AW-18328695036</td><td><code>gtm.js</code>, <code>gtm.dom</code>, <code>gtm.load</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Qué hay configurado en el contenedor</h3>
+<p>Leído del contenedor público, para dejar constancia de qué depende de este mecanismo:</p>
+<ul>
+  <li>Etiqueta de configuración de Google para AW-18328695036, disparada en la inicialización.</li>
+  <li>Conversión de clic en WhatsApp, etiqueta <span class="mono">g2ljCOHE7eMcEPzh5qNE</span>, disparada por el evento personalizado <code>whatsapp_click</code>.</li>
+  <li>Conversión de envío de formulario, etiqueta <span class="mono">2TWlCJ795OMcEPzh5qNE</span>, disparada por el envío de un formulario con la clase <code>contact-form</code>.</li>
+  <li>Vinculador de conversiones, para la captura de <code>gclid</code>, y los escuchadores de clic y de envío de formulario.</li>
+  <li>No hay Google Analytics 4 ni ninguna otra herramienta de terceros en el contenedor.</li>
+</ul>
+<p>Ninguno de estos elementos se modificó. El formulario de contacto de la home conserva su clase y su comportamiento, y las peticiones de remarketing y del vinculador siguen saliendo en el mismo momento que antes.</p>
+
+<!-- ============================================================ -->
+<h2 id="admin">13. Pruebas de /admin y de la API</h2>
+
+<h3>Autenticación</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Prueba</th><th>Resultado</th><th class="wrap-ok">Significado</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET /admin/</code></td><td class="num">302</td><td class="wrap-ok">Sigue redirigiendo a Cloudflare Access; el panel no quedó expuesto</td></tr>
+    <tr><td><code>POST /api/pages</code> sin credenciales</td><td class="num">401</td><td class="wrap-ok">La protección de escritura de la API sigue en pie</td></tr>
+  </tbody>
+</table>
+</div>
+<p>El panel no se puede cargar desde aquí porque Cloudflare Access lo protege incluso en desarrollo local, así que la verificación se apoya en los endpoints de los que depende y en que ninguno de los archivos del dashboard fue tocado. <code>public/admin/</code> no aparece en el diff de ninguno de los dos commits.</p>
+
+<h3>Endpoints que consume el dashboard</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Endpoint</th><th class="num">Código</th><th class="num">Tamaño</th><th class="num">Tiempo</th></tr></thead>
+  <tbody>
+    <tr><td><code>/api/pages</code></td><td class="num">200</td><td class="num">16 828 B</td><td class="num">0,358 s</td></tr>
+    <tr><td><code>/api/products</code></td><td class="num">200</td><td class="num">3 915 B</td><td class="num">0,365 s</td></tr>
+    <tr><td><code>/api/services</code></td><td class="num">200</td><td class="num">1 718 B</td><td class="num">0,330 s</td></tr>
+    <tr><td><code>/api/packages</code></td><td class="num">200</td><td class="num">1 501 B</td><td class="num">0,332 s</td></tr>
+    <tr><td><code>/api/events</code></td><td class="num">200</td><td class="num">1 527 B</td><td class="num">0,351 s</td></tr>
+    <tr><td><code>/api/testimonials</code></td><td class="num">200</td><td class="num">2 B</td><td class="num">0,325 s</td></tr>
+    <tr><td><code>/api/settings</code></td><td class="num">200</td><td class="num">399 B</td><td class="num">0,499 s</td></tr>
+    <tr><td><code>/api/pages/slug/sonido</code></td><td class="num">200</td><td class="num">7 317 B</td><td class="num">0,295 s</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Latencia de <code>/api/settings</code></h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Medición</th><th class="num">Antes</th><th class="num">Después</th></tr></thead>
+  <tbody>
+    <tr><td>Cuatro muestras consecutivas</td><td class="num">1,554 · 0,336 · 0,349 · 0,317 s</td><td class="num">0,291 · 0,303 · 0,300 · 0,307 s</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Desaparece el pico en frío, que era lo que retrasaba el subtítulo del hero de la home y el número del botón de WhatsApp.</p>
+
+<h3>Decisiones tomadas para no afectar al dashboard</h3>
+<ul>
+  <li>No se añadió ninguna cabecera de caché a las respuestas de la API. El panel consume las mismas URLs públicas que el sitio, y cachearlas dejaría listas desactualizadas en la administración.</li>
+  <li>No se tocó <code>/api/upload</code> ni los módulos del panel, así que el flujo de subida de imágenes y la generación de variantes en el navegador del administrador siguen exactamente igual.</li>
+  <li>El editor sigue guardando la URL original de cada imagen: las variantes se derivan al renderizar, no se almacenan en el contenido.</li>
+  <li>Al retirar el panel de cotización de las páginas dinámicas se comprobó antes que <code>app.js</code> tolera su ausencia: la función que dibuja la barra sale si no encuentra su elemento, y los escuchadores del carrito solo se registran en la rama de la home.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="errores">14. Errores y respuestas 404</h2>
+
+<p>Cada página se recorrió entera en ambos dispositivos para forzar la carga diferida de todas las imágenes, registrando errores de consola, errores de página y toda respuesta con código 400 o superior.</p>
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Página</th><th>Dispositivo</th><th class="num">Errores de consola</th><th class="num">Respuestas ≥ 400</th><th class="num">Imágenes rotas</th></tr></thead>
+  <tbody>
+    <tr><td><code>/</code></td><td>Móvil</td><td class="num">0</td><td class="num">0</td><td class="num">0</td></tr>
+    <tr><td><code>/sonido</code></td><td>Móvil</td><td class="num">0</td><td class="num">0</td><td class="num">0</td></tr>
+    <tr><td><code>/pantallas-led</code></td><td>Móvil</td><td class="num">0</td><td class="num">0</td><td class="num">0</td></tr>
+    <tr><td><code>/</code></td><td>Escritorio</td><td class="num">0</td><td class="num">0</td><td class="num">0</td></tr>
+    <tr><td><code>/sonido</code></td><td>Escritorio</td><td class="num">0</td><td class="num">0</td><td class="num">0</td></tr>
+    <tr><td><code>/pantallas-led</code></td><td>Escritorio</td><td class="num">0</td><td class="num">0</td><td class="num">0</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <p><strong>Sobre los 404 que sí aparecieron en desarrollo local.</strong> Durante las pruebas con <code>wrangler dev</code> se registraron varios 404 de imagen. Se comprobó que eran del bucket R2 emulado, que solo tiene una parte de los objetos: la misma imagen que fallaba sin <code>srcset</code> —el hero en formato PNG, que se sirve por <code>src</code> directo— también fallaba localmente. En producción, con el bucket real, no hay ninguno. Vale la pena dejarlo escrito porque el entorno local no sirve para validar la existencia de variantes.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="verificaciones">15. Verificaciones de producción</h2>
+
+<h3>Contenido y SEO</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Página</th><th class="wrap-ok">H1 servido en el HTML inicial</th><th class="wrap-ok">Canonical</th><th class="num">JSON-LD</th></tr></thead>
+  <tbody>
+    <tr><td><code>/</code></td><td class="wrap-ok">Soluciones profesionales en audio e iluminación</td><td class="wrap-ok">— (la home no lo lleva, igual que antes)</td><td class="num">1</td></tr>
+    <tr><td><code>/sonido</code></td><td class="wrap-ok">Alquiler de Sonido Profesional para Eventos en Bogotá</td><td class="wrap-ok"><code>/sonido</code></td><td class="num">1</td></tr>
+    <tr><td><code>/pantallas-led</code></td><td class="wrap-ok">Alquiler y Venta de Pantallas LED para Eventos en Bogotá</td><td class="wrap-ok"><code>/pantallas-led</code></td><td class="num">1</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Los <code>title</code> y las descripciones se comprobaron idénticos a los de antes del despliegue. El sitemap sigue publicando las tres URLs con sus fechas de modificación.</p>
+
+<h3>Tamaño del DOM</h3>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Página</th><th class="num">Nodos antes</th><th class="num">Nodos después</th></tr></thead>
+  <tbody>
+    <tr><td><code>/</code></td><td class="num">490</td><td class="num">490 <span class="d flat">=</span></td></tr>
+    <tr><td><code>/sonido</code></td><td class="num">440</td><td class="num">199 <span class="d up">−55 %</span></td></tr>
+    <tr><td><code>/pantallas-led</code></td><td class="num">518</td><td class="num">277 <span class="d up">−47 %</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Diseño idéntico</h3>
+<p>Se sirvió el HTML anterior interceptando la petición del documento, con el resto de recursos viniendo de producción, y se comparó la geometría de ocho elementos de referencia más la altura total del documento, en las dos páginas dinámicas y los dos dispositivos.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Comparación</th><th>Resultado</th></tr></thead>
+  <tbody>
+    <tr><td><code>/sonido</code> móvil</td><td>Idéntico</td></tr>
+    <tr><td><code>/sonido</code> escritorio</td><td>Idéntico</td></tr>
+    <tr><td><code>/pantallas-led</code> móvil</td><td>Idéntico</td></tr>
+    <tr><td><code>/pantallas-led</code> escritorio</td><td>Idéntico</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Coinciden posición, tamaño y altura total al píxel. Un detalle metodológico que conviene anotar: la primera comparación por captura de pantalla daba diferencias que resultaron ser un artefacto del propio script, porque la hoja de estilos define desplazamiento suave y la captura se tomaba mientras la página aún volvía arriba. La comparación de geometría a posición fija es la que zanja la cuestión.</p>
+
+<h3>Estilos idénticos</h3>
+<p>Antes y después del recorte de CSS se capturaron 43 propiedades computadas de cada elemento de las tres páginas en los dos dispositivos, con las animaciones congeladas: 1642 elementos en total.</p>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Vista</th><th class="num">Elementos</th><th class="num">Diferencias</th></tr></thead>
+  <tbody>
+    <tr><td><code>/</code> móvil</td><td class="num">395</td><td class="num">3</td></tr>
+    <tr><td><code>/sonido</code> móvil</td><td class="num">174</td><td class="num">0</td></tr>
+    <tr><td><code>/pantallas-led</code> móvil</td><td class="num">252</td><td class="num">10</td></tr>
+    <tr><td><code>/</code> escritorio</td><td class="num">395</td><td class="num">0</td></tr>
+    <tr><td><code>/sonido</code> escritorio</td><td class="num">174</td><td class="num">0</td></tr>
+    <tr><td><code>/pantallas-led</code> escritorio</td><td class="num">252</td><td class="num">9</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Las 22 diferencias están en tres propiedades y todas son fase de animación, no cambios reales: opacidad 0,6 frente a 0,600001 en las manchas de los paquetes, una sombra de 0 frente a 0,0027 px en los botones de preguntas frecuentes, y un desplazamiento de 0,83 px en el marquee. Ninguna regla dejó de aplicarse.</p>
+
+<h3>Elección de imagen y prioridad</h3>
+<p>Verificado en producción, en los dos dispositivos, que el hero elige el archivo esperado, que solo el primero lleva prioridad alta, que los siguientes cargan en diferido y que ninguna imagen queda sin resolver.</p>
+
+<!-- ============================================================ -->
+<h2 id="fallos">16. Lo que no funcionó</h2>
+
+<div class="note bad">
+  <h4 style="margin-top:0">Partir el CSS en dos hojas bloqueantes hundió la home</h4>
+  <p>El primer intento dejó la landing pidiendo <code>styles.css</code> y <code>home.css</code>, ambas bloqueando el render, más un <code>preload</code> del póster en prioridad alta. Medido: el primer pintado de la home en móvil subió de 1444 a 1897 ms, el LCP de 1894 a 2460 ms y el puntaje cayó de 99 a 95. Lighthouse atribuía 550 ms de pérdida a las dos hojas y el póster de 49 KB aparecía en la traza antes de que el CSS terminara de llegar.</p>
+  <p><strong>Corrección.</strong> <code>styles.css</code> volvió a ser el archivo completo que pide la landing, y las páginas dinámicas reciben <code>core.css</code> mediante la sustitución del <code>href</code> en el edge: una sola petición bloqueante en ambos casos. El <code>preload</code> del póster se retiró; el escáner de precarga lo encuentra igual en el atributo del <code>&lt;video&gt;</code>. La home volvió a 99.</p>
+  <p><strong>Lección.</strong> Un cambio en el shell afecta a las tres páginas. Hay que medir la home aunque el trabajo apunte a otra página.</p>
+</div>
+
+<div class="note bad">
+  <h4 style="margin-top:0">Re-codificar el video no compensa</h4>
+  <p>Se probó antes de asumirlo. Los números están en la sección del video: ni quitar el audio ni bajar la calidad producen un ahorro que justifique la pérdida. El archivo se dejó como estaba y el problema se resolvió por otra vía, sacándolo de la carga inicial.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="conclusiones">17. Conclusiones</h2>
+
+<ul>
+  <li><strong>El objetivo se cumplió en una de las dos páginas que estaban por debajo.</strong> <code>/pantallas-led</code> pasa de 92 a 98 en móvil y su LCP baja un segundo. <code>/sonido</code> llega a 92 y se queda a tres puntos, con Google Tag Manager como causa principal de la diferencia.</li>
+  <li><strong>El trabajo estructural es mayor que lo que refleja el puntaje.</strong> Las páginas dinámicas pesan un tercio menos, tienen la mitad de nodos, reciben 3,5 KB menos de CSS y han reducido entre un 10 % y un 38 % el tiempo de recálculo de diseño y pintado en CPU lenta. Eso se nota en teléfonos reales más de lo que mueve la aguja de Lighthouse.</li>
+  <li><strong>La home no mejoró de puntaje porque ya estaba en 99 en laboratorio</strong>, pero dejó de descargar 2,8 MB durante la carga inicial. Es el cambio con mayor efecto sobre usuarios con datos móviles, y el que menos aparece en la métrica.</li>
+  <li><strong>Ninguna funcionalidad se degradó.</strong> Conversiones, SEO, dashboard, API y autenticación verificados uno por uno después del despliegue; diseño y estilos comprobados idénticos con métodos objetivos.</li>
+  <li><strong>Dos hipótesis razonables resultaron falsas al medirlas</strong>: que partir el CSS mejoraría todas las páginas, y que el video se podía comprimir más. Ambas se descartaron con datos antes de quedarse en producción.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="pendientes">18. Pendientes y recomendaciones</h2>
+
+<h3>Por orden de impacto</h3>
+
+<div class="cause">
+  <header><span class="chip crit">Mayor palanca</span><h3>Diferir Google Tag Manager</h3></header>
+  <div class="body">
+    <p><strong>Qué cuesta hoy.</strong> 311 KB y las únicas tareas largas del sitio. En <code>/sonido</code> compiten con la imagen del hero justo cuando se está pintando.</p>
+    <p><strong>Propuesta.</strong> El fragmento sigue creando <code>dataLayer</code> igual que ahora, pero inserta <code>gtm.js</code> en la primera interacción del usuario —desplazamiento, toque, clic o tecla— o a los tres segundos del evento <code>load</code>, lo que ocurra antes.</p>
+    <p><strong>Qué se preserva.</strong> Las conversiones de WhatsApp y de formulario, porque <code>dataLayer</code> hace de cola y Tag Manager procesa en orden todo lo empujado antes de cargar. Los enlaces de WhatsApp abren en pestaña nueva, así que la página sigue viva para enviar la conversión, y el formulario está al pie, imposible de enviar en menos de tres segundos.</p>
+    <p><strong>Qué se pierde.</strong> Las visitas que rebotan en menos de tres segundos sin interactuar dejarían de entrar en audiencias de remarketing y de contar como visita de página en Ads.</p>
+    <p><strong>Cómo se verificaría.</strong> Con el script de comprobación ampliado para probar el clic antes y después de que cargue Tag Manager, con Tag Assistant, y contrastando las conversiones en Google Ads a 24 y 48 horas.</p>
+  </div>
+</div>
+
+<div class="cause">
+  <header><span class="chip medio">Requiere permiso</span><h3>El hero en formato PNG de <code>/sonido</code></h3></header>
+  <div class="body">
+    <p>La clave <code>products/b903b25e-c856-4e64-a747-b615235507b0.png</code> contiene en realidad un WebP de 1740×904 y 93 348 bytes, pero su extensión impide derivar variantes con seguridad: aceptar claves que no sean <code>.webp</code> reabriría el riesgo de anunciar variantes inexistentes, porque <code>/api/upload</code> solo las genera para ese formato.</p>
+    <p>La corrección limpia es copiar el objeto a una clave <code>.webp</code>, generar sus dos variantes y actualizar el campo correspondiente de <code>content_json</code> en D1. Es una escritura de contenido que quedó fuera del alcance autorizado. El impacto es solo de escritorio, que ya está en 97, así que no urge.</p>
+  </div>
+</div>
+
+<div class="cause">
+  <header><span class="chip medio">Fuera del alcance</span><h3>Cabeceras de caché de los assets estáticos</h3></header>
+  <div class="body">
+    <p>CSS, JavaScript, fuentes, logo e iconos siguen saliendo con <code>public, max-age=0, must-revalidate</code>, que es el valor por defecto de Workers Assets. Revalidan en cada navegación aunque el CSS y el JavaScript ya lleven número de versión en la URL.</p>
+    <p>No mueve el puntaje de Lighthouse, que mide siempre con caché vacía, pero sí la navegación real entre páginas y las visitas repetidas. Añadir <code>immutable</code> a <code>/css/*</code>, <code>/js/*</code> y <code>/fonts/*</code> es seguro porque ya están versionados; para <code>/images/*</code> obligaría a cambiar el nombre del archivo al reemplazar uno.</p>
+  </div>
+</div>
+
+<div class="cause">
+  <header><span class="chip pend">Bloqueado</span><h3>Token de Cloudflare</h3></header>
+  <div class="body">
+    <p>El token guardado en Vault sigue siendo rechazado por la API con <code>Invalid API Token</code>, comprobado contra la verificación de usuario, la de cuenta y <code>wrangler whoami</code>. Todo el trabajo se hizo con la sesión OAuth de wrangler, que permite leer el Worker, sus versiones, D1, KV y R2, pero no la configuración de zona: reglas de caché, TTL de navegador, Early Hints, Speed Brain, Web Analytics ni DNS.</p>
+    <p>Sin ese acceso tampoco hay permiso de purga, lo que obligó a esperar la expiración natural de la caché para medir con las imágenes nuevas.</p>
+  </div>
+</div>
+
+<h3>Observaciones menores anotadas durante el trabajo</h3>
+<ul>
+  <li>El <code>sizes</code> de la galería declara la mitad del ancho de la ventana cuando en móvil las imágenes ocupan casi todo. El navegador elige una variante más pequeña de lo ideal y la amplía alrededor de un 45 %. Ahorra bytes a costa de nitidez; conviene decidirlo a la vista, no por métrica.</li>
+  <li><code>public/svg-icons/Evento Social.svg</code> y <code>camara de video.svg</code> pesan 379 KB cada uno, están versionados y desplegados, y ninguna página los referencia. No se descargan, pero engordan el paquete de assets.</li>
+  <li>Los archivos de video antiguos siguen desplegados aunque el póster y el arranque diferido no los hayan cambiado; si en algún momento se re-codifican, conviene usar nombres nuevos, porque se sirven con caché inmutable de un año.</li>
+  <li>El enlace <code>preconnect</code> del <code>&lt;head&gt;</code> apunta al propio origen del sitio y no aporta nada.</li>
+  <li>La regla de CSS que oculta el botón flotante de WhatsApp en páginas dinámicas también alcanza al que crea el bloque de WhatsApp del editor. Se conservó tal cual para no alterar el comportamiento actual, pero conviene revisar si ese botón debería verse en <code>/pantallas-led</code>.</li>
+</ul>
+
+<hr class="soft">
+<p><small class="src">Informe generado el 11 de septiembre de 2026 a partir de 60 reportes de Lighthouse, 12 trazas de Playwright con Chrome DevTools Protocol, comprobaciones HTTP sobre 40 URLs de producción, el contenedor público de Google Tag Manager y lectura de la API de Cloudflare con la sesión OAuth de wrangler. Archivo autocontenido: no carga fuentes, scripts ni recursos externos.</small></p>
+
+</div>
+</body>
+</html>
