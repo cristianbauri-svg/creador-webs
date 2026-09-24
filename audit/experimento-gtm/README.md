@@ -1,8 +1,11 @@
 # Experimento de diferimiento de Google Tag Manager (Fase 2B)
 
-**Nada de esto está en producción.** Los archivos viven en `audit/` a propósito:
-fuera de `public/` y de `src/`, para que ningún `wrangler deploy` accidental
-pueda publicarlos.
+El resultado de este experimento **está en producción desde el 2026-09-11**:
+GTM diferido a 3 s y los CTA de WhatsApp en pestaña nueva (versionado en el
+commit `93a4d5a`, hoy dentro de `public/index.html`, `public/404.html`,
+`public/js/app.js` y `src/index.ts`). Los archivos de esta carpeta son el banco
+de pruebas y la documentación: viven en `audit/`, fuera de `public/` y de
+`src/`, para que ningún `wrangler deploy` pueda publicarlos.
 
 ## Qué hay aquí
 
@@ -16,6 +19,8 @@ pueda publicarlos.
 | `ventana-conversion.mjs` | Barrido de siete instantes de toque (800, 1500, 1800, 2500, 3000, 3500 y 5000 ms) en las tres ramas. |
 | `informe-fase2b-experimento-gtm.html` | **El informe completo**, autocontenido: se abre con doble clic y sin conexión. |
 | `informe-temporizador-15s-vs-3s.html` | **Informe comparativo** del temporizador: 1,5 s frente a 3 s, ambos con CTA en pestaña nueva. |
+| `verificacion-predeploy.mjs` | Protocolo pre-deploy contra `wrangler dev`: 57 comprobaciones de consola, carga del contenedor, `dataLayer`, `whatsapp_click`, conversiones, formulario, H1, canonical, JSON-LD y CTA en pestaña nueva. **Carga el contenedor real de GTM y genera tráfico real hacia Google** (ver el aviso más abajo). |
+| `rollback.md` | Producción actual, rollback seguro, versiones que no se deben usar y el estado externo de Cloudflare que no vive en git. |
 
 ## Cómo se corre
 
@@ -34,6 +39,20 @@ node audit/experimento-gtm/prueba-gclid.mjs       http://127.0.0.1:8799 "DEFER"
 Las navegaciones a WhatsApp se responden con una página de relleno y los `POST`
 a `/api/quotations` se interceptan: las pruebas no abren chats ni crean
 cotizaciones reales.
+
+### Aviso: tráfico real hacia Google
+
+`verificacion-predeploy.mjs` (y también `proxy.mjs`, `pruebas-conversion.mjs`,
+`prueba-gclid.mjs` y `ventana-conversion.mjs`) **carga el contenedor real
+GTM-5VQGJ3Z8** y deja salir sus peticiones: puede generar tráfico y hits reales
+hacia Google (Tag Manager, Analytics y las etiquetas de conversión de Google
+Ads) desde localhost, aunque se ejecute contra `wrangler dev`. Solo se
+interceptan WhatsApp y `/api/quotations`.
+
+Correrlos solo cuando haga falta medir GTM de verdad. Para comprobar el sitio
+sin tocar Google, usar las pruebas herméticas del repositorio
+(`npx vitest run test/…` y `node test/e2e/portafolio-xss.mjs`), que abortan
+toda petición a terceros.
 
 ## Conclusión medida
 

@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Straton Audio — Temporizador de GTM: 1,5 s frente a 3 s</title>
+<meta name="description" content="Informe comparativo autocontenido: medición del temporizador de diferimiento de Google Tag Manager a 1,5 segundos frente a 3 segundos, manteniendo los CTA de WhatsApp en pestaña nueva. Rendimiento, conversiones, _gcl_aw, remarketing y dataLayer.">
+<style>
+  :root {
+    --paper:#F6F8F5; --paper-2:#EDF1EC; --paper-3:#E3E9E4;
+    --ink:#16201B; --ink-2:#3E4B44; --muted:#64746B; --line:#D3DBD5;
+    --accent:#177A43; --accent-ink:#0F5A31; --accent-soft:#DDF0E4; --gold:#8F6E2C;
+    --ok:#177A43; --ok-soft:#DDF0E4; --bad:#B42318; --bad-soft:#FBE9E7;
+    --warn:#B4530A; --warn-soft:#FCEEDF; --code:#EBF0EC;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:#0F1412; --paper-2:#161D19; --paper-3:#1D2622;
+      --ink:#E6ECE7; --ink-2:#BFCAC2; --muted:#8E9C94; --line:#2A3530;
+      --accent:#3FD683; --accent-ink:#7DE8AC; --accent-soft:#143423; --gold:#D6B36A;
+      --ok:#3FD683; --ok-soft:#123020; --bad:#FF8A80; --bad-soft:#3A1512;
+      --warn:#FFAB70; --warn-soft:#3A2210; --code:#182019;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:#0F1412; --paper-2:#161D19; --paper-3:#1D2622;
+    --ink:#E6ECE7; --ink-2:#BFCAC2; --muted:#8E9C94; --line:#2A3530;
+    --accent:#3FD683; --accent-ink:#7DE8AC; --accent-soft:#143423; --gold:#D6B36A;
+    --ok:#3FD683; --ok-soft:#123020; --bad:#FF8A80; --bad-soft:#3A1512;
+    --warn:#FFAB70; --warn-soft:#3A2210; --code:#182019;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.62; margin: 0; padding-inline: clamp(16px, 4vw, 48px); padding-block: 28px 90px; }
+  .wrap { max-width: 76rem; margin: 0 auto; }
+  h1, h2, h3, h4 { line-height: 1.2; text-wrap: balance; margin: 0; font-weight: 700; }
+  h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); letter-spacing: -0.02em; }
+  h2 { font-size: 1.4rem; margin-top: 3.1rem; padding-top: 1rem; border-top: 2px solid var(--ink); letter-spacing: -0.01em; }
+  h3 { font-size: 1.06rem; margin-top: 1.8rem; }
+  h4 { font-size: 0.95rem; margin-top: 1.3rem; color: var(--ink-2); }
+  p, li { max-width: 74ch; }
+  p { margin: 0.7rem 0; }
+  ul, ol { padding-left: 1.3rem; margin: 0.6rem 0; }
+  li { margin: 0.35rem 0; }
+  li::marker { color: var(--muted); }
+  code, .mono { font-family: var(--mono); font-size: 0.88em; }
+  code { background: var(--code); padding: 0.06em 0.36em; border-radius: 3px; word-break: break-word; }
+  pre { background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; font-size: 0.8rem; line-height: 1.5; font-family: var(--mono); }
+  pre code { background: none; padding: 0; font-size: 1em; }
+  .eyebrow { font-size: 0.7rem; letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .lede { font-size: 1.07rem; color: var(--ink-2); max-width: 68ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 16px; font-size: 0.84rem; color: var(--muted); }
+  .meta b { color: var(--ink); font-weight: 600; }
+  .headline { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 26px 0 4px; }
+  .headline > div { background: var(--paper-2); border-left: 3px solid var(--line); padding: 11px 14px; }
+  .headline > div.win { border-left-color: var(--accent); }
+  .headline > div.risk { border-left-color: var(--bad); }
+  .headline .k { font-size: 0.7rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .headline .v { font-size: 1.5rem; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .headline .s { font-size: 0.83rem; color: var(--ink-2); }
+  .tablewrap { overflow-x: auto; margin: 14px 0 18px; border: 1px solid var(--line); border-radius: 6px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--paper-2); font-weight: 700; font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-2); white-space: nowrap; }
+  td.num, th.num { text-align: right; font-family: var(--mono); white-space: nowrap; }
+  td.w { white-space: normal; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: color-mix(in srgb, var(--paper-2) 45%, transparent); }
+  tr.destacada td { background: var(--ok-soft); }
+  tr.mala td { background: var(--bad-soft); }
+  .si { color: var(--ok); font-weight: 700; }
+  .no { color: var(--bad); font-weight: 700; }
+  .d { display: inline-block; font-family: var(--mono); font-size: 0.82em; padding: 1px 6px; border-radius: 3px; margin-left: 6px; }
+  .d.up { background: var(--ok-soft); color: var(--ok); }
+  .d.down { background: var(--bad-soft); color: var(--bad); }
+  .d.flat { color: var(--muted); }
+  .note { background: var(--paper-2); border-left: 3px solid var(--gold); padding: 10px 14px; margin: 14px 0; font-size: 0.92rem; }
+  .note.ok { border-left-color: var(--accent); }
+  .note.bad { border-left-color: var(--bad); }
+  .note > :first-child { margin-top: 0; } .note > :last-child { margin-bottom: 0; }
+  .note p { max-width: 72ch; }
+  .veredicto { border-left: 4px solid var(--bad); background: var(--bad-soft); padding: 16px 18px; margin: 26px 0 6px; border-radius: 0 6px 6px 0; }
+  .veredicto h2 { margin: 0 0 6px; padding: 0; border: 0; font-size: 1.18rem; color: var(--bad); }
+  .veredicto p { margin: 7px 0; max-width: 72ch; }
+  dl.kv { display: grid; grid-template-columns: 12rem 1fr; gap: 7px 18px; margin: 10px 0; font-size: 0.92rem; }
+  dl.kv dt { color: var(--muted); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 3px; }
+  dl.kv dd { margin: 0; max-width: 76ch; }
+  @media (max-width: 680px) { dl.kv { grid-template-columns: 1fr; } dl.kv dt { padding-top: 9px; } }
+  .chip { display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+  .chip.ok { background: var(--ok-soft); color: var(--ok); }
+  .chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  nav.toc { columns: 2; column-gap: 34px; font-size: 0.9rem; margin: 20px 0 0; padding: 14px 16px; background: var(--paper-2); border-radius: 6px; }
+  nav.toc ol { margin: 0; padding-left: 1.2rem; }
+  nav.toc li { break-inside: avoid; margin: 0.22rem 0; }
+  nav.toc a { text-decoration: none; color: var(--ink-2); }
+  nav.toc a:hover { color: var(--accent-ink); text-decoration: underline; }
+  @media (max-width: 680px) { nav.toc { columns: 1; } }
+  small.src { color: var(--muted); font-size: 0.78rem; }
+  hr.soft { border: 0; border-top: 1px solid var(--line); margin: 26px 0; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media print {
+    body { background: #fff; color: #000; padding: 0; font-size: 10.5pt; }
+    h2 { page-break-inside: avoid; }
+    .tablewrap, .note, .veredicto { break-inside: avoid; }
+    nav.toc { break-after: page; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Straton Audio · experimento de GTM · informe comparativo autocontenido</div>
+  <h1>Temporizador de 1,5 segundos frente a 3 segundos</h1>
+  <p class="lede">Se midió la variante con la red de seguridad a 1,5 s, manteniendo los CTA de WhatsApp en pestaña nueva, con exactamente la misma metodología de la ronda anterior. El resultado va en contra de la intuición: acortar el temporizador no es un término medio, es perder el beneficio entero y quedarse con buena parte del coste.</p>
+  <div class="meta">
+    <span><b>Fecha</b> 11 sep 2026</span>
+    <span><b>Producción</b> intacta, versión 65b825a5</span>
+    <span><b>Despliegues</b> ninguno</span>
+    <span><b>Mediciones</b> 45 informes de Lighthouse · 42 toques reales · 3 entradas con gclid</span>
+    <span><b>Banco</b> audit/experimento-gtm/</span>
+  </div>
+
+  <div class="headline">
+    <div class="risk"><div class="k">TBT con CPU 10×, /sonido</div><div class="v">317 ms</div><div class="s">con 1,5 s · hoy 298 · con 3 s: 1</div></div>
+    <div class="risk"><div class="k">Puntaje CPU 10×, LED</div><div class="v">88</div><div class="s">con 1,5 s · hoy 92 · con 3 s: 96</div></div>
+    <div class="win"><div class="k">Conversiones</div><div class="v">14 de 14</div><div class="s">en las tres ramas</div></div>
+    <div class="win"><div class="k">Cookie de atribución</div><div class="v">−1,4 s</div><div class="s">lo único que 1,5 s mejora</div></div>
+  </div>
+
+  <nav class="toc" aria-label="Contenido del informe">
+    <ol>
+      <li><a href="#veredicto">Veredicto</a></li>
+      <li><a href="#metodologia">Metodología</a></li>
+      <li><a href="#configuracion">Configuración del experimento</a></li>
+      <li><a href="#std">Rendimiento: perfil estándar</a></li>
+      <li><a href="#cpu10">Rendimiento: CPU 10×</a></li>
+      <li><a href="#porque">Por qué 1,5 s sale peor que no diferir</a></li>
+      <li><a href="#conversiones">Pruebas de conversión por instante</a></li>
+      <li><a href="#carga">Cuándo carga el contenedor</a></li>
+      <li><a href="#datalayer">dataLayer y la cola</a></li>
+      <li><a href="#ads">Google Ads y remarketing</a></li>
+      <li><a href="#gclid">El cookie <code>_gcl_aw</code></a></li>
+      <li><a href="#formulario">Formulario</a></li>
+      <li><a href="#balance">Balance: qué se gana y qué se cede</a></li>
+      <li><a href="#conclusiones">Conclusiones y recomendación</a></li>
+      <li><a href="#notas">Notas de método y limitaciones</a></li>
+    </ol>
+  </nav>
+</header>
+
+<!-- ============================================================ -->
+<div class="veredicto" id="veredicto">
+  <h2>1. Veredicto</h2>
+  <p><b>El temporizador de 1,5 segundos no es un término medio viable: está dominado por las otras dos opciones.</b> Cede el beneficio completo de rendimiento y conserva más de la mitad del coste de atribución.</p>
+  <p><b>En hardware lento, que es el escenario que decide, 1,5 s es igual o peor que no diferir nada.</b> El tiempo total de bloqueo queda en 317 ms en <code>/sonido</code> frente a los 298 ms actuales, y en 403 ms en <code>/pantallas-led</code> frente a 268. Con 3 s esos mismos valores son 1 ms y 88 ms. El puntaje de <code>/pantallas-led</code> baja de 92 a 88, por debajo del estado actual.</p>
+  <p><b>Lo único que 1,5 s mejora es la ventana de atribución</b>, que se reduce de 2,8 a 1,4 segundos. Es una mejora real, pero se paga con todo el rendimiento, que era el objetivo del ejercicio.</p>
+  <p><b>Recomendación: 3 segundos, o no diferir.</b> Si la preocupación por la atribución pesa más que los puntos, la decisión correcta es no diferir, no acortar el temporizador.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="metodologia">2. Metodología</h2>
+<p>Idéntica a la de la ronda anterior, con una sola diferencia deliberada que se explica más abajo.</p>
+
+<dl class="kv">
+  <dt>Rendimiento</dt>
+  <dd>Lighthouse 13.4.1 por línea de comandos con el Chromium headless de Playwright. Dos perfiles: el estándar de PageSpeed (móvil, método <em>simulate</em>, 150 ms de latencia, 1638,4 kbps de bajada, CPU 4× más lenta) y el mismo con <code>--throttling.cpuSlowdownMultiplier=10</code>. Tres corridas por celda en el perfil estándar y dos en CPU 10×; se reporta la mediana y se listan las corridas individuales.</dd>
+  <dt>Conversiones</dt>
+  <dd>Playwright con perfil móvil de 412×823 px lógicos a densidad 2,625 y pantalla táctil. Toque real con <code>touchscreen.tap()</code> sobre el centro del CTA del hero de <code>/sonido</code>. Siete instantes: 800, 1500, 1800, 2500, 3000, 3500 y 5000 ms. Dos repeticiones por celda.</dd>
+  <dt>Atribución</dt>
+  <dd>Entrada simulada desde anuncio con <code>gclid</code> en la URL, y fotografía de cookies y peticiones a Google a los 1000, 2000, 3000, 4000 y 6000 ms.</dd>
+  <dt>Sin efectos secundarios</dt>
+  <dd>Las navegaciones a WhatsApp se responden con una página de relleno y los <code>POST</code> a <code>/api/quotations</code> se interceptan. No se abrió ningún chat ni se creó ninguna cotización. Producción no se modificó en ningún momento y no se ejecutó <code>wrangler deploy</code>.</dd>
+</dl>
+
+<div class="note">
+  <p><b>El único cambio de método respecto de la ronda anterior, y por qué.</b> El banco ahora sirve el fragmento <em>compacto</em>, que es el que se desplegaría, en lugar del comentado. En la ronda anterior se descubrió que la versión con comentarios añade unos 480 bytes comprimidos y eso basta para cruzar la ventana inicial de congestión TCP que Lighthouse modela, lo que cuesta un viaje de red entero de FCP. Con el fragmento compacto ese artefacto desaparece. Las tres ramas de esta ronda se midieron todas de nuevo con el mismo fragmento, así que son comparables entre sí; no lo son con las cifras absolutas de la ronda anterior.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="configuracion">3. Configuración del experimento</h2>
+<p>Tres ramas servidas por el mismo banco de pruebas, que entrega producción real reescribiendo únicamente el fragmento de Google Tag Manager. Mismos archivos, misma red, mismo contenedor y mismas etiquetas en las tres.</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Rama</th><th class="num">Puerto</th><th class="num">Red de seguridad</th><th>CTA en pestaña nueva</th><th class="num">Documento (brotli)</th></tr></thead>
+    <tbody>
+      <tr><td><b>actual</b></td><td class="num">8798</td><td class="num">—</td><td>no</td><td class="num">12 587 B</td></tr>
+      <tr><td><b>pestaña + 3 s</b></td><td class="num">8796</td><td class="num">3000 ms</td><td class="si">sí</td><td class="num">13 035 B</td></tr>
+      <tr><td><b>pestaña + 1,5 s</b></td><td class="num">8795</td><td class="num">1500 ms</td><td class="si">sí</td><td class="num">13 042 B</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>Las dos ramas diferidas se diferencian en siete bytes comprimidos: literalmente solo cambia el número del temporizador. Cualquier diferencia que aparezca entre ellas es atribuible a ese número y a nada más.</p>
+
+<h4>El fragmento, con el temporizador como única variable</h4>
+<pre><code>&lt;script&gt;(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+var c=0,e=['pointerdown','pointermove','touchstart','keydown','wheel','scroll'],o={passive:true,capture:true};
+function g(){if(c)return;c=1;for(var k=0;k&lt;e.length;k++)w.removeEventListener(e[k],g,o);
+var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&amp;l='+l:'';
+j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f)}
+for(var k=0;k&lt;e.length;k++)w.addEventListener(e[k],g,o);w.setTimeout(g,<b>3000</b>)   &lt;-- o 1500
+})(window,document,'script','dataLayer','GTM-5VQGJ3Z8');&lt;/script&gt;</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="std">4. Rendimiento: perfil estándar de PageSpeed</h2>
+<p>Móvil, CPU 4× más lenta, mediana de tres corridas.</p>
+
+<div class="tablewrap">
+  <table>
+    <caption class="sr-only">Métricas por rama en el perfil estándar</caption>
+    <thead><tr>
+      <th>Página</th><th>Rama</th><th class="num">Rendimiento</th><th class="num">LCP</th><th class="num">FCP</th>
+      <th class="num">TBT</th><th class="num">CLS</th><th class="num">Speed Index</th><th class="num">TTFB</th>
+      <th class="num">Peso</th><th class="num">gtm.js</th><th class="num">Corridas</th>
+    </tr></thead>
+    <tbody>
+      <tr><td rowspan="3"><code>/sonido</code></td><td>actual</td><td class="num">95</td><td class="num">2852</td><td class="num">980</td><td class="num">62</td><td class="num">0,000</td><td class="num">1023</td><td class="num">151</td><td class="num">1111 KB</td><td class="num">277 ms</td><td class="num">96, 85, 95</td></tr>
+      <tr class="destacada"><td>pestaña + 3 s</td><td class="num">94</td><td class="num">3005</td><td class="num">1130</td><td class="num si">0</td><td class="num">0,000</td><td class="num">1184</td><td class="num">152</td><td class="num">797 KB</td><td class="num">3222 ms</td><td class="num">92, 94, 94</td></tr>
+      <tr><td>pestaña + 1,5 s</td><td class="num">95</td><td class="num">2934</td><td class="num">1130</td><td class="num no">74</td><td class="num">0,000</td><td class="num">1130</td><td class="num">152</td><td class="num">1111 KB</td><td class="num">1665 ms</td><td class="num">95, 94, 95</td></tr>
+
+      <tr><td rowspan="3"><code>/pantallas-led</code></td><td>actual</td><td class="num">97</td><td class="num">2503</td><td class="num">1218</td><td class="num">52</td><td class="num">0,008</td><td class="num">1218</td><td class="num">159</td><td class="num">811 KB</td><td class="num">286 ms</td><td class="num">96, 97, 97</td></tr>
+      <tr class="destacada"><td>pestaña + 3 s</td><td class="num">98</td><td class="num">2434</td><td class="num">1159</td><td class="num si">0</td><td class="num">0,008</td><td class="num">1219</td><td class="num">160</td><td class="num">498 KB</td><td class="num">no carga</td><td class="num">98, 98, 97</td></tr>
+      <tr><td>pestaña + 1,5 s</td><td class="num">96</td><td class="num">2613</td><td class="num">1214</td><td class="num no">78</td><td class="num">0,008</td><td class="num">1462</td><td class="num">182</td><td class="num">811 KB</td><td class="num">1696 ms</td><td class="num">96, 96, 97</td></tr>
+
+      <tr><td rowspan="3"><code>/</code></td><td>actual</td><td class="num">100</td><td class="num">1288</td><td class="num">1213</td><td class="num">60</td><td class="num">0,024</td><td class="num">2237</td><td class="num">289</td><td class="num">3790 KB</td><td class="num">401 ms</td><td class="num">100, 100, 100</td></tr>
+      <tr class="destacada"><td>pestaña + 3 s</td><td class="num">100</td><td class="num">1299</td><td class="num">1224</td><td class="num si">0</td><td class="num">0,024</td><td class="num">2154</td><td class="num">293</td><td class="num">3476 KB</td><td class="num">3307 ms</td><td class="num">100, 100, 100</td></tr>
+      <tr><td>pestaña + 1,5 s</td><td class="num">100</td><td class="num">1285</td><td class="num">1210</td><td class="num no">62</td><td class="num">0,024</td><td class="num">2190</td><td class="num">290</td><td class="num">3790 KB</td><td class="num">1804 ms</td><td class="num">99, 100, 100</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p>En este perfil los puntajes apenas se mueven —el banco corre sobre <code>127.0.0.1</code> y con CPU 4× hay margen de sobra—, pero la señal ya está clara en dos columnas. El <b>tiempo total de bloqueo</b> es 0 con 3 s y vuelve a 62–78 ms con 1,5 s, por encima incluso del estado actual en dos de las tres páginas. Y el <b>peso</b> delata lo mismo: con 3 s el contenedor no llega a entrar en la ventana de medición y la página pesa 797, 498 y 3476 KB; con 1,5 s entra, y el peso vuelve exactamente a los valores de hoy.</p>
+
+<!-- ============================================================ -->
+<h2 id="cpu10">5. Rendimiento: CPU 10×</h2>
+<p>El mismo perfil con la CPU diez veces más lenta, que es la aproximación más cercana al hardware sobre el que corre PageSpeed Insights. Mediana de dos corridas. <b>Aquí el resultado deja de ser sutil.</b></p>
+
+<div class="tablewrap">
+  <table>
+    <caption class="sr-only">Métricas por rama con CPU 10×</caption>
+    <thead><tr>
+      <th>Página</th><th>Rama</th><th class="num">Rendimiento</th><th class="num">LCP</th><th class="num">FCP</th>
+      <th class="num">TBT</th><th class="num">CLS</th><th class="num">Speed Index</th><th class="num">TTFB</th>
+      <th class="num">Peso</th><th class="num">gtm.js</th><th class="num">Corridas</th>
+    </tr></thead>
+    <tbody>
+      <tr><td rowspan="3"><code>/sonido</code></td><td>actual</td><td class="num">89</td><td class="num">2855</td><td class="num">980</td><td class="num">298</td><td class="num">0,000</td><td class="num">1040</td><td class="num">164</td><td class="num">1111 KB</td><td class="num">294 ms</td><td class="num">86, 92</td></tr>
+      <tr class="destacada"><td>pestaña + 3 s</td><td class="num si">94</td><td class="num">3054</td><td class="num">1142</td><td class="num si">1</td><td class="num">0,000</td><td class="num">1224</td><td class="num">184</td><td class="num">797 KB</td><td class="num">no carga</td><td class="num">95, 93</td></tr>
+      <tr class="mala"><td>pestaña + 1,5 s</td><td class="num no">88</td><td class="num">2971</td><td class="num">1134</td><td class="num no">317</td><td class="num">0,000</td><td class="num">1144</td><td class="num">152</td><td class="num">1111 KB</td><td class="num">1672 ms</td><td class="num">88, 87</td></tr>
+
+      <tr><td rowspan="3"><code>/pantallas-led</code></td><td>actual</td><td class="num">92</td><td class="num">2560</td><td class="num">1210</td><td class="num">268</td><td class="num">0,008</td><td class="num">1210</td><td class="num">156</td><td class="num">811 KB</td><td class="num">274 ms</td><td class="num">92, 91</td></tr>
+      <tr class="destacada"><td>pestaña + 3 s</td><td class="num si">96</td><td class="num">2533</td><td class="num">1183</td><td class="num si">88</td><td class="num">0,008</td><td class="num">1306</td><td class="num">142</td><td class="num">498 KB</td><td class="num">no carga</td><td class="num">97, 96</td></tr>
+      <tr class="mala"><td>pestaña + 1,5 s</td><td class="num no">88</td><td class="num">2414</td><td class="num">1177</td><td class="num no">403</td><td class="num">0,008</td><td class="num">1370</td><td class="num">160</td><td class="num">811 KB</td><td class="num">1686 ms</td><td class="num">88, 88</td></tr>
+
+      <tr><td rowspan="3"><code>/</code></td><td>actual</td><td class="num">94</td><td class="num">1660</td><td class="num">1518</td><td class="num">253</td><td class="num">0,024</td><td class="num">2292</td><td class="num">102</td><td class="num">3790 KB</td><td class="num">346 ms</td><td class="num">93, 95</td></tr>
+      <tr class="destacada"><td>pestaña + 3 s</td><td class="num si">100</td><td class="num">1253</td><td class="num">1181</td><td class="num si">9</td><td class="num">0,024</td><td class="num">1906</td><td class="num">103</td><td class="num">3476 KB</td><td class="num">3116 ms</td><td class="num">100, 100</td></tr>
+      <tr class="mala"><td>pestaña + 1,5 s</td><td class="num no">94</td><td class="num">1251</td><td class="num">1178</td><td class="num no">298</td><td class="num">0,024</td><td class="num">2160</td><td class="num">112</td><td class="num">3790 KB</td><td class="num">1626 ms</td><td class="num">95, 92</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>Resumen de la diferencia</h3>
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Página</th><th class="num">Hoy</th><th class="num">Con 3 s</th><th class="num">Con 1,5 s</th><th class="w">Lectura</th></tr></thead>
+    <tbody>
+      <tr><td><code>/</code></td><td class="num">94</td><td class="num si">100 <span class="d up">+6</span></td><td class="num">94 <span class="d flat">=</span></td><td class="w">1,5 s no aporta absolutamente nada</td></tr>
+      <tr><td><code>/sonido</code></td><td class="num">89</td><td class="num si">94 <span class="d up">+5</span></td><td class="num no">88 <span class="d down">−1</span></td><td class="w">1,5 s queda por debajo del estado actual</td></tr>
+      <tr><td><code>/pantallas-led</code></td><td class="num">92</td><td class="num si">96 <span class="d up">+4</span></td><td class="num no">88 <span class="d down">−4</span></td><td class="w">1,5 s empeora la página cuatro puntos</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="note bad">
+  <p><b>El tiempo total de bloqueo es la columna que lo explica todo.</b> Con 3 s cae a 1, 88 y 9 milisegundos. Con 1,5 s sube a 317, 403 y 298: en las tres páginas queda igual o peor que hoy, que son 298, 268 y 253. En <code>/pantallas-led</code> el bloqueo con 1,5 s es un 50 % mayor que sin diferir nada.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="porque">6. Por qué 1,5 s sale peor que no diferir</h2>
+<p>Parece un contrasentido: si retrasar tres segundos mejora, retrasar uno y medio debería mejorar algo. No ocurre, y el motivo es dónde cae el trabajo pesado respecto de la ventana que Lighthouse mide.</p>
+
+<p>El tiempo total de bloqueo solo cuenta las tareas largas que ocurren <b>entre el primer pintado y el momento en que la página queda interactiva</b>. Lo anterior al primer pintado no suma. Con esa regla en mente, las tres ramas colocan el trabajo de Google Tag Manager en tres sitios distintos:</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Rama</th><th class="num">gtm.js entra a</th><th class="num">Primer pintado</th><th class="w">Dónde cae el trabajo pesado</th><th class="num">TBT resultante</th></tr></thead>
+    <tbody>
+      <tr><td>actual</td><td class="num">~290 ms</td><td class="num">~980 ms</td><td class="w">Una parte antes del primer pintado, que no cuenta; el resto dentro de la ventana</td><td class="num">298 ms</td></tr>
+      <tr><td>pestaña + 1,5 s</td><td class="num">~1670 ms</td><td class="num">~1134 ms</td><td class="w"><b>Todo justo después del primer pintado</b>: cae íntegro dentro de la ventana</td><td class="num no">317 ms</td></tr>
+      <tr><td>pestaña + 3 s</td><td class="num">~3200 ms o no carga</td><td class="num">~1142 ms</td><td class="w">Fuera de la ventana, o directamente después de que la medición termine</td><td class="num si">1 ms</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p>Dicho de otro modo: hoy el contenedor arranca tan pronto que parte de su coste se paga antes de que haya nada que bloquear. A 1,5 s arranca en el peor momento posible, justo cuando la página acaba de pintar y el usuario empieza a poder interactuar, así que <b>el cien por cien de su coste cae dentro de la ventana</b>. A 3 s ya no llega a tiempo de estorbar.</p>
+
+<p>Esto no es un artefacto de la herramienta. El tiempo total de bloqueo mide algo real: cuánto tiempo el hilo principal está ocupado y no responde a un toque. A 1,5 s ese bloqueo ocurre exactamente cuando el visitante está viendo la página y a punto de tocar el botón.</p>
+
+<!-- ============================================================ -->
+<h2 id="conversiones">7. Pruebas de conversión por instante</h2>
+<p>Toque real sobre el CTA del hero de <code>/sonido</code>, siete instantes, dos repeticiones por celda. Formato: <span class="mono">instante de la navegación / instante de la conversión</span>, en milisegundos. Un guion significa que la conversión nunca salió.</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>El usuario toca a</th><th>actual</th><th>pestaña + 3 s</th><th>pestaña + 1,5 s</th></tr></thead>
+    <tbody>
+      <tr><td class="num">800 ms</td><td class="num si">4211/4208 · 1503/1502</td><td class="num si">1506/2283 · 1470/2248</td><td class="num si">1530/2294 · 1478/2302</td></tr>
+      <tr><td class="num">1500 ms</td><td class="num si">2158/2156 · 2157/2156</td><td class="num si">2174/2953 · 2230/3055</td><td class="num si">2170/2627 · 2170/2614</td></tr>
+      <tr><td class="num">1800 ms</td><td class="num si">2459/2458 · 2472/2470</td><td class="num si">2463/3253 · 2496/3644</td><td class="num si">2465/2733 · 2486/2999</td></tr>
+      <tr><td class="num">2500 ms</td><td class="num si">3198/3197 · 3181/3179</td><td class="num si">3187/4120 · 3206/4009</td><td class="num si">3337/3334 · 3245/3242</td></tr>
+      <tr><td class="num">3000 ms</td><td class="num si">3682/3680 · 3679/3677</td><td class="num si">3705/4203 · 3732/4785</td><td class="num si">3695/3692 · 3738/3735</td></tr>
+      <tr><td class="num">3500 ms</td><td class="num si">4186/4185 · 4180/4178</td><td class="num si">4285/4282 · 4221/4218</td><td class="num si">4191/4188 · 4168/4164</td></tr>
+      <tr><td class="num">5000 ms</td><td class="num si">5827/5826 · 5684/5682</td><td class="num si">5736/5732 · 5682/5678</td><td class="num si">5690/5687 · 5759/5754</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Rama</th><th class="num">Conversiones registradas</th><th class="w">Observación</th></tr></thead>
+    <tbody>
+      <tr><td>actual</td><td class="num si">14 de 14</td><td class="w">Sale siempre, pero por uno o dos milisegundos: la etiqueta se emite justo antes de que la navegación destruya el documento.</td></tr>
+      <tr><td>pestaña + 3 s</td><td class="num si">14 de 14</td><td class="w">Sale siempre. Con la página viva la carrera desaparece; la conversión llega entre 0,5 y 1,3 s más tarde que hoy.</td></tr>
+      <tr><td>pestaña + 1,5 s</td><td class="num si">14 de 14</td><td class="w">Sale siempre, y antes que con 3 s: entre 300 y 1000 ms de ventaja en los instantes intermedios.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p><b>En conversiones no hay ninguna diferencia de fondo entre 1,5 y 3 segundos:</b> las dos registran todo, gracias a la pestaña nueva. La única diferencia es cuándo llega el aviso a Google, y eso no altera si la conversión se contabiliza.</p>
+
+<p>Un detalle que ilustra el mecanismo: a partir de los 2500 ms, en la rama de 1,5 s la navegación y la conversión ocurren con tres milisegundos de diferencia —3337 y 3334—, igual que en el estado actual. Es porque el contenedor ya está cargado y la etiqueta se dispara de forma síncrona en el manejador del clic. En la rama de 3 s, en cambio, la conversión llega 800 ms después de la navegación, porque hace falta cargar el contenedor primero; y llega igualmente, porque la pestaña original sigue abierta.</p>
+
+<!-- ============================================================ -->
+<h2 id="carga">8. Cuándo carga el contenedor</h2>
+<p>Primer instante en que se pide <code>gtm.js</code>, en las dos repeticiones de cada celda.</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Toque a</th><th class="num">actual</th><th class="num">pestaña + 3 s</th><th class="num">pestaña + 1,5 s</th></tr></thead>
+    <tbody>
+      <tr><td class="num">800 ms</td><td class="num">434, 506</td><td class="num">1502, 1465</td><td class="num">1526, 1474</td></tr>
+      <tr><td class="num">1500 ms</td><td class="num">445, 429</td><td class="num">2170, 2226</td><td class="num">1843, 1832</td></tr>
+      <tr><td class="num">1800 ms</td><td class="num">423, 449</td><td class="num">2459, 2492</td><td class="num">1844, 1831</td></tr>
+      <tr><td class="num">2500 ms</td><td class="num">468, 464</td><td class="num">3183, 3202</td><td class="num">1831, 1838</td></tr>
+      <tr><td class="num">3000 ms</td><td class="num">445, 431</td><td class="num">3369, 3343</td><td class="num">1828, 1861</td></tr>
+      <tr><td class="num">3500 ms</td><td class="num">484, 439</td><td class="num">3439, 3359</td><td class="num">1861, 1823</td></tr>
+      <tr><td class="num">5000 ms</td><td class="num">618, 444</td><td class="num">3374, 3337</td><td class="num">1831, 1832</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p>Las columnas leen así: cuando el toque ocurre antes de que venza el temporizador, es el propio <code>pointerdown</code> del dedo el que dispara la carga —por eso las dos ramas diferidas coinciden en la fila de 800 ms—. Cuando ocurre después, el contenedor ya entró por la red de seguridad, y ahí se ve la firma de cada variante: <b>constante alrededor de 1830 ms con el temporizador corto y alrededor de 3350 ms con el largo</b>.</p>
+
+<p>La prueba de interacción lo confirma desde otro ángulo: un toque en zona vacía a los 700 ms hizo que <code>gtm.js</code> se pidiera a los 1393 ms en la rama de 3 s y a los 1428 ms en la de 1,5 s. Cuando hay una persona interactuando, el temporizador es irrelevante: manda la interacción.</p>
+
+<!-- ============================================================ -->
+<h2 id="datalayer">9. dataLayer y la cola</h2>
+<p>Prueba del clic sintético a los 900 ms, que no genera <code>pointerdown</code> y por tanto no adelanta la carga: aísla el comportamiento del encolado.</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Observación</th><th>pestaña + 3 s</th><th>pestaña + 1,5 s</th></tr></thead>
+    <tbody>
+      <tr><td><code>dataLayer</code> a los 900 ms</td><td class="si">existe, 1 entrada</td><td class="si">existe, 1 entrada</td></tr>
+      <tr><td>Contenedor cargado en ese momento</td><td>no</td><td>no</td></tr>
+      <tr><td>El clic entra en la cola</td><td class="si">sí (0 → 1)</td><td class="si">sí (0 → 1)</td></tr>
+      <tr><td><code>gtm.js</code> pedido a</td><td class="num">3329 ms</td><td class="num">1843 ms</td></tr>
+      <tr><td>Evento procesado por GTM</td><td class="si">sí, <code>gtm.uniqueEventId</code> = 6</td><td class="si">sí, <code>gtm.uniqueEventId</code> = 6</td></tr>
+      <tr><td>Conversión enviada a</td><td class="num">4195 ms</td><td class="num si">2644 ms</td></tr>
+      <tr><td>Peticiones a Google Ads</td><td class="num">9</td><td class="num">9</td></tr>
+      <tr><td>Contenedores cargados</td><td class="si">GTM-5VQGJ3Z8, AW-18328695036</td><td class="si">GTM-5VQGJ3Z8, AW-18328695036</td></tr>
+      <tr><td>Errores de consola</td><td class="si">ninguno propio del sitio</td><td class="si">ninguno propio del sitio</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p>El mecanismo de la cola se comporta igual en las dos ramas: el evento sobrevive, Tag Manager lo procesa al cargar y la conversión sale con la etiqueta correcta. La única diferencia es que con el temporizador corto llega 1551 ms antes.</p>
+
+<!-- ============================================================ -->
+<h2 id="ads">10. Google Ads y remarketing</h2>
+<p>Cronología completa de las nueve peticiones que genera el contenedor, en las tres ramas. Son exactamente las mismas peticiones; lo único que cambia es cuándo salen.</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Petición</th><th class="num">actual</th><th class="num">pestaña + 1,5 s</th><th class="num">pestaña + 3 s</th><th class="w">Para qué sirve</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">googletagmanager.com/gtm.js</td><td class="num">366</td><td class="num">1849</td><td class="num">3358</td><td class="w">El contenedor</td></tr>
+      <tr><td class="mono">googletagmanager.com/gtag/js</td><td class="num">918</td><td class="num">2423</td><td class="num">3804</td><td class="w">La biblioteca de Google Ads</td></tr>
+      <tr><td class="mono">googleads.g.doubleclick.net/pagead/viewthroughconversion</td><td class="num">1374</td><td class="num">2812</td><td class="num">4154</td><td class="w">Aviso de visita y base de la atribución</td></tr>
+      <tr><td class="mono">google.com/rmkt/collect/18328695036</td><td class="num">1374</td><td class="num">2812</td><td class="num">4155</td><td class="w"><b>Remarketing</b></td></tr>
+      <tr><td class="mono">google.com/ccm/collect</td><td class="num">1375</td><td class="num">2812</td><td class="num">4155</td><td class="w">Medición de conversiones</td></tr>
+      <tr><td class="mono">googleadservices.com/pagead/set_partitioned_cookie</td><td class="num">1375</td><td class="num">2812</td><td class="num">4155</td><td class="w">Escritura de cookie particionada</td></tr>
+      <tr><td class="mono">ad.doubleclick.net/ccm/s/collect</td><td class="num">1375</td><td class="num">2812</td><td class="num">4155</td><td class="w">Medición de conversiones</td></tr>
+      <tr><td class="mono">google.com/pagead/1p-user-list/18328695036</td><td class="num">1588</td><td class="num">3029</td><td class="num">4387</td><td class="w"><b>Lista de audiencia de primera parte</b></td></tr>
+      <tr><td class="mono">google.com.co/pagead/1p-user-list/18328695036</td><td class="num">1588</td><td class="num">3029</td><td class="num">4387</td><td class="w">Lista de audiencia, dominio local</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p>Para el remarketing, que es lo que se alimenta con <code>rmkt/collect</code> y las listas de audiencia, el retraso frente al estado actual es de <b>1,4 segundos con el temporizador corto y 2,8 con el largo</b>. En ambos casos es un retraso, no una supresión: quien permanezca lo suficiente entra en las audiencias igual que hoy.</p>
+
+<!-- ============================================================ -->
+<h2 id="gclid">11. El cookie <code>_gcl_aw</code></h2>
+<p>Entrada simulada desde un anuncio, con <code>gclid</code> en la URL. Es la pieza más sensible: si el cookie no se escribe y la persona vuelve más tarde por otro camino y convierte, la conversión no se atribuye al anuncio.</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Instante</th><th>actual</th><th>pestaña + 1,5 s</th><th>pestaña + 3 s</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1000 ms</td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="no">ninguna</td><td class="no">ninguna</td></tr>
+      <tr><td class="num">2000 ms</td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="no">ninguna</td><td class="no">ninguna</td></tr>
+      <tr><td class="num">3000 ms</td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="no">ninguna</td></tr>
+      <tr><td class="num">4000 ms</td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td></tr>
+      <tr><td class="num">6000 ms</td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p>Tomando el instante de la petición que escribe el cookie: <b>~1,4 s hoy, ~2,8 s con 1,5 s de temporizador y ~4,2 s con 3 s</b>. En las tres ramas el valor final del cookie es correcto y contiene el <code>gclid</code> de entrada; la diferencia es únicamente el momento.</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Rama</th><th class="num">Cookie escrito a</th><th class="num">Ventana de exposición</th><th class="w">A quién afecta</th></tr></thead>
+    <tbody>
+      <tr><td>actual</td><td class="num">~1,4 s</td><td class="num">—</td><td class="w">Referencia</td></tr>
+      <tr><td>pestaña + 1,5 s</td><td class="num">~2,8 s</td><td class="num">1,4 s</td><td class="w" rowspan="2">Solo a quien llega de un anuncio, <b>no interactúa en absoluto</b> y abandona dentro de esa ventana. Cualquier toque, desplazamiento o movimiento del ratón la colapsa.</td></tr>
+      <tr><td>pestaña + 3 s</td><td class="num">~4,2 s</td><td class="num">2,8 s</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p>Este es el único terreno en el que el temporizador corto gana: <b>reduce a la mitad la ventana de exposición</b>. Conviene ponerlo en perspectiva: sigue siendo peor que el estado actual, y el grupo afectado es el mismo en ambas variantes, solo que más pequeño.</p>
+
+<!-- ============================================================ -->
+<h2 id="formulario">12. Formulario</h2>
+<p>Se rellenó y envió el formulario real de la home, con el <code>POST</code> a la API interceptado para no crear cotizaciones de prueba. Comportamiento idéntico en las dos ramas diferidas:</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Comprobación</th><th>pestaña + 3 s</th><th>pestaña + 1,5 s</th></tr></thead>
+    <tbody>
+      <tr><td>Eventos en <code>dataLayer</code></td><td class="mono">gtm.js, gtm.dom, gtm.load, gtm.formSubmit</td><td class="mono">gtm.js, gtm.dom, gtm.load, gtm.formSubmit</td></tr>
+      <tr><td>¿Se registra <code>gtm.formSubmit</code>?</td><td class="si">Sí</td><td class="si">Sí</td></tr>
+      <tr><td>Peticiones a Google Ads</td><td class="num">6 → 21</td><td class="num">6 → 21</td></tr>
+      <tr><td>Conversión con la etiqueta del formulario</td><td class="si">Detectada</td><td class="si">Detectada</td></tr>
+      <tr><td>Envío a la API</td><td>interceptado</td><td>interceptado</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>El formulario nunca estuvo en riesgo con ninguno de los dos valores: está al pie de una página larga, exige rellenar varios campos y cualquier tecleo es interacción que adelanta la carga del contenedor.</p>
+
+<!-- ============================================================ -->
+<h2 id="balance">13. Balance: qué se gana y qué se cede</h2>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Dimensión</th><th class="num">actual</th><th class="num">pestaña + 1,5 s</th><th class="num">pestaña + 3 s</th></tr></thead>
+    <tbody>
+      <tr><td>Puntaje CPU 10×, <code>/</code></td><td class="num">94</td><td class="num">94</td><td class="num si">100</td></tr>
+      <tr><td>Puntaje CPU 10×, <code>/sonido</code></td><td class="num">89</td><td class="num no">88</td><td class="num si">94</td></tr>
+      <tr><td>Puntaje CPU 10×, <code>/pantallas-led</code></td><td class="num">92</td><td class="num no">88</td><td class="num si">96</td></tr>
+      <tr><td>TBT CPU 10×, peor página</td><td class="num">298 ms</td><td class="num no">403 ms</td><td class="num si">88 ms</td></tr>
+      <tr><td>Conversiones registradas</td><td class="num si">14/14</td><td class="num si">14/14</td><td class="num si">14/14</td></tr>
+      <tr><td>Cookie de atribución escrito a</td><td class="num si">~1,4 s</td><td class="num">~2,8 s</td><td class="num no">~4,2 s</td></tr>
+      <tr><td>Retraso del remarketing</td><td class="num si">—</td><td class="num">+1,4 s</td><td class="num no">+2,8 s</td></tr>
+      <tr><td>Peso de la página, <code>/sonido</code></td><td class="num">1111 KB</td><td class="num">1111 KB</td><td class="num si">797 KB</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p>La lectura es directa. <b>La rama de 1,5 s no gana en ninguna dimensión frente al estado actual</b>: iguala o empeora el rendimiento y retrasa la atribución. Y frente a la rama de 3 s solo gana en el momento del cookie, a cambio de renunciar a entre cuatro y seis puntos de rendimiento en todas las páginas.</p>
+
+<p>En términos de decisión, 1,5 s está <b>dominado</b>: cualquiera que sea la prioridad —rendimiento o atribución— existe otra opción mejor. Si pesa el rendimiento, 3 s. Si pesa la atribución, no diferir.</p>
+
+<!-- ============================================================ -->
+<h2 id="conclusiones">14. Conclusiones y recomendación</h2>
+<ul>
+  <li><b>El temporizador de 1,5 segundos queda descartado.</b> No es un punto intermedio entre rendimiento y atribución: pierde el rendimiento entero y conserva la mitad del coste.</li>
+  <li><b>La causa es de fondo, no un capricho de la herramienta.</b> A 1,5 s el contenedor arranca justo después del primer pintado, así que todo su coste cae dentro de la ventana en que el hilo principal debería estar libre para responder al usuario. A 3 s ya no llega a estorbar; hoy, arrancando muy pronto, parte del coste se paga antes de que haya algo que bloquear.</li>
+  <li><b>En conversiones las tres ramas empatan</b>, 14 de 14, gracias a los CTA en pestaña nueva. Ese sigue siendo el elemento imprescindible de la propuesta, con cualquier temporizador.</li>
+  <li><b>La cola de <code>dataLayer</code>, el formulario y las peticiones a Google Ads se comportan igual</b> en las dos ramas diferidas. Nada de eso depende del valor del temporizador.</li>
+  <li><b>Recomendación: mantener 3 segundos.</b> Si la pérdida de atribución de los rebotes sin interacción resulta inaceptable tras revisarla, la alternativa correcta es no diferir, no acortar el temporizador.</li>
+</ul>
+
+<div class="note ok">
+  <p><b>Lo que no cambia respecto de la ronda anterior.</b> La decisión sigue teniendo dos partes: autorizar el diferimiento a 3 segundos, y autorizar que los CTA de WhatsApp abran en pestaña nueva. Sin lo segundo no recomiendo lo primero. Esta ronda solo cierra la tercera pregunta que quedaba abierta —el valor del temporizador— y la respuesta es que 3 segundos era el valor correcto.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="notas">15. Notas de método y limitaciones</h2>
+<ul>
+  <li><b>El banco de pruebas subestima las ganancias absolutas.</b> Al servir desde <code>127.0.0.1</code>, Lighthouse observa una latencia de ida y vuelta de 1 ms para el origen propio y de unos 95 ms para Google, así que su simulador infravalora la competencia que el contenedor ejerce sobre los recursos del sitio. Las cifras de esta ronda sirven para comparar las tres ramas entre sí, no para anticipar el puntaje real. La estimación de ganancia frente a producción está en el informe anterior, medida bloqueando el contenedor sobre el sitio real.</li>
+  <li><b>Las cifras absolutas no son comparables con las de la ronda anterior</b>, porque el banco cambió al fragmento compacto. Todas las ramas de esta ronda se midieron de nuevo con el mismo fragmento.</li>
+  <li><b>CPU 10× se midió con dos corridas por celda</b>, frente a tres en el perfil estándar. La dispersión observada es baja y la señal muy superior al ruido —de 88 a 96 puntos, de 403 a 88 ms de bloqueo—, pero conviene tenerlo presente.</li>
+  <li><b>Un 404 aparece en la consola del banco:</b> es el beacon de Cloudflare Web Analytics, que hace <code>POST</code> a <code>/cdn-cgi/rum</code> mientras el proxy solo reenvía peticiones <code>GET</code>. Es un artefacto del banco, no del sitio; en producción esa petición responde 204.</li>
+  <li><b>No se cuantifica cuánta gente cae en la ventana de exposición.</b> El sitio no tiene Google Analytics y Cloudflare Web Analytics no reporta permanencia por sesión. Esa incógnita solo se despeja observando Google Ads después de desplegar, con el rollback preparado.</li>
+</ul>
+
+<h3>Archivos que produjeron estos datos</h3>
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Archivo</th><th class="w">Qué aporta a este informe</th></tr></thead>
+    <tbody>
+      <tr><td><code>proxy.mjs</code></td><td class="w">El banco. Se le añadieron las variantes <code>defer15</code> y <code>deferblank15</code>, y ahora sirve el fragmento compacto.</td></tr>
+      <tr><td><code>ventana-conversion.mjs</code></td><td class="w">El barrido de siete instantes. Se le añadió el argumento <code>--ramas</code> para elegir qué comparar.</td></tr>
+      <tr><td><code>pruebas-conversion.mjs</code></td><td class="w">Cola de <code>dataLayer</code>, interacción y formulario.</td></tr>
+      <tr><td><code>prueba-gclid.mjs</code></td><td class="w">Cookie de atribución y cronología de peticiones a Google.</td></tr>
+      <tr><td><code>snippet-defer.min.html</code></td><td class="w">El fragmento base; el temporizador se sustituye en el banco según la variante.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>Cómo se reproduce</h4>
+<pre><code>node audit/experimento-gtm/proxy.mjs --variante=actual       --puerto=8798 &amp;
+node audit/experimento-gtm/proxy.mjs --variante=deferblank   --puerto=8796 &amp;
+node audit/experimento-gtm/proxy.mjs --variante=deferblank15 --puerto=8795 &amp;
+
+node audit/experimento-gtm/ventana-conversion.mjs 2 \
+  "--ramas=actual:8798,pestaña 3 s:8796,pestaña 1.5 s:8795"
+node audit/experimento-gtm/pruebas-conversion.mjs http://127.0.0.1:8795 "PESTAÑA+1.5s"
+node audit/experimento-gtm/prueba-gclid.mjs       http://127.0.0.1:8795 "PESTAÑA+1.5s"</code></pre>
+
+<hr class="soft">
+<p><small class="src">Informe generado el 11 de septiembre de 2026. Se apoya en 45 informes de Lighthouse sobre el banco de pruebas —tres ramas, tres páginas, dos perfiles—, 42 observaciones de toque real con dos repeticiones por celda, tres entradas simuladas desde anuncio y la batería completa de conversión en las dos ramas diferidas. Ninguna medición modificó el sitio: las navegaciones a WhatsApp se respondieron con una página de relleno y los envíos a la API se interceptaron. Producción sigue en la versión 65b825a5 con el fragmento inmediato y no se ejecutó ningún despliegue. Archivo autocontenido: no carga fuentes, scripts ni recursos externos.</small></p>
+
+</div>
+</body>
+</html>

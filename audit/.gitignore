@@ -21,3 +21,12 @@ lh-*.json
 # Son el punto de restauración de las migraciones de contenido (la regla
 # "*.json" del .gitignore raíz los dejaría fuera, y son el rollback).
 !d1-backup/*.json
+
+# Excepción: documentación del experimento de GTM, revisada el 2026-09-24
+# (sin PII ni secretos). Se nombran los archivos exactos, sin comodines, para
+# que ningún otro HTML de auditoría se versione por accidente.
+# snippet-defer.min.html además lo lee proxy.mjs.
+!experimento-gtm/informe-fase2b-experimento-gtm.html
+!experimento-gtm/informe-temporizador-15s-vs-3s.html
+!experimento-gtm/snippet-defer.min.html
+!experimento-gtm/snippet-defer.html

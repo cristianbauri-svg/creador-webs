@@ -1,0 +1,919 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Straton Audio — Fase 2B: experimento de diferimiento de Google Tag Manager</title>
+<meta name="description" content="Informe autocontenido del experimento controlado para diferir Google Tag Manager en stratonaudio.com.co: metodología, mediciones antes y después, pruebas de conversión por instante, pérdida potencial, código propuesto, rollback y decisiones pendientes.">
+<style>
+  :root {
+    --paper:#F6F8F5; --paper-2:#EDF1EC; --paper-3:#E3E9E4;
+    --ink:#16201B; --ink-2:#3E4B44; --muted:#64746B; --line:#D3DBD5;
+    --accent:#177A43; --accent-ink:#0F5A31; --accent-soft:#DDF0E4; --gold:#8F6E2C;
+    --ok:#177A43; --ok-soft:#DDF0E4; --bad:#B42318; --bad-soft:#FBE9E7;
+    --warn:#B4530A; --warn-soft:#FCEEDF; --code:#EBF0EC;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:#0F1412; --paper-2:#161D19; --paper-3:#1D2622;
+      --ink:#E6ECE7; --ink-2:#BFCAC2; --muted:#8E9C94; --line:#2A3530;
+      --accent:#3FD683; --accent-ink:#7DE8AC; --accent-soft:#143423; --gold:#D6B36A;
+      --ok:#3FD683; --ok-soft:#123020; --bad:#FF8A80; --bad-soft:#3A1512;
+      --warn:#FFAB70; --warn-soft:#3A2210; --code:#182019;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:#0F1412; --paper-2:#161D19; --paper-3:#1D2622;
+    --ink:#E6ECE7; --ink-2:#BFCAC2; --muted:#8E9C94; --line:#2A3530;
+    --accent:#3FD683; --accent-ink:#7DE8AC; --accent-soft:#143423; --gold:#D6B36A;
+    --ok:#3FD683; --ok-soft:#123020; --bad:#FF8A80; --bad-soft:#3A1512;
+    --warn:#FFAB70; --warn-soft:#3A2210; --code:#182019;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--paper); color: var(--ink); font-family: var(--sans);
+    font-size: 15px; line-height: 1.62; margin: 0;
+    padding-inline: clamp(16px, 4vw, 48px); padding-block: 28px 90px;
+  }
+  .wrap { max-width: 78rem; margin: 0 auto; }
+  h1, h2, h3, h4 { line-height: 1.2; text-wrap: balance; margin: 0; font-weight: 700; }
+  h1 { font-size: clamp(1.8rem, 4vw, 2.7rem); letter-spacing: -0.02em; }
+  h2 { font-size: 1.42rem; margin-top: 3.2rem; padding-top: 1rem; border-top: 2px solid var(--ink); letter-spacing: -0.01em; }
+  h3 { font-size: 1.08rem; margin-top: 1.9rem; }
+  h4 { font-size: 0.95rem; margin-top: 1.3rem; color: var(--ink-2); }
+  p, li { max-width: 74ch; }
+  p { margin: 0.7rem 0; }
+  ul, ol { padding-left: 1.3rem; margin: 0.6rem 0; }
+  li { margin: 0.35rem 0; }
+  li::marker { color: var(--muted); }
+  code, .mono { font-family: var(--mono); font-size: 0.88em; }
+  code { background: var(--code); padding: 0.06em 0.36em; border-radius: 3px; word-break: break-word; }
+  pre { background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; font-size: 0.8rem; line-height: 1.5; font-family: var(--mono); }
+  pre code { background: none; padding: 0; font-size: 1em; }
+  .eyebrow { font-size: 0.7rem; letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .lede { font-size: 1.07rem; color: var(--ink-2); max-width: 68ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 16px; font-size: 0.84rem; color: var(--muted); }
+  .meta b { color: var(--ink); font-weight: 600; }
+  .headline { display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 12px; margin: 26px 0 4px; }
+  .headline > div { background: var(--paper-2); border-left: 3px solid var(--line); padding: 11px 14px; }
+  .headline > div.win { border-left-color: var(--accent); }
+  .headline > div.risk { border-left-color: var(--bad); }
+  .headline .k { font-size: 0.7rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .headline .v { font-size: 1.5rem; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .headline .s { font-size: 0.83rem; color: var(--ink-2); }
+  .tablewrap { overflow-x: auto; margin: 14px 0 18px; border: 1px solid var(--line); border-radius: 6px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--paper-2); font-weight: 700; font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-2); white-space: nowrap; }
+  td.num, th.num { text-align: right; font-family: var(--mono); white-space: nowrap; }
+  td.w { white-space: normal; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: color-mix(in srgb, var(--paper-2) 45%, transparent); }
+  .si { color: var(--ok); font-weight: 700; }
+  .no { color: var(--bad); font-weight: 700; }
+  .d { display: inline-block; font-family: var(--mono); font-size: 0.82em; padding: 1px 6px; border-radius: 3px; margin-left: 6px; }
+  .d.up { background: var(--ok-soft); color: var(--ok); }
+  .d.down { background: var(--bad-soft); color: var(--bad); }
+  .d.flat { color: var(--muted); }
+  .note { background: var(--paper-2); border-left: 3px solid var(--gold); padding: 10px 14px; margin: 14px 0; font-size: 0.92rem; }
+  .note.ok { border-left-color: var(--accent); }
+  .note.bad { border-left-color: var(--bad); }
+  .note > :first-child { margin-top: 0; } .note > :last-child { margin-bottom: 0; }
+  .note p { max-width: 72ch; }
+  .veredicto { border-left: 4px solid var(--warn); background: var(--warn-soft); padding: 16px 18px; margin: 26px 0 6px; border-radius: 0 6px 6px 0; }
+  .veredicto h2 { margin: 0 0 6px; padding: 0; border: 0; font-size: 1.2rem; color: var(--warn); }
+  .veredicto p { margin: 7px 0; max-width: 72ch; }
+  dl.kv { display: grid; grid-template-columns: 12rem 1fr; gap: 7px 18px; margin: 10px 0; font-size: 0.92rem; }
+  dl.kv dt { color: var(--muted); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 3px; }
+  dl.kv dd { margin: 0; max-width: 76ch; }
+  @media (max-width: 680px) { dl.kv { grid-template-columns: 1fr; } dl.kv dt { padding-top: 9px; } }
+  .check { list-style: none; padding-left: 0; }
+  .check li { padding-left: 1.55rem; position: relative; }
+  .check li::before { content: "\2713"; position: absolute; left: 0; top: 0; color: var(--accent); font-weight: 700; }
+  .paso { border: 1px solid var(--line); border-radius: 6px; margin: 12px 0; }
+  .paso > header { background: var(--paper-2); padding: 9px 14px; border-bottom: 1px solid var(--line); font-weight: 700; font-size: 0.95rem; }
+  .paso .body { padding: 4px 14px 12px; }
+  .chip { display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+  .chip.ok { background: var(--ok-soft); color: var(--ok); }
+  .chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.pend { background: var(--paper-3); color: var(--ink-2); }
+  nav.toc { columns: 2; column-gap: 34px; font-size: 0.9rem; margin: 20px 0 0; padding: 14px 16px; background: var(--paper-2); border-radius: 6px; }
+  nav.toc ol { margin: 0; padding-left: 1.2rem; }
+  nav.toc li { break-inside: avoid; margin: 0.22rem 0; }
+  nav.toc a { text-decoration: none; color: var(--ink-2); }
+  nav.toc a:hover { color: var(--accent-ink); text-decoration: underline; }
+  @media (max-width: 680px) { nav.toc { columns: 1; } }
+  small.src { color: var(--muted); font-size: 0.78rem; }
+  hr.soft { border: 0; border-top: 1px solid var(--line); margin: 26px 0; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media print {
+    body { background: #fff; color: #000; padding: 0; font-size: 10.5pt; }
+    h2 { page-break-inside: avoid; }
+    .tablewrap, .paso, .note, .veredicto { break-inside: avoid; }
+    nav.toc { break-after: page; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Straton Audio · stratonaudio.com.co · informe autocontenido</div>
+  <h1>Fase 2B — Experimento controlado de diferimiento de Google Tag Manager</h1>
+  <p class="lede">Se construyó la variante completa fuera del árbol desplegable y se midió contra producción real. El diferimiento entrega los puntos que faltan, pero por sí solo rompe una conversión que hoy funciona. Hay una forma de quedarse con lo bueno, y está medida.</p>
+  <div class="meta">
+    <span><b>Fecha</b> 11 sep 2026</span>
+    <span><b>Producción</b> intacta, versión 65b825a5</span>
+    <span><b>Archivos tocados en public/, src/ o test/</b> ninguno</span>
+    <span><b>Experimento</b> audit/experimento-gtm/</span>
+    <span><b>Herramientas</b> Lighthouse 13.4.1 · Playwright · Chromium 1234</span>
+  </div>
+
+  <div class="headline">
+    <div class="win"><div class="k">/sonido, CPU 4×</div><div class="v">92 → 97</div><div class="s">LCP −874 ms</div></div>
+    <div class="win"><div class="k">Home, CPU 10×</div><div class="v">91 → 99</div><div class="s">TBT 278 → 19 ms</div></div>
+    <div class="win"><div class="k">TBT, las tres páginas</div><div class="v">a cero</div><div class="s">GTM es la única fuente</div></div>
+    <div class="risk"><div class="k">Riesgo detectado</div><div class="v">10 de 14</div><div class="s">conversiones perdidas si se difiere sin mitigar</div></div>
+  </div>
+
+  <nav class="toc" aria-label="Contenido del informe">
+    <ol>
+      <li><a href="#veredicto">Veredicto y resumen ejecutivo</a></li>
+      <li><a href="#metodologia">Metodología</a></li>
+      <li><a href="#configuracion">Configuración del experimento</a></li>
+      <li><a href="#medicion4x">Mediciones antes / después</a></li>
+      <li><a href="#cpu10">Mediciones con CPU 10×</a></li>
+      <li><a href="#banco">Las tres variantes en el banco de pruebas</a></li>
+      <li><a href="#ventana">Pruebas de conversión por instante</a></li>
+      <li><a href="#mismapestana">Navegación en la misma pestaña</a></li>
+      <li><a href="#pestananueva">La mitigación: pestaña nueva</a></li>
+      <li><a href="#datalayer">dataLayer y Google Tag Manager</a></li>
+      <li><a href="#ads">Google Ads y remarketing</a></li>
+      <li><a href="#gclid">El cookie <code>_gcl_aw</code></a></li>
+      <li><a href="#formulario">Formulario de contacto</a></li>
+      <li><a href="#perdida">Pérdida potencial de conversiones</a></li>
+      <li><a href="#archivos">Archivos experimentales</a></li>
+      <li><a href="#arquitectura">Arquitectura y código propuesto</a></li>
+      <li><a href="#riesgos">Riesgos</a></li>
+      <li><a href="#rollback">Mecanismo de rollback</a></li>
+      <li><a href="#pruebas">Plan de pruebas</a></li>
+      <li><a href="#conclusiones">Conclusiones</a></li>
+      <li><a href="#decisiones">Las cuatro decisiones</a></li>
+    </ol>
+  </nav>
+</header>
+
+<!-- ============================================================ -->
+<div class="veredicto" id="veredicto">
+  <h2>1. Veredicto en tres frases</h2>
+  <p><b>La ganancia es real y suficiente.</b> Con GTM fuera de la ventana de carga, <code>/sonido</code> pasa de 92 a 97 en la configuración estándar de PageSpeed. En el escenario de CPU lenta, que es el que más se parece al hardware real de PageSpeed Insights, ganan las tres páginas: la home sube de 91 a 99, <code>/sonido</code> de 89 a 95 y <code>/pantallas-led</code> de 93 a 98. El tiempo total de bloqueo cae a prácticamente cero.</p>
+  <p><b>Pero el diferimiento solo, con el sitio como está hoy, pierde conversiones.</b> Quien toca el botón de WhatsApp en los primeros tres segundos se queda sin conversión de Google Ads. Medido con toque real en siete instantes y dos repeticiones: 10 fallos de 14 observaciones, frente a 14 aciertos de 14 en el estado actual.</p>
+  <p><b>La causa no es el diferimiento; es que los CTA de WhatsApp navegan en la misma pestaña</b> y destruyen el documento antes de que la etiqueta llegue a salir. Hoy la conversión gana esa carrera por uno o dos milisegundos. Abriendo esos botones en pestaña nueva —como ya hace el botón flotante del propio sitio— la conversión se envía en las 14 observaciones. Ese cambio necesita autorización explícita porque toca el comportamiento de los botones, no el tracking.</p>
+</div>
+
+<h3>Qué se mantuvo intacto</h3>
+<p>Nada de lo siguiente se modificó ni se propone modificar: el evento <code>whatsapp_click</code> y la función que lo emite, la cuenta de Google Ads AW-18328695036, la etiqueta de conversión de WhatsApp, el formulario y su conversión, el vinculador de conversiones y la captura de <code>gclid</code>, el dashboard, la API, D1, KV, R2 y el SEO. El contenedor GTM-5VQGJ3Z8 no se tocó en el panel de Tag Manager: ni etiquetas, ni activadores, ni variables.</p>
+
+<!-- ============================================================ -->
+<h2 id="metodologia">2. Metodología</h2>
+
+<h3>Medición de rendimiento</h3>
+<dl class="kv">
+  <dt>Herramienta</dt>
+  <dd>Lighthouse 13.4.1 por línea de comandos, con el Chromium headless de Playwright (build 1234) como navegador.</dd>
+  <dt>Perfil estándar</dt>
+  <dd><code>--form-factor=mobile</code> con el throttling por defecto de PageSpeed: método <em>simulate</em> (Lantern), latencia de red 150 ms, bajada 1638,4 kbps, latencia de petición 562,5 ms, subida 675 kbps y CPU cuatro veces más lenta.</dd>
+  <dt>Perfil de CPU lenta</dt>
+  <dd>El mismo, con <code>--throttling.cpuSlowdownMultiplier=10</code>. Es la aproximación más cercana al hardware sobre el que corre PageSpeed Insights.</dd>
+  <dt>Cómo se aísla GTM</dt>
+  <dd>Con <code>--blocked-url-patterns="*googletagmanager.com*"</code> sobre la URL real de producción. Bloquear el contenedor por completo da el techo teórico al que se acerca el diferimiento, porque con él GTM entra a los 3 segundos, cuando la ventana de medición prácticamente terminó. Es una medición de lectura: no modifica el sitio.</dd>
+  <dt>Repeticiones</dt>
+  <dd>Tres corridas por página, perfil y rama; se reporta la mediana y se listan las corridas individuales para que se vea la dispersión.</dd>
+  <dt>Equipo</dt>
+  <dd><code>benchmarkIndex</code> entre 4100 y 4330 según la corrida.</dd>
+</dl>
+
+<div class="note">
+  <p><b>Advertencia de interpretación, la misma de las fases anteriores.</b> Estos números no son los de PageSpeed Insights. El equipo donde se mide es tres o cuatro veces más rápido que las máquinas de Google: por eso las referencias que manejábamos al principio eran 89 / 74 / 75 donde el laboratorio marcaba 99 / 89 / 92. Lo que se traslada a PSI es la mejora relativa, no el valor absoluto. Por eso el informe da tanto peso a la tabla de CPU 10×.</p>
+</div>
+
+<h3>Medición de conversiones</h3>
+<dl class="kv">
+  <dt>Navegador</dt>
+  <dd>Playwright sobre Chromium con perfil móvil: 412×823 px lógicos, densidad 2,625, user agent de Android, pantalla táctil habilitada.</dd>
+  <dt>Interacción</dt>
+  <dd>Toque real con <code>touchscreen.tap()</code> sobre el centro del CTA, que genera <code>pointerdown</code> igual que un dedo. Para la prueba de la cola se usa en cambio un clic sintético, que no genera <code>pointerdown</code> y por eso permite aislar el comportamiento del encolado sin adelantar la carga del contenedor.</dd>
+  <dt>Qué se registra</dt>
+  <dd>Instante de la petición de <code>gtm.js</code>, instante de la navegación a WhatsApp, instante de la petición de conversión que lleva la etiqueta <code>g2ljCOHE7eMcEPzh5qNE</code>, contenido de <code>dataLayer</code>, contenedores cargados, cookies y errores de consola.</dd>
+  <dt>Sin efectos secundarios</dt>
+  <dd>La navegación a WhatsApp se responde con una página de relleno, de modo que el documento original muere exactamente igual que en la realidad pero sin abrir ningún chat. Los <code>POST</code> a <code>/api/quotations</code> se interceptan y se responden con un objeto simulado: no se creó ninguna cotización real.</dd>
+</dl>
+
+<!-- ============================================================ -->
+<h2 id="configuracion">3. Configuración del experimento</h2>
+
+<p>El obstáculo de un experimento así es comparar peras con peras. Si se mide una variante en local y otra en producción, la diferencia de red y de archivos contamina el resultado. La solución fue un banco de pruebas que <b>sirve producción real y reescribe únicamente el fragmento de GTM</b>: las ramas comparten los mismos archivos, la misma red, el mismo contenedor y las mismas etiquetas. Lo único que cambia entre una y otra es cuándo se inserta <code>gtm.js</code>.</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Variante</th><th class="num">Puerto</th><th class="w">Qué sirve</th></tr></thead>
+    <tbody>
+      <tr><td><code>actual</code></td><td class="num">8798</td><td class="w">Producción sin tocar. Es la línea base.</td></tr>
+      <tr><td><code>defer3s</code></td><td class="num">8799</td><td class="w">El fragmento diferido: el contenedor entra en la primera interacción o a los 3 s desde que se parsea el fragmento.</td></tr>
+      <tr><td><code>deferload</code></td><td class="num">8797</td><td class="w">Igual, pero el contador de 3 s arranca al terminar de cargar la página. Se midió y se descartó: no mejora nada respecto de la anterior.</td></tr>
+      <tr><td><code>deferblank</code></td><td class="num">8796</td><td class="w">El diferimiento más la mitigación propuesta: los enlaces de WhatsApp abren en pestaña nueva.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>Detalles de implementación del banco</h4>
+<ul>
+  <li>El documento HTML se pide al origen sin comprimir, se transforma y se recomprime con brotli antes de servirlo, para que el tamaño transferido se parezca al real. El resto de recursos viaja tal cual llega.</li>
+  <li>La política de seguridad de contenido de producción permite <code>'self'</code> y <code>googletagmanager.com</code>, y funciona igual desde el origen local porque el JavaScript propio también es <code>'self'</code>.</li>
+  <li>La mitigación de pestaña nueva se simula con un script inyectado que marca los enlaces de WhatsApp. En la implementación real iría en el renderizador de bloques, no como script.</li>
+</ul>
+
+<div class="note ok">
+  <p><b>Constancia de que producción no se tocó.</b> Al terminar, <code>git status</code> no muestra cambios en <code>public/</code>, <code>src/</code>, <code>test/</code> ni <code>wrangler.jsonc</code>; la versión desplegada sigue siendo <code>65b825a5-e68a-4baf-88c4-7530ff461aed</code>; y el HTML que sirve el sitio sigue conteniendo el fragmento inmediato, no el diferido. En ningún momento se ejecutó <code>wrangler deploy</code>.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="medicion4x">4. Mediciones antes / después</h2>
+<p>Producción real, móvil, configuración estándar de PageSpeed, mediana de tres corridas. La columna izquierda es el sitio tal como está hoy; la derecha, con <code>googletagmanager.com</code> bloqueado.</p>
+
+<div class="tablewrap">
+  <table>
+    <caption class="sr-only">Métricas con y sin GTM, CPU 4×</caption>
+    <thead><tr>
+      <th>Página</th><th class="num">Rendimiento</th><th class="num">LCP</th><th class="num">FCP</th><th class="num">TBT</th>
+      <th class="num">CLS</th><th class="num">Speed Index</th><th class="num">TTFB</th><th class="num">Peso</th><th class="num">Requests</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td><code>/sonido</code></td>
+        <td class="num">92 → <b>97</b> <span class="d up">+5</span></td>
+        <td class="num">3333 → 2459 <span class="d up">−874</span></td>
+        <td class="num">1392 → 1096 <span class="d up">−296</span></td>
+        <td class="num">54 → 0</td>
+        <td class="num">0,000 → 0,000</td>
+        <td class="num">1392 → 1098</td>
+        <td class="num">132 → 149</td>
+        <td class="num">1106 → 793 KB</td>
+        <td class="num">29 → 22</td>
+      </tr>
+      <tr>
+        <td><code>/pantallas-led</code></td>
+        <td class="num">98 → 99 <span class="d up">+1</span></td>
+        <td class="num">2269 → 2075</td>
+        <td class="num">1403 → 1114</td>
+        <td class="num">65 → 0</td>
+        <td class="num">0,008 → 0,008</td>
+        <td class="num">1435 → 1153</td>
+        <td class="num">136 → 152</td>
+        <td class="num">809 → 495 KB</td>
+        <td class="num">22 → 15</td>
+      </tr>
+      <tr>
+        <td><code>/</code></td>
+        <td class="num">99 → 99 <span class="d flat">=</span></td>
+        <td class="num">1798 → 2005</td>
+        <td class="num">1383 → 1105</td>
+        <td class="num">52 → 0</td>
+        <td class="num">0,024 → 0,024</td>
+        <td class="num">2608 → 1973</td>
+        <td class="num">118 → 102</td>
+        <td class="num">3784 → 3470 KB</td>
+        <td class="num">34 → 27</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p style="font-size:0.86rem;color:var(--muted)">Tiempos en milisegundos; CLS sin unidad. El TTFB lo fijan la red y el arranque del Worker, no el contenedor: sus variaciones son ruido entre corridas.</p>
+
+<h4>Corridas individuales</h4>
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Página</th><th class="num">Con GTM</th><th class="num">Con GTM bloqueado</th></tr></thead>
+    <tbody>
+      <tr><td><code>/sonido</code></td><td class="num">91, 92, 94</td><td class="num">97, 95, 98</td></tr>
+      <tr><td><code>/pantallas-led</code></td><td class="num">98, 98, 98</td><td class="num">99, 99, 99</td></tr>
+      <tr><td><code>/</code></td><td class="num">98, 99, 99</td><td class="num">99, 100, 99</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>La home no gana puntos porque ya estaba en 99, pero se lleva 314 KB menos, siete peticiones menos y un Speed Index 635 ms mejor. <code>/pantallas-led</code> ya estaba en 98 y sube a un 99 perfectamente estable. El caso que importaba, <code>/sonido</code>, sube cinco puntos y cruza el umbral de 95.</p>
+
+<!-- ============================================================ -->
+<h2 id="cpu10">5. Mediciones con CPU 10×</h2>
+<p>La misma comparación con la CPU diez veces más lenta. Tres corridas por celda. Este es el escenario más parecido al hardware de PageSpeed Insights y, por tanto, el que mejor anticipa lo que verás en la herramienta de Google.</p>
+
+<div class="tablewrap">
+  <table>
+    <caption class="sr-only">Métricas con y sin GTM, CPU 10×</caption>
+    <thead><tr>
+      <th>Página</th><th class="num">Rendimiento</th><th class="num">LCP</th><th class="num">FCP</th><th class="num">TBT</th>
+      <th class="num">CLS</th><th class="num">Speed Index</th><th class="num">TTFB</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td><code>/</code></td>
+        <td class="num">91 → <b>99</b> <span class="d up">+8</span></td>
+        <td class="num">2442 → 2007</td><td class="num">1579 → 1286</td>
+        <td class="num">278 → 19 <span class="d up">−259</span></td>
+        <td class="num">0,024 → 0,024</td><td class="num">2637 → 2322</td><td class="num">105 → 103</td>
+      </tr>
+      <tr>
+        <td><code>/sonido</code></td>
+        <td class="num">89 → <b>95</b> <span class="d up">+6</span></td>
+        <td class="num">3244 → 2886</td><td class="num">1450 → 1121</td>
+        <td class="num">212 → 12 <span class="d up">−200</span></td>
+        <td class="num">0,000 → 0,000</td><td class="num">1450 → 1270</td><td class="num">140 → 141</td>
+      </tr>
+      <tr>
+        <td><code>/pantallas-led</code></td>
+        <td class="num">93 → <b>98</b> <span class="d up">+5</span></td>
+        <td class="num">2287 → 2429</td><td class="num">1412 → 1080</td>
+        <td class="num">259 → 44 <span class="d up">−215</span></td>
+        <td class="num">0,008 → 0,008</td><td class="num">1412 → 1288</td><td class="num">126 → 142</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>Corridas individuales</h4>
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Página</th><th class="num">Con GTM</th><th class="num">Con GTM bloqueado</th></tr></thead>
+    <tbody>
+      <tr><td><code>/</code></td><td class="num">91, 89, 92</td><td class="num">99, 99, 99</td></tr>
+      <tr><td><code>/sonido</code></td><td class="num">89, 87, 92</td><td class="num">94, 98, 95</td></tr>
+      <tr><td><code>/pantallas-led</code></td><td class="num">93, 89, 94</td><td class="num">97, 98, 99</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="note ok">
+  <p><b>Esta es la tabla que mejor describe el beneficio real.</b> En hardware lento las tres páginas ganan entre cinco y ocho puntos, y el tiempo total de bloqueo se desploma: de 278 a 19 ms en la home, de 212 a 12 ms en <code>/sonido</code> y de 259 a 44 ms en <code>/pantallas-led</code>. Confirma lo que la Fase 1 ya apuntaba: Google Tag Manager es la única fuente significativa de tareas largas del sitio. En un teléfono de gama media eso se nota al tocar, no solo en el número.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="banco">6. Las tres variantes en el banco de pruebas</h2>
+<p>Antes de medir contra producción se compararon las tres variantes en el banco, tres corridas por celda en <code>/sonido</code> y dos en el resto.</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Página</th><th>Variante</th><th class="num">Rendimiento</th><th class="num">LCP</th><th class="num">FCP</th><th class="num">TBT</th><th class="num">Speed Index</th><th class="num">Peso</th><th class="num">gtm.js pedido a</th></tr></thead>
+    <tbody>
+      <tr><td><code>/sonido</code></td><td>actual</td><td class="num">96</td><td class="num">2852</td><td class="num">980</td><td class="num">54</td><td class="num">1258</td><td class="num">1111 KB</td><td class="num">436 ms</td></tr>
+      <tr><td><code>/sonido</code></td><td>defer 3 s</td><td class="num">94</td><td class="num">3012</td><td class="num">1137</td><td class="num">0</td><td class="num">1373</td><td class="num">797 KB</td><td class="num">no se pidió</td></tr>
+      <tr><td><code>/sonido</code></td><td>defer tras load</td><td class="num">94</td><td class="num">3004</td><td class="num">1129</td><td class="num">0</td><td class="num">1346</td><td class="num">797 KB</td><td class="num">no se pidió</td></tr>
+      <tr><td><code>/</code></td><td>actual</td><td class="num">100</td><td class="num">1272</td><td class="num">1198</td><td class="num">61</td><td class="num">2314</td><td class="num">3790 KB</td><td class="num">404 ms</td></tr>
+      <tr><td><code>/</code></td><td>defer 3 s</td><td class="num">100</td><td class="num">1298</td><td class="num">1222</td><td class="num">0</td><td class="num">2219</td><td class="num">3476 KB</td><td class="num">3300 ms</td></tr>
+      <tr><td><code>/pantallas-led</code></td><td>actual</td><td class="num">96</td><td class="num">2570</td><td class="num">1220</td><td class="num">57</td><td class="num">1220</td><td class="num">811 KB</td><td class="num">280 ms</td></tr>
+      <tr><td><code>/pantallas-led</code></td><td>defer 3 s</td><td class="num">97</td><td class="num">2474</td><td class="num">1199</td><td class="num">0</td><td class="num">1274</td><td class="num">498 KB</td><td class="num">no se pidió</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>Dos lecciones que salieron de aquí</h4>
+<ol>
+  <li><b>El banco subestima la ganancia.</b> Al servir desde <code>127.0.0.1</code>, Lighthouse observa una latencia de ida y vuelta de 1 ms para el origen propio y de ~95 ms para Google, así que su simulador infravalora la competencia que GTM ejerce sobre los recursos del sitio. Por eso el número de referencia del informe es la medición contra producción con el contenedor bloqueado, no esta tabla. El banco sirve para lo que sí mide bien: el TBT baja a cero en todas las variantes diferidas.</li>
+  <li><b>El tamaño del fragmento importa más de lo que parece.</b> Una primera versión del fragmento, con comentarios extensos, añadía unos 480 bytes comprimidos y llevaba el documento de 14 227 a 14 707 bytes transferidos. Eso cruza la ventana inicial de congestión TCP que Lighthouse modela, y cuesta un viaje de red completo: el FCP subía unos 150 ms. De ahí que la versión que se desplegaría sea la forma compacta, con 493 bytes crudos de diferencia sobre la actual.</li>
+</ol>
+<p>La variante <b>defer tras load</b> queda descartada: no mejora a la de 3 segundos en ninguna métrica y retrasa más la carga del contenedor, lo que amplía la ventana de riesgo de conversión.</p>
+
+<!-- ============================================================ -->
+<h2 id="ventana">7. Pruebas de conversión por instante</h2>
+<p>Es la prueba que decide. Se entra en <code>/sonido</code>, se espera un tiempo determinado y se toca de verdad el CTA del hero, que navega a WhatsApp en la misma pestaña. Se registra si la petición de conversión de Google Ads llegó a salir antes de que el documento muriera. Dos repeticiones por celda.</p>
+
+<div class="tablewrap">
+  <table>
+    <caption class="sr-only">Instante de navegación y de conversión por rama</caption>
+    <thead><tr><th>El usuario toca a</th><th>Hoy (sin diferir)</th><th>Solo diferido</th><th>Diferido + pestaña nueva</th></tr></thead>
+    <tbody>
+      <tr><td class="num">800 ms</td><td class="num si">4221/4219 · 1510/1509</td><td class="num no">1465/— · 1478/—</td><td class="num si">1469/2230 · 1460/2575</td></tr>
+      <tr><td class="num">1500 ms</td><td class="num si">2162/2161 · 2181/2180</td><td class="num no">2154/— · 2122/—</td><td class="num si">2166/2998 · 2220/3034</td></tr>
+      <tr><td class="num">1800 ms</td><td class="num si">2458/2457 · 2606/2605</td><td class="num no">2455/— · 2469/—</td><td class="num si">2490/3284 · 2464/3374</td></tr>
+      <tr><td class="num">2500 ms</td><td class="num si">3206/3205 · 3181/3180</td><td class="num no">3150/— · 3178/—</td><td class="num si">3151/4074 · 3183/3995</td></tr>
+      <tr><td class="num">3000 ms</td><td class="num si">3672/3670 · 3682/3681</td><td class="num no">3689/— · 3646/—</td><td class="num si">3688/4192 · 3710/4185</td></tr>
+      <tr><td class="num">3500 ms</td><td class="num si">4192/4190 · 4240/4239</td><td class="num">4195/4193 · 4198/—</td><td class="num si">4188/4254 · 4208/4206</td></tr>
+      <tr><td class="num">5000 ms</td><td class="num si">5684/5683 · 5685/5684</td><td class="num si">5695/5694 · 5687/5686</td><td class="num si">5667/5664 · 5698/5695</td></tr>
+    </tbody>
+  </table>
+</div>
+<p style="font-size:0.86rem;color:var(--muted)">Formato de cada celda: <span class="mono">instante de la navegación / instante de la conversión</span>, en milisegundos desde que empezó la carga. Un guion significa que la petición de conversión nunca llegó a salir. El CTA estaba alcanzable en pantalla en las 42 observaciones.</p>
+
+<h3>Recuento</h3>
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Rama</th><th class="num">Conversiones registradas</th><th class="w">Lectura</th></tr></thead>
+    <tbody>
+      <tr><td>Hoy, sin diferir</td><td class="num si">14 de 14</td><td class="w">Siempre sale, pero por muy poco: la conversión se emite entre uno y dos milisegundos antes de la navegación.</td></tr>
+      <tr><td>Solo diferido</td><td class="num no">4 de 14</td><td class="w">Falla en todos los instantes hasta 3000 ms y en una de las dos repeticiones de 3500 ms. Solo es fiable a partir de los 5 segundos.</td></tr>
+      <tr><td>Diferido + pestaña nueva</td><td class="num si">14 de 14</td><td class="w">Recupera todos los casos. La conversión sale más tarde, pero sale, porque la página sigue viva.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>Cuándo se pide <code>gtm.js</code> en cada caso</h3>
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Toque a</th><th class="num">Hoy</th><th class="num">Solo diferido</th><th class="num">Diferido + pestaña nueva</th></tr></thead>
+    <tbody>
+      <tr><td class="num">800 ms</td><td class="num">486, 479</td><td class="num">1463, 1475</td><td class="num">1465, 1457</td></tr>
+      <tr><td class="num">1500 ms</td><td class="num">441, 445</td><td class="num">2152, 2120</td><td class="num">2163, 2216</td></tr>
+      <tr><td class="num">1800 ms</td><td class="num">401, 558</td><td class="num">2453, 2467</td><td class="num">2486, 2460</td></tr>
+      <tr><td class="num">2500 ms</td><td class="num">419, 424</td><td class="num">3148, 3176</td><td class="num">3147, 3179</td></tr>
+      <tr><td class="num">3000 ms</td><td class="num">443, 439</td><td class="num">3370, 3310</td><td class="num">3357, 3351</td></tr>
+      <tr><td class="num">3500 ms</td><td class="num">439, 509</td><td class="num">3345, 3342</td><td class="num">3333, 3349</td></tr>
+      <tr><td class="num">5000 ms</td><td class="num">462, 462</td><td class="num">3355, 3360</td><td class="num">3358, 3321</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>Se ve con claridad el mecanismo: en las ramas diferidas, cuando el toque ocurre antes de los 3 segundos es el propio <code>pointerdown</code> del dedo el que dispara la carga del contenedor; cuando ocurre después, el contenedor ya entró por la red de seguridad, siempre alrededor de los 3,3 segundos.</p>
+
+<h3>La prueba de los 900 ms, que es de otra naturaleza</h3>
+<p>Esta no usa un toque, sino un clic sintético que no genera <code>pointerdown</code> y por tanto no adelanta la carga, y además cancela la navegación. Sirve para aislar una pregunta distinta: <b>¿el evento encolado sobrevive y se procesa?</b></p>
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Observación a los 900 ms</th><th>Hoy</th><th>Diferido</th></tr></thead>
+    <tbody>
+      <tr><td><code>dataLayer</code> existe</td><td class="si">sí, 2 entradas</td><td class="si">sí, 1 entrada</td></tr>
+      <tr><td>Contenedor cargado</td><td>sí</td><td>no</td></tr>
+      <tr><td>El clic entra en la cola</td><td class="si">sí (0 → 1)</td><td class="si">sí (0 → 1)</td></tr>
+      <tr><td><code>gtm.js</code> pedido a</td><td class="num">507 ms</td><td class="num">3431 ms</td></tr>
+      <tr><td>Evento procesado por GTM</td><td class="si">sí, <code>gtm.uniqueEventId</code> = 8</td><td class="si">sí, <code>gtm.uniqueEventId</code> = 6</td></tr>
+      <tr><td>Conversión enviada a</td><td class="num si">1993 ms</td><td class="num si">4647 ms</td></tr>
+      <tr><td>Peticiones a Google Ads</td><td class="num">9</td><td class="num">9</td></tr>
+      <tr><td>Errores de consola</td><td>ninguno</td><td>ninguno</td></tr>
+    </tbody>
+  </table>
+</div>
+<p><b>La cola funciona.</b> Un evento disparado cuando el contenedor todavía no existe se queda en <code>dataLayer</code>, Tag Manager lo procesa al cargar —le asigna su <code>gtm.uniqueEventId</code>— y la conversión sale con la etiqueta correcta. El mecanismo del diferimiento es sólido; el problema no está ahí, sino en que la navegación mata la página antes de que ese ciclo pueda completarse.</p>
+
+<!-- ============================================================ -->
+<h2 id="mismapestana">8. Navegación en la misma pestaña</h2>
+<p>Este hallazgo no estaba documentado en el proyecto y es el que condiciona toda la decisión. Inventario de los enlaces de WhatsApp de las tres páginas, tomado del DOM real en producción:</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Página</th><th class="num">Enlaces</th><th>Clase</th><th>Texto</th><th>Comportamiento</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="4"><code>/sonido</code></td><td class="num">1</td><td><code>btn-hero</code></td><td>Cotizar mi evento</td><td class="no">misma pestaña</td></tr>
+      <tr><td class="num">2</td><td><code>btn-cta</code></td><td>COTIZAR POR WHATSAPP</td><td class="no">misma pestaña</td></tr>
+      <tr><td class="num">3</td><td><code>btn-cta</code></td><td>COTIZA CON NUESTROS ASESORES</td><td class="no">misma pestaña</td></tr>
+      <tr><td class="num">4</td><td><code>whatsapp-float</code></td><td>(icono)</td><td>pestaña nueva, pero oculto por CSS</td></tr>
+      <tr><td rowspan="4"><code>/pantallas-led</code></td><td class="num">1</td><td><code>btn-hero</code></td><td>Cotizar vía WhatsApp</td><td class="no">misma pestaña</td></tr>
+      <tr><td class="num">2</td><td><code>btn-cta</code></td><td>CLIC AQUI</td><td class="no">misma pestaña</td></tr>
+      <tr><td class="num">3</td><td><code>whatsapp-float dynamic-whatsapp</code></td><td>(icono)</td><td>pestaña nueva, pero oculto por CSS</td></tr>
+      <tr><td class="num">4</td><td><code>whatsapp-float</code></td><td>(icono)</td><td>pestaña nueva, pero oculto por CSS</td></tr>
+      <tr><td><code>/</code></td><td class="num">1</td><td><code>whatsapp-float</code></td><td>(icono)</td><td class="si">pestaña nueva, visible</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p><b>En las dos páginas que reciben el tráfico de anuncios, todos los botones de WhatsApp visibles se llevan al usuario fuera del sitio en la misma pestaña.</b> El documento se destruye y con él cualquier petición que no haya salido todavía. La etiqueta de conversión solo llega a Google si el navegador alcanzó a emitirla en el mismo turno del evento de clic, antes de iniciar la navegación.</p>
+
+<p>Los datos de la sección anterior muestran ese margen con precisión incómoda: hoy la conversión se emite <b>uno o dos milisegundos</b> antes de la navegación. Funciona porque la etiqueta se dispara de forma síncrona en el manejador del clic, con el contenedor ya cargado y configurado. En cuanto ese contenedor no está listo —que es exactamente lo que provoca el diferimiento— no hay nada que emitir y la conversión se pierde sin dejar rastro.</p>
+
+<div class="note">
+  <p><b>Una corrección sobre lo que informé antes.</b> En una observación aislada previa, el toque a los 800 ms en el estado actual no produjo conversión, y lo reporté como una pérdida que ya existe hoy. Con el barrido completo, dos repeticiones por instante, no se reprodujo: hoy la conversión salió en las 14 observaciones. Lo que sí queda firmemente medido es la estrechez del margen. Mantengo la observación como señal de fragilidad, no como pérdida demostrada.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="pestananueva">9. La mitigación: pestaña nueva</h2>
+<p>Si el enlace abre en una pestaña nueva, la página de Straton sobrevive al clic. El contenedor termina de cargar —lo disparó el <code>pointerdown</code> del propio toque—, procesa el evento que quedó en la cola y envía la conversión. La página que el usuario abandonó sigue ahí, viva, haciendo su trabajo.</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Instante del toque</th><th class="num">Conversión enviada</th><th class="num">Retraso respecto de hoy</th></tr></thead>
+    <tbody>
+      <tr><td class="num">800 ms</td><td class="num si">2230 y 2575 ms</td><td class="num">+0,7 a +1,1 s</td></tr>
+      <tr><td class="num">1500 ms</td><td class="num si">2998 y 3034 ms</td><td class="num">+0,8 s</td></tr>
+      <tr><td class="num">1800 ms</td><td class="num si">3284 y 3374 ms</td><td class="num">+0,8 s</td></tr>
+      <tr><td class="num">2500 ms</td><td class="num si">4074 y 3995 ms</td><td class="num">+0,8 s</td></tr>
+      <tr><td class="num">3000 ms</td><td class="num si">4192 y 4185 ms</td><td class="num">+0,5 s</td></tr>
+      <tr><td class="num">3500 ms</td><td class="num si">4254 y 4206 ms</td><td class="num">≈ igual</td></tr>
+      <tr><td class="num">5000 ms</td><td class="num si">5664 y 5695 ms</td><td class="num">≈ igual</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>Tres argumentos a favor, más allá de la medición</h4>
+<ul>
+  <li>Es lo que <b>ya hace el botón flotante</b> del propio sitio. No introduce un comportamiento nuevo: unifica el que ya existe.</li>
+  <li>Elimina la fragilidad de fondo. Hoy la conversión depende de ganar una carrera por milisegundos; con la pestaña nueva deja de haber carrera.</li>
+  <li>Para el visitante, la página de Straton sigue abierta detrás cuando vuelve de WhatsApp. En una landing de captación eso juega a favor.</li>
+</ul>
+<p>Es un cambio de comportamiento de los botones, no del tracking, y por eso queda fuera de la propuesta base y sujeto a autorización explícita.</p>
+
+<!-- ============================================================ -->
+<h2 id="datalayer">10. dataLayer y Google Tag Manager</h2>
+
+<h3>Cómo se comporta la cola</h3>
+<p>El fragmento propuesto crea <code>dataLayer</code> y empuja el evento <code>gtm.js</code> <b>en la misma línea y en el mismo momento que hoy</b>. Lo único que se retrasa es la inserción de la etiqueta <code>&lt;script&gt;</code>. Eso tiene una consecuencia importante: el orden de la cola que Tag Manager procesa al cargar es idéntico al actual, de modo que la etiqueta de configuración de Google Ads sigue ejecutándose antes que cualquier conversión encolada.</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Comprobación</th><th>Resultado medido</th></tr></thead>
+    <tbody>
+      <tr><td><code>dataLayer</code> existe desde el primer byte</td><td class="si">Sí, con la entrada <code>gtm.js</code> ya dentro</td></tr>
+      <tr><td>Un evento anterior a la carga permanece</td><td class="si">Sí: la cola pasa de 1 a 2 entradas y conserva <code>whatsapp_click</code></td></tr>
+      <tr><td>Tag Manager lo procesa al cargar</td><td class="si">Sí, le asigna <code>gtm.uniqueEventId</code></td></tr>
+      <tr><td>Contenedores cargados al final</td><td class="si">GTM-5VQGJ3Z8 y AW-18328695036, igual que hoy</td></tr>
+      <tr><td>Eventos estándar del ciclo</td><td class="si"><code>gtm.js</code>, <code>gtm.dom</code>, <code>gtm.load</code> en ambas ramas</td></tr>
+      <tr><td>Doble carga del contenedor</td><td class="si">Nunca: en decenas de cargas medidas, <code>gtm.js</code> se pidió una sola vez</td></tr>
+      <tr><td>Errores de consola</td><td class="si">Ninguno en ninguna rama</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>Una interacción adelanta la carga</h3>
+<p>Un toque en zona vacía a los 700 ms hizo que <code>gtm.js</code> se pidiera a los 1357 ms, en lugar de los 3431 ms que tarda cuando nadie interactúa. En escritorio basta mover el ratón. Para la inmensa mayoría de visitantes reales el contenedor entra en el primer segundo de actividad.</p>
+
+<h3>Prueba del fragmento en aislamiento</h3>
+<p>El fragmento compacto se probó en un documento mínimo, con el contenedor simulado, para verificar su lógica sin ruido:</p>
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Comprobación</th><th>Resultado</th></tr></thead>
+    <tbody>
+      <tr><td>Sintaxis JavaScript</td><td class="si">Válida</td></tr>
+      <tr><td>Al cargar el documento</td><td class="si"><code>dataLayer</code> creado con 1 entrada: <code>gtm.js</code></td></tr>
+      <tr><td>Al segundo, sin interacción</td><td class="si">No se pidió nada</td></tr>
+      <tr><td><code>gtm.js</code> pedido a</td><td class="num si">3043 ms</td></tr>
+      <tr><td>Cola final</td><td class="si">2 entradas: <code>gtm.js</code> y <code>whatsapp_click</code></td></tr>
+      <tr><td>Errores</td><td class="si">Ninguno</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="ads">11. Google Ads y remarketing</h2>
+
+<h3>Qué hay configurado en el contenedor</h3>
+<p>Leído del contenedor público GTM-5VQGJ3Z8, para dejar constancia de qué depende de este mecanismo:</p>
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Elemento</th><th>Identificador</th><th class="w">Cuándo se dispara</th></tr></thead>
+    <tbody>
+      <tr><td>Etiqueta de configuración de Google</td><td class="mono">AW-18328695036</td><td class="w">En la inicialización del contenedor</td></tr>
+      <tr><td>Conversión de clic en WhatsApp</td><td class="mono">g2ljCOHE7eMcEPzh5qNE</td><td class="w">Evento personalizado <code>whatsapp_click</code></td></tr>
+      <tr><td>Conversión de envío de formulario</td><td class="mono">2TWlCJ795OMcEPzh5qNE</td><td class="w"><code>gtm.formSubmit</code> en un formulario cuya clase contiene <code>contact-form</code></td></tr>
+      <tr><td>Vinculador de conversiones</td><td class="mono">Conversion Linker</td><td class="w">Captura del <code>gclid</code>; se activa con el contenedor</td></tr>
+      <tr><td>Escuchadores de clic y de formulario</td><td class="mono">__cl, __fsl</td><td class="w">Evento <code>gtm.js</code></td></tr>
+    </tbody>
+  </table>
+</div>
+<p>No hay Google Analytics 4 ni ninguna otra herramienta de terceros en el contenedor. Ninguno de estos elementos se modifica.</p>
+
+<h3>Cronología completa de peticiones a Google</h3>
+<p>Entrada simulada desde un anuncio, con <code>gclid</code> en la URL. Las dos ramas emiten exactamente las mismas nueve peticiones; lo único que cambia es cuándo.</p>
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Petición</th><th class="num">Hoy</th><th class="num">Diferido</th><th class="w">Para qué sirve</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">googletagmanager.com/gtm.js</td><td class="num">326 ms</td><td class="num">3344 ms</td><td class="w">El contenedor</td></tr>
+      <tr><td class="mono">googletagmanager.com/gtag/js</td><td class="num">962 ms</td><td class="num">3955 ms</td><td class="w">La biblioteca de Google Ads</td></tr>
+      <tr><td class="mono">googleads.g.doubleclick.net/pagead/viewthroughconversion/18328695036</td><td class="num">1518 ms</td><td class="num">4315 ms</td><td class="w">Aviso de visita y base de la atribución</td></tr>
+      <tr><td class="mono">google.com/rmkt/collect/18328695036</td><td class="num">1518 ms</td><td class="num">4315 ms</td><td class="w">Remarketing</td></tr>
+      <tr><td class="mono">google.com/ccm/collect</td><td class="num">1518 ms</td><td class="num">4315 ms</td><td class="w">Medición de conversiones</td></tr>
+      <tr><td class="mono">googleadservices.com/pagead/set_partitioned_cookie</td><td class="num">1518 ms</td><td class="num">4315 ms</td><td class="w">Escritura de cookie particionada</td></tr>
+      <tr><td class="mono">ad.doubleclick.net/ccm/s/collect</td><td class="num">1518 ms</td><td class="num">4315 ms</td><td class="w">Medición de conversiones</td></tr>
+      <tr><td class="mono">google.com/pagead/1p-user-list/18328695036</td><td class="num">1865 ms</td><td class="num">4533 ms</td><td class="w">Lista de audiencia de primera parte</td></tr>
+      <tr><td class="mono">google.com.co/pagead/1p-user-list/18328695036</td><td class="num">1865 ms</td><td class="num">4533 ms</td><td class="w">Lista de audiencia, dominio local</td></tr>
+    </tbody>
+  </table>
+</div>
+<p><b>El efecto sobre el remarketing es un retraso de unos 2,8 segundos, no una supresión.</b> Quien permanezca en la página más de cuatro segundos, o interactúe antes, entra en las audiencias exactamente igual que hoy. Quien se vaya antes sin tocar nada, no.</p>
+
+<!-- ============================================================ -->
+<h2 id="gclid">12. El cookie <code>_gcl_aw</code></h2>
+<p>Es la pieza más delicada de toda la decisión. El vinculador de conversiones toma el <code>gclid</code> de la URL del anuncio y lo guarda en una cookie; si esa cookie no se escribe y la persona vuelve más tarde por otra vía y convierte, la conversión no se atribuye al anuncio que la trajo.</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Instante</th><th>Hoy</th><th>Diferido</th><th class="num">Peticiones a Google (diferido)</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1000 ms</td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="no">ninguna</td><td class="num">0</td></tr>
+      <tr><td class="num">2000 ms</td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="no">ninguna</td><td class="num">0</td></tr>
+      <tr><td class="num">3000 ms</td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="no">ninguna</td><td class="num">1</td></tr>
+      <tr><td class="num">4000 ms</td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="num">9</td></tr>
+      <tr><td class="num">6000 ms</td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="si"><code>_gcl_au</code>, <code>_gcl_aw</code></td><td class="num">9</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>El cookie se escribe a los ~1,5 s hoy y a los ~4,3 s con el diferimiento. En ambas ramas el valor final es correcto y contiene el <code>gclid</code> de entrada; la diferencia es únicamente el momento.</p>
+
+<!-- ============================================================ -->
+<h2 id="formulario">13. Formulario de contacto</h2>
+<p>Se rellenó y envió el formulario real de la home, con el <code>POST</code> a la API interceptado para no crear cotizaciones de prueba. El comportamiento es idéntico en las dos ramas:</p>
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Comprobación</th><th>Hoy</th><th>Diferido</th></tr></thead>
+    <tbody>
+      <tr><td>Eventos en <code>dataLayer</code></td><td class="mono">gtm.js, gtm.dom, gtm.load, gtm.formSubmit</td><td class="mono">gtm.js, gtm.dom, gtm.load, gtm.formSubmit</td></tr>
+      <tr><td>¿Se registra <code>gtm.formSubmit</code>?</td><td class="si">Sí</td><td class="si">Sí</td></tr>
+      <tr><td>Peticiones a Google Ads</td><td class="num">6 → 21</td><td class="num">6 → 21</td></tr>
+      <tr><td>Conversión con la etiqueta del formulario</td><td class="si">Detectada</td><td class="si">Detectada</td></tr>
+      <tr><td>Envío a la API</td><td>interceptado</td><td>interceptado</td></tr>
+      <tr><td>Errores de consola</td><td class="si">Ninguno</td><td class="si">Ninguno</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>El formulario no corre ningún riesgo por dos motivos independientes: está al pie de una página larga y exige rellenar varios campos, así que es materialmente imposible enviarlo en menos de tres segundos; y además, cualquier tecleo en un campo es interacción que adelanta la carga del contenedor.</p>
+
+<!-- ============================================================ -->
+<h2 id="perdida">14. Pérdida potencial de conversiones</h2>
+<p>Conviene separar dos cosas que se confunden con facilidad.</p>
+
+<h3>14.1 · Lo que el diferimiento introduce, y es grave</h3>
+<div class="note bad">
+  <p><b>Un toque en un CTA de WhatsApp durante los primeros ~3,5 segundos no registra conversión.</b> Medido: 10 fallos de 14 observaciones. Afecta justo al visitante más valioso —el que llega de un anuncio y actúa de inmediato— y en las dos páginas que reciben ese tráfico. <b>Con la mitigación de pestaña nueva desaparece por completo: 14 de 14.</b></p>
+  <p>Sin esa mitigación, no recomiendo desplegar el diferimiento.</p>
+</div>
+
+<h3>14.2 · Lo que se pierde aunque se aplique la mitigación</h3>
+<p>Para un visitante que llega de un anuncio, <b>no interactúa en absoluto</b> —ni toca, ni desliza, ni mueve el ratón, ni teclea— y abandona entre el segundo 1,5 y el 4,3:</p>
+<ol>
+  <li><b>No se escribe el cookie <code>_gcl_aw</code> con el <code>gclid</code>.</b> Es la pérdida más costosa: si esa persona vuelve más tarde por otro camino y convierte, la conversión no se atribuye al anuncio.</li>
+  <li><b>No se envía el aviso de visita a Google Ads.</b> No entra en las audiencias de remarketing ni cuenta para métricas de vista.</li>
+  <li><b>No se pierde ninguna conversión por esta vía</b>, porque convertir exige un clic, y un clic ya es interacción que adelanta la carga del contenedor.</li>
+</ol>
+
+<h3>14.3 · Lo que no podemos cuantificar por adelantado</h3>
+<p>No sabemos qué proporción de visitantes cae en esa franja. El sitio no tiene Google Analytics y Cloudflare Web Analytics no reporta permanencia por sesión, así que no hay forma de estimarlo antes de desplegar. La única vía honesta es medirlo después, observando en Google Ads el volumen de conversiones y el tamaño de las audiencias durante dos semanas, con el rollback preparado.</p>
+<p>Como referencia para acotar el riesgo: cualquier señal de vida colapsa la franja a casi nada. En escritorio basta mover el ratón; en móvil, el más leve desplazamiento. Un visitante que llega de un anuncio y se queda mirando la pantalla completamente inmóvil durante tres segundos es un caso real, pero minoritario.</p>
+
+<!-- ============================================================ -->
+<h2 id="archivos">15. Archivos experimentales</h2>
+<p>Todo vive en <code>audit/experimento-gtm/</code>, deliberadamente fuera de <code>public/</code> y de <code>src/</code>, para que ningún despliegue accidental pueda publicarlo.</p>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Archivo</th><th class="w">Para qué</th></tr></thead>
+    <tbody>
+      <tr><td><code>snippet-defer.min.html</code></td><td class="w">El fragmento que se desplegaría. Forma compacta, sintaxis validada y probada en aislamiento.</td></tr>
+      <tr><td><code>snippet-defer.html</code></td><td class="w">El mismo fragmento comentado en detalle, para leerlo. <b>No desplegar:</b> sus comentarios cruzan la ventana inicial de congestión TCP y cuestan ~150 ms de FCP.</td></tr>
+      <tr><td><code>proxy.mjs</code></td><td class="w">El banco de pruebas. Sirve producción real reescribiendo solo el fragmento de GTM. Cuatro variantes.</td></tr>
+      <tr><td><code>pruebas-conversion.mjs</code></td><td class="w">Batería de conversión: cola de eventos, interacción, clic tardío y formulario.</td></tr>
+      <tr><td><code>ventana-conversion.mjs</code></td><td class="w">Barrido de los siete instantes en las tres ramas. Produce la tabla de la sección 7.</td></tr>
+      <tr><td><code>prueba-gclid.mjs</code></td><td class="w">Cuándo se escribe el cookie de atribución en cada rama.</td></tr>
+      <tr><td><code>README.md</code></td><td class="w">Cómo levantar el banco y reproducirlo todo.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>Cómo se reproduce</h4>
+<pre><code>node audit/experimento-gtm/proxy.mjs --variante=actual     --puerto=8798 &amp;
+node audit/experimento-gtm/proxy.mjs --variante=defer3s    --puerto=8799 &amp;
+node audit/experimento-gtm/proxy.mjs --variante=deferblank --puerto=8796 &amp;
+
+node audit/experimento-gtm/ventana-conversion.mjs 2
+node audit/experimento-gtm/pruebas-conversion.mjs http://127.0.0.1:8799 "DEFER"
+node audit/experimento-gtm/prueba-gclid.mjs       http://127.0.0.1:8799 "DEFER"</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="arquitectura">16. Arquitectura y código propuesto</h2>
+
+<h3>16.1 · El principio</h3>
+<dl class="kv">
+  <dt>Qué cambia</dt>
+  <dd>Solo <em>cuándo</em> se inserta la etiqueta <code>&lt;script&gt;</code> de <code>gtm.js</code>: en la primera interacción del usuario, o a los 3 segundos, lo que ocurra antes.</dd>
+  <dt>Qué se mantiene</dt>
+  <dd>El identificador del contenedor, el <code>&lt;noscript&gt;</code> del <code>&lt;body&gt;</code>, las siete etiquetas, los activadores, las variables, el vinculador de conversiones, las dos etiquetas de conversión, la función <code>initWhatsAppTracking()</code>, el formulario, el dashboard, la API y el SEO.</dd>
+  <dt>Orden de la cola</dt>
+  <dd><code>dataLayer</code> se crea y el evento <code>gtm.js</code> se empuja en la misma línea que hoy, de modo que el orden de procesamiento es idéntico.</dd>
+  <dt>Señales de interacción</dt>
+  <dd><code>pointerdown</code>, <code>pointermove</code>, <code>touchstart</code>, <code>keydown</code>, <code>wheel</code> y <code>scroll</code>, todas pasivas y en fase de captura para no interferir con ningún manejador. Se desatan al cargar.</dd>
+  <dt>Idempotencia</dt>
+  <dd>Un testigo impide que el contenedor se inserte dos veces si coinciden la interacción y el temporizador.</dd>
+  <dt>Tamaño</dt>
+  <dd>926 bytes crudos frente a los 433 actuales: 493 bytes de diferencia.</dd>
+</dl>
+
+<h3>16.2 · El fragmento, en <code>public/index.html</code> y <code>public/404.html</code></h3>
+<p>Sustituye al bloque delimitado por <code>&lt;!-- Google Tag Manager --&gt;</code> y <code>&lt;!-- End Google Tag Manager --&gt;</code>. El <code>&lt;noscript&gt;</code> del <code>&lt;body&gt;</code> queda igual.</p>
+<pre><code>&lt;!-- Google Tag Manager — el contenedor se carga en la primera interacción
+     o a los 3 s. dataLayer se crea aquí mismo, así que cualquier evento
+     anterior queda en cola y se procesa al cargar. Ver audit/experimento-gtm/. --&gt;
+&lt;script&gt;(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+var c=0,e=['pointerdown','pointermove','touchstart','keydown','wheel','scroll'],o={passive:true,capture:true};
+function g(){if(c)return;c=1;for(var k=0;k&lt;e.length;k++)w.removeEventListener(e[k],g,o);
+var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&amp;l='+l:'';
+j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f)}
+for(var k=0;k&lt;e.length;k++)w.addEventListener(e[k],g,o);w.setTimeout(g,3000)
+})(window,document,'script','dataLayer','GTM-5VQGJ3Z8');&lt;/script&gt;
+&lt;!-- End Google Tag Manager --&gt;</code></pre>
+
+<h3>16.3 · Solo si se aprueba la mitigación: los CTA en pestaña nueva</h3>
+<p>Dos funciones espejo, una línea en cada una: <code>renderHero()</code> y <code>renderCTA()</code> en <code>public/js/app.js</code>, y <code>renderHeroHtml()</code> en <code>src/index.ts</code>.</p>
+<pre><code>// Antes
+'&lt;a href="' + escapeAttr(props.button_link || '#') + '" class="btn-hero ' +
+  btnStyleClass(props.button_style) + '"&gt;'
+
+// Después: los enlaces a WhatsApp abren en pestaña nueva, para que la página
+// siga viva mientras la etiqueta de conversión termina de salir.
+var destino = /wa\.me|api\.whatsapp\.com|whatsapp\.com\/send/i.test(props.button_link || '')
+  ? ' target="_blank" rel="noopener noreferrer"' : '';
+'&lt;a href="' + escapeAttr(props.button_link || '#') + '"' + destino + ' class="btn-hero ' +
+  btnStyleClass(props.button_style) + '"&gt;'</code></pre>
+<p>Alcance: los bloques hero y CTA de las páginas dinámicas. No toca el botón flotante, que ya lo hace, ni los enlaces de tarjetas, que hoy no apuntan a WhatsApp.</p>
+
+<h3>16.4 · Lo que no se modifica</h3>
+<ul>
+  <li><code>initWhatsAppTracking()</code> en <code>app.js</code>: el escuchador y el contenido del evento quedan intactos.</li>
+  <li>El contenedor GTM-5VQGJ3Z8 en el panel de Tag Manager.</li>
+  <li>Google Ads AW-18328695036 y las dos etiquetas de conversión.</li>
+  <li><code>public/admin/index.html</code>: el panel mantiene su fragmento actual. Está tras Cloudflare Access y su rendimiento no entra en PageSpeed.</li>
+  <li>Worker, D1, KV, R2, dashboard, API, SEO y JSON-LD.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="riesgos">17. Riesgos</h2>
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Riesgo</th><th>Gravedad</th><th class="w">Qué dice la medición y cómo se trata</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Conversión de WhatsApp perdida en los primeros ~3,5 s</td>
+        <td><span class="chip bad">Alto</span></td>
+        <td class="w">Confirmado: 10 fallos de 14 observaciones. <b>Es el riesgo que decide.</b> Desaparece por completo con los CTA en pestaña nueva, verificado en las 14. Sin esa mitigación no recomiendo desplegar.</td>
+      </tr>
+      <tr>
+        <td>Cookie <code>_gcl_aw</code> escrita 2,8 s más tarde</td>
+        <td><span class="chip warn">Medio</span></td>
+        <td class="w">Afecta a quien llega de un anuncio, no interactúa nada y se va entre 1,5 y 4,3 s. No cuantificable por adelantado: hay que vigilar en Google Ads las conversiones atribuidas a clic durante dos semanas.</td>
+      </tr>
+      <tr>
+        <td>Menos visitas registradas y audiencias más pequeñas</td>
+        <td><span class="chip warn">Medio</span></td>
+        <td class="w">Mismo grupo de visitantes. Si el volumen cae de forma apreciable, se puede bajar el temporizador de 3 s a 1,5 s y recuperar la mayor parte, cediendo parte de la ganancia.</td>
+      </tr>
+      <tr>
+        <td>El contenedor no llega a cargar nunca</td>
+        <td><span class="chip ok">Bajo</span></td>
+        <td class="w">Dos caminos independientes: seis señales de interacción y un temporizador. Aunque la pestaña esté en segundo plano, un temporizador de 3 s se dispara. Probado en aislamiento: carga a los 3043 ms sin interacción alguna.</td>
+      </tr>
+      <tr>
+        <td>Doble carga del contenedor</td>
+        <td><span class="chip ok">Bajo</span></td>
+        <td class="w">Un testigo lo impide y los escuchadores se retiran al cargar. En decenas de cargas medidas, <code>gtm.js</code> se pidió siempre una sola vez.</td>
+      </tr>
+      <tr>
+        <td>El evento encolado se procesa antes que la configuración de Ads</td>
+        <td><span class="chip ok">Bajo</span></td>
+        <td class="w">Descartado por medición: el clic encolado recibe <code>gtm.uniqueEventId</code> y su conversión sale con la etiqueta correcta. El orden se conserva porque el evento <code>gtm.js</code> se empuja en la misma línea que hoy.</td>
+      </tr>
+      <tr>
+        <td>El fragmento engorda el documento</td>
+        <td><span class="chip ok">Bajo</span></td>
+        <td class="w">Detectado y resuelto: la versión comentada costaba ~150 ms de FCP por cruzar la ventana inicial TCP. La forma compacta añade 493 bytes crudos.</td>
+      </tr>
+      <tr>
+        <td>Consentimiento y privacidad</td>
+        <td><span class="chip ok">Bajo</span></td>
+        <td class="w">El sitio no tiene plataforma de consentimiento y el contenedor no la usa. Diferir no altera nada en ese terreno.</td>
+      </tr>
+      <tr>
+        <td>Regresión en la home o en <code>/pantallas-led</code></td>
+        <td><span class="chip ok">Bajo</span></td>
+        <td class="w">Medido: ambas mejoran en los dos perfiles. La home sube de 91 a 99 con CPU lenta.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="rollback">18. Mecanismo de rollback</h2>
+<p>Tres niveles, del más rápido al más completo. Los dos primeros no requieren compilar nada.</p>
+
+<div class="paso">
+  <header>Nivel 1 · Volver a la versión anterior del Worker — segundos</header>
+  <div class="body">
+    <pre><code>npx wrangler rollback 65b825a5-e68a-4baf-88c4-7530ff461aed</code></pre>
+    <p>Cada versión del Worker lleva su propia configuración y su propio manifiesto de assets; se verificó por API en las versiones 93 y 97. Revertir la versión restaura también el HTML, y con él el fragmento inmediato. No hay compilación ni subida: es un cambio de puntero.</p>
+    <p><b>Condición previa:</b> anotar el identificador de la versión vigente antes de desplegar. Hoy es <code>65b825a5-e68a-4baf-88c4-7530ff461aed</code>.</p>
+  </div>
+</div>
+
+<div class="paso">
+  <header>Nivel 2 · Revertir el commit — unos dos minutos</header>
+  <div class="body">
+    <pre><code>git revert &lt;commit del diferimiento&gt;
+npx wrangler deploy</code></pre>
+    <p>Deja el historial coherente con lo desplegado. Es el camino correcto si la decisión es definitiva y no solo un corte de emergencia.</p>
+  </div>
+</div>
+
+<div class="paso">
+  <header>Nivel 3 · Interruptor sin desplegar — opcional, no propuesto por defecto</header>
+  <div class="body">
+    <p>El Worker podría leer una clave de KV y reescribir el fragmento con HTMLRewriter según su valor. Queda fuera de la propuesta porque añade una lectura de KV a cada petición de HTML —incluida la home, que hoy no hace ninguna— para cubrir un caso que los niveles 1 y 2 ya resuelven en segundos.</p>
+  </div>
+</div>
+
+<div class="note ok">
+  <p><b>Señales para activar el rollback.</b> Cualquiera de estas basta: conversiones de WhatsApp en Google Ads por debajo del rango de las dos semanas previas durante dos días consecutivos; errores de JavaScript en las páginas públicas; <code>gtm.js</code> sin cargar en la comprobación posterior al despliegue; o Tag Assistant sin registrar la conversión en una prueba manual.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="pruebas">19. Plan de pruebas</h2>
+
+<h3>19.1 · Ya ejecutado, antes de proponer nada</h3>
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Prueba</th><th>Resultado</th></tr></thead>
+    <tbody>
+      <tr><td>Sintaxis del fragmento y comportamiento en aislamiento</td><td class="si">Correcto: cola creada, carga a 3043 ms, sin errores</td></tr>
+      <tr><td>Evento encolado antes de que exista el contenedor</td><td class="si">Procesado por GTM; conversión enviada a 4647 ms</td></tr>
+      <tr><td>Una interacción adelanta la carga</td><td class="si"><code>gtm.js</code> a 1357 ms en lugar de 3431 ms</td></tr>
+      <tr><td>Formulario de contacto</td><td class="si"><code>gtm.formSubmit</code> y conversión, idénticos en ambas ramas</td></tr>
+      <tr><td>Clic en WhatsApp con el contenedor ya cargado</td><td class="si">Idéntico en ambas ramas</td></tr>
+      <tr><td>Barrido de siete instantes, tres ramas, dos repeticiones</td><td class="no">10 de 14 perdidas al diferir; 14 de 14 con la mitigación</td></tr>
+      <tr><td>Momento de escritura del cookie <code>_gcl_aw</code></td><td>1,5 s hoy → 4,3 s diferido</td></tr>
+      <tr><td>Rendimiento, tres variantes en el banco de pruebas</td><td class="si">TBT a cero en las diferidas</td></tr>
+      <tr><td>Techo de ganancia en producción, CPU 4×</td><td class="si"><code>/sonido</code> 92 → 97</td></tr>
+      <tr><td>Techo de ganancia en producción, CPU 10×</td><td class="si">91 → 99, 89 → 95 y 93 → 98</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>19.2 · Si se autoriza: antes de tocar producción</h3>
+<ol>
+  <li>Aplicar el fragmento compacto y, si se aprueba, la mitigación de los CTA.</li>
+  <li><code>npx tsc --noEmit</code> y <code>npx vitest run test/server-render.spec.ts</code>.</li>
+  <li>Añadir al test de render dos comprobaciones: que el HTML servido contiene el fragmento diferido, y que los enlaces a WhatsApp del hero llevan <code>target="_blank"</code>.</li>
+  <li>Probar con <code>wrangler dev</code> las tres páginas: sin errores de consola y con el contenedor cargando a los 3 s.</li>
+  <li>Anotar el identificador de la versión vigente del Worker para el rollback.</li>
+</ol>
+
+<h3>19.3 · Inmediatamente después de desplegar</h3>
+<ol>
+  <li>Repetir la batería completa de <code>pruebas-conversion.mjs</code> apuntando a producción.</li>
+  <li>Repetir el barrido de <code>ventana-conversion.mjs</code> en los siete instantes: la conversión debe salir en los siete.</li>
+  <li>Comprobar el cookie <code>_gcl_aw</code> entrando con un <code>gclid</code> real de prueba.</li>
+  <li>Lighthouse móvil y escritorio en las tres páginas, tres corridas, más una tanda con CPU 10×.</li>
+  <li>Verificación funcional habitual: consola limpia, cero 404, H1, canonical, JSON-LD y el dashboard respondiendo.</li>
+  <li>Tag Assistant en modo vista previa sobre <code>/sonido</code>, con un clic real en el CTA.</li>
+</ol>
+
+<h3>19.4 · Seguimiento</h3>
+<ul>
+  <li><b>A 24 y 48 horas:</b> conversiones de WhatsApp en Google Ads frente a la media de las dos semanas anteriores, ajustando por día de la semana.</li>
+  <li><b>A 7 y 14 días:</b> volumen de las audiencias de remarketing y conversiones atribuidas a clic de anuncio, que es donde se vería el efecto del cookie más tardío.</li>
+  <li><b>Continuo:</b> PageSpeed Insights de las tres páginas, para confirmar que la ganancia de laboratorio se traslada.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="conclusiones">20. Conclusiones</h2>
+<ul>
+  <li><b>El diferimiento entrega lo que prometía.</b> Cinco puntos en <code>/sonido</code> con la configuración estándar, y entre cinco y ocho en las tres páginas con CPU lenta, que es el escenario que más se parece a PageSpeed Insights. El tiempo total de bloqueo cae a prácticamente cero en todas partes.</li>
+  <li><b>El mecanismo de la cola es sólido.</b> Un evento disparado antes de que exista el contenedor sobrevive, se procesa y genera su conversión. Eso estaba en duda y ya no lo está.</li>
+  <li><b>El obstáculo no es el diferimiento, es una fragilidad previa del sitio.</b> Los CTA de WhatsApp navegan en la misma pestaña y la conversión gana la carrera por uno o dos milisegundos. El diferimiento simplemente deja de ganarla.</li>
+  <li><b>La mitigación es pequeña, está medida y alinea el sitio consigo mismo.</b> Una línea en dos funciones espejo, y el mismo comportamiento que ya tiene el botón flotante.</li>
+  <li><b>Queda una incógnita que solo se despeja después:</b> cuánta gente llega de un anuncio, no interactúa y se va antes de cuatro segundos. No hay analítica que lo responda hoy, así que la decisión se toma con el rollback preparado y dos semanas de observación en Google Ads.</li>
+  <li><b>Una corrección de honestidad:</b> lo que informé antes sobre una pérdida ya existente a los 800 ms no se reprodujo con repeticiones. El margen es estrechísimo, pero hoy la conversión sale.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="decisiones">21. Las cuatro decisiones que requieren autorización</h2>
+
+<div class="paso">
+  <header>Decisión 1 · ¿Se autoriza el diferimiento de Google Tag Manager?</header>
+  <div class="body">
+    <p>Ganancia medida: <code>/sonido</code> de 92 a 97 con la configuración estándar; con CPU lenta, la home de 91 a 99, <code>/sonido</code> de 89 a 95 y <code>/pantallas-led</code> de 93 a 98. El tiempo total de bloqueo pasa a cero en las tres páginas.</p>
+  </div>
+</div>
+
+<div class="paso">
+  <header>Decisión 2 · ¿Se autoriza que los CTA de WhatsApp abran en pestaña nueva?</header>
+  <div class="body">
+    <p>Sin esto <b>no recomiendo desplegar el diferimiento</b>: se perderían conversiones en los primeros 3,5 segundos, medido en 10 de 14 observaciones. Con esto, la conversión sale en las 14 y además desaparece la fragilidad de la carrera por milisegundos que existe hoy. Es un cambio de comportamiento de los botones, no del tracking.</p>
+  </div>
+</div>
+
+<div class="paso">
+  <header>Decisión 3 · ¿Temporizador en 3 segundos o en 1,5?</header>
+  <div class="body">
+    <p>Tres segundos es lo medido en este informe. Un segundo y medio reduce a la mitad la franja sin cookie de atribución y cede parte de la ganancia de rendimiento. Puedo medir esa variante antes de decidir, con el mismo banco y la misma metodología.</p>
+  </div>
+</div>
+
+<div class="paso">
+  <header>Decisión 4 · Si se autoriza solo la primera y no la segunda</header>
+  <div class="body">
+    <p>La alternativa honesta es <b>no desplegar</b> y dejar <code>/sonido</code> en 92, o desplegar aceptando por escrito la pérdida documentada en la sección 14.1. Lo que no haría es desplegar sin dejar constancia de esa pérdida.</p>
+  </div>
+</div>
+
+<hr class="soft">
+<p><small class="src">Informe generado el 11 de septiembre de 2026. Se apoya en 45 reportes de Lighthouse sobre producción y sobre el banco de pruebas, 42 observaciones de toque real con dos repeticiones por celda, la batería de conversión completa en ambas ramas, la prueba del cookie de atribución y la lectura del contenedor público de Google Tag Manager. Ninguna medición modificó el sitio: las navegaciones a WhatsApp se respondieron con una página de relleno y los envíos a la API se interceptaron. Producción sigue en la versión 65b825a5 con el fragmento inmediato. Archivo autocontenido: no carga fuentes, scripts ni recursos externos.</small></p>
+
+</div>
+</body>
+</html>

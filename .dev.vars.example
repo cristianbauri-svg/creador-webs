@@ -1,0 +1,12 @@
+# Secretos locales para `wrangler dev` y las pruebas (copiar a .dev.vars, que
+# git ignora). Sin valores, el Worker funciona igual: el formulario de
+# cotización simplemente no envía la notificación de Telegram.
+#
+# Nunca poner aquí el token ni el chat de producción: los secretos de
+# producción viven en Cloudflare (`wrangler secret put`) y no dependen de este
+# archivo. Para probar Telegram en local, usar un bot y un chat exclusivos de
+# desarrollo.
+#
+# ENVIRONMENT, CF_ACCESS_TEAM_DOMAIN y CF_ACCESS_AUD salen de wrangler.jsonc.
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=

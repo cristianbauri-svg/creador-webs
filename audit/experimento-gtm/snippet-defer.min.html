@@ -1,0 +1,25 @@
+<!-- ============================================================
+  VARIANTE EXPERIMENTAL — no está en producción.
+
+  Esta es la forma compacta, la que se desplegaría. Es funcionalmente idéntica
+  a snippet-defer.html; la diferencia es que los comentarios largos no viajan
+  al navegador. Importa: el HTML del documento está en la ruta crítica y en el
+  banco de pruebas la versión comentada añadía ~480 bytes comprimidos, los
+  suficientes para cruzar la ventana inicial de congestión TCP y costar un
+  viaje de red completo (~150 ms de FCP).
+
+  Reemplaza al fragmento actual en public/index.html y public/404.html.
+  El <noscript> del <body>, el identificador del contenedor, las etiquetas,
+  los activadores y las variables no cambian.
+============================================================ -->
+  <!-- Google Tag Manager — el contenedor se carga en la primera interacción
+       o a los 3 s. dataLayer se crea aquí mismo, así que cualquier evento
+       anterior queda en cola y se procesa al cargar. Ver audit/experimento-gtm/. -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+  var c=0,e=['pointerdown','pointermove','touchstart','keydown','wheel','scroll'],o={passive:true,capture:true};
+  function g(){if(c)return;c=1;for(var k=0;k<e.length;k++)w.removeEventListener(e[k],g,o);
+  var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
+  j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f)}
+  for(var k=0;k<e.length;k++)w.addEventListener(e[k],g,o);w.setTimeout(g,3000)
+  })(window,document,'script','dataLayer','GTM-5VQGJ3Z8');</script>
+  <!-- End Google Tag Manager -->
