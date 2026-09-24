@@ -24,9 +24,10 @@ producción, los rollbacks y el historial viven en `audit/`, sobre todo en
 - El dominio es un Workers Custom Domain configurado en el dashboard, no en
   `wrangler.jsonc`. El resto del estado externo (HTTPS, www, Access) está en
   `audit/experimento-gtm/rollback.md`.
-- Esquema de D1 en `migrations/`. Las migraciones 010–013 se aplicaron con
-  `wrangler d1 execute --file` y no figuran en `d1_migrations`: **no ejecutar
-  `wrangler d1 migrations apply --remote`**.
+- Esquema de D1 en `migrations/`. Las migraciones 010–013 ya se aplicaron fuera del
+  mecanismo de `d1_migrations` y no figuran como registradas. **No ejecutar
+  `wrangler d1 migrations apply --remote` hasta reconciliar primero ese estado**, porque
+  Wrangler podría tratarlas como pendientes.
 - Sin dependencias de runtime: `package.json` solo tiene herramientas de desarrollo.
 
 ## Invariantes de seguridad
@@ -67,13 +68,13 @@ producción, los rollbacks y el historial viven en `audit/`, sobre todo en
 - `wrangler dev` usa estado local (`.wrangler/state`, con D1, KV y R2 emulados) salvo que se
   pida acceso remoto de forma explícita.
 - Distinguir siempre D1 local de D1 remoto (`--remote`).
-- En Wrangler 4, `wrangler r2 object …` actúa en **local** por defecto. Para producción, usar
-  `--remote`.
-- Un mensaje de la CLI no prueba que una operación remota ocurrió: Wrangler 4.99 muestra
-  "Delete complete." aunque la API rechace el borrado. Verificar siempre con una lectura
-  posterior.
-- Autenticación: sesión OAuth de Wrangler. Si el entorno define `CLOUDFLARE_API_TOKEN`, ese
-  token no sirve para este proyecto: ejecutar `env -u CLOUDFLARE_API_TOKEN npx wrangler …`.
+- Para cualquier operación R2 sobre producción, usar explícitamente `--remote` cuando el
+  comando lo admita.
+- Nunca asumir que una operación destructiva remota tuvo éxito por el mensaje de la CLI:
+  verificar siempre el estado remoto con una lectura posterior.
+- Autenticación: sesión OAuth de Wrangler. Si Wrangler autentica contra una cuenta o
+  credencial inesperada, comprobar si `CLOUDFLARE_API_TOKEN` está sobrescribiendo la sesión
+  OAuth. El procedimiento operativo vigente está en `audit/experimento-gtm/rollback.md`.
 - Validación local: `npx tsc --noEmit` y
   `npx vitest run test/api-seguridad.spec.ts test/seo-canonical.spec.ts test/server-render.spec.ts`.
   `test/index.spec.ts` es la plantilla del starter y no prueba este Worker.
