@@ -495,6 +495,7 @@
   function uploadFile(file) {
     var formData = new FormData();
     formData.append('file', file);
+    formData.append('folder', 'events');
 
     return fetch('/api/upload', {
       method: 'POST',

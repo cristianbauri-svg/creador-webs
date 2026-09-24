@@ -15,6 +15,7 @@ import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import worker, { type Env } from "../src";
 import { mediaKeyFromUrl } from "../src/utils/r2";
 import { resetTables } from "./fixtures/d1-schema";
+import eventsPanelHtml from "../public/admin/modules/events.html?raw";
 
 const ORIGIN = "https://stratonaudio.com.co";
 const TEST_AUD = "aud-de-prueba";
@@ -218,6 +219,12 @@ describe("Fase 1 — escribir en /api/events exige sesión de Access", () => {
   });
 
   it("el cuerpo exacto que envía hoy el panel se acepta al crear y al editar", async () => {
+    // El panel sube antes, después y galería con uploadFile(), la única llamada
+    // a /api/upload, y esa función pide la carpeta events/ (nunca products/).
+    expect(eventsPanelHtml).toMatch(/formData\.append\(\s*['"]folder['"]\s*,\s*['"]events['"]\s*\)/);
+    expect(eventsPanelHtml).not.toMatch(/['"]?folder['"]?\s*[,:=]\s*['"]products['"]/);
+    expect(eventsPanelHtml.match(/\/api\/upload/g)).toHaveLength(1);
+
     const token = await accessJwt();
     // Mismo objeto que arma saveEvent() en public/admin/modules/events.html.
     const panelBody = {
@@ -227,7 +234,7 @@ describe("Fase 1 — escribir en /api/events exige sesión de Access", () => {
       result: null,
       before_media_url: null,
       after_media_url: null,
-      gallery_json: JSON.stringify([PRODUCT_IMG]),
+      gallery_json: JSON.stringify([EVENT_IMG_NEW]),
       link: null,
       status: "draft",
     };

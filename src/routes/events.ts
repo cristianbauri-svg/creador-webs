@@ -9,10 +9,11 @@ import type { Env } from "../index";
 const EVENT_TYPES = ["corporativo", "social", "concierto"];
 const EVENT_STATUSES = ["draft", "published"];
 
-/** Carpeta de R2 cuyas imágenes puede borrar un evento. Hoy el panel sube
- *  todas las imágenes a products/ (no envía `folder`), así que al reemplazar
- *  una imagen de evento la anterior se conserva: un evento nunca borra una
- *  imagen que pueda pertenecer a otra entidad. */
+/** Carpeta de R2 cuyas imágenes puede borrar un evento. El panel sube las
+ *  imágenes nuevas de eventos (antes, después y galería) a events/. Las
+ *  referencias históricas que apuntan a products/ u otras carpetas no se
+ *  borran automáticamente: un evento solo borra imágenes de events/, así que
+ *  nunca borra una imagen que pueda pertenecer a otra entidad. */
 const EVENT_MEDIA_FOLDERS = ["events"];
 
 const MAX_TITLE = 200; // mismo maxlength que el formulario del panel
