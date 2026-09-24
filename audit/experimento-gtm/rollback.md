@@ -4,16 +4,28 @@
 
 | Dato | Valor |
 |---|---|
-| Commit | `f2dea140e2b7dc40165c6e9c94260cc4771ae28a` (rama `straton-audio-web`). El runtime es el de `c449d9b`: `f2dea14` solo cambió `audit/` y `.dev.vars.example`. |
-| Versión del Worker | `65c3ee36-a675-43c1-b317-703c912c1d7f` (tag `telegram-token-20260924`) |
-| Deployment | `c37d2837-4563-427e-aabb-3d1e18d0c5e2` (2026-09-24T18:39:30Z, 100 % del tráfico) |
-| Motivo de la versión | Rotación de `TELEGRAM_BOT_TOKEN`. Sin cambios de código. |
-| Contenido | GTM diferido a 3 s y CTA de WhatsApp en pestaña nueva (`93a4d5a`), hotfix de seguridad (`703e2c0`), workers.dev y URLs de versión cerrados en la config (`398dfe3`) y canonical único (`948f868`, `c449d9b`). |
+| Commit | `46aed524824bd625b2be0cd411346691753e6403` (rama `straton-audio-web`) |
+| Versión del Worker | `93bbfce5-4610-4882-affa-b5ecf33716b2` (tag `event-media-folder-20260924`) |
+| Deployment | `ef80096a-ac93-490e-92c1-acbfd0bd792d` (2026-09-24T22:45:37Z, 100 % del tráfico) |
+| Motivo de la versión | Corrección del panel de Eventos: las imágenes nuevas (antes, después y galería) se suben a `events/` en vez de a la carpeta por defecto, `products/`. |
+| Contenido | GTM diferido a 3 s y CTA de WhatsApp en pestaña nueva (`93a4d5a`), hotfix de seguridad (`703e2c0`), workers.dev y URLs de versión cerrados en la config (`398dfe3`), canonical único (`948f868`, `c449d9b`) y media nueva de eventos en `events/` (`46aed52`). |
 
-Verificado el 2026-09-24: el `index.js` de `cb79a035` (versión anterior,
-deployment `54a822d4`) es byte a byte el build de `c449d9b`, y `65c3ee36` tiene
-el mismo script (etag `fde2021d…`) y los mismos bindings que `cb79a035`. Solo
-cambia el valor del token.
+Qué cambió realmente en `93bbfce5`, verificado el 2026-09-24:
+
+- El script del Worker es el mismo de `65c3ee36`: comparten `script_etag`
+  (`fde2021d089d202713d9ac835ebb8b206a9afdadcef9f0537041d7dcefb9b5d3`), así que
+  el código compilado no cambió.
+- El cambio efectivo está en los Static Assets: `public/admin/modules/events.html`
+  ahora envía `folder = events` a `/api/upload`.
+- No se migraron ni se borraron las imágenes históricas que ya están en
+  `products/`.
+- Compatibilidad: `2026-06-16` con `nodejs_compat`.
+- Bindings: `ASSETS`, `STRATON_DB`, `STRATON_KV`, `STRATON_BUCKET` y los
+  secretos `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`.
+
+Historial del script: el `index.js` de `cb79a035` (deployment `54a822d4`) es byte
+a byte el build de `c449d9b`, y tanto `65c3ee36` como `93bbfce5` tienen ese mismo
+script.
 
 ## Rollback seguro
 
@@ -21,7 +33,11 @@ Punto de rollback operativo recomendado para futuros deploys:
 
 | Versión | Commit | Qué conserva |
 |---|---|---|
-| `65c3ee36-a675-43c1-b317-703c912c1d7f` (deployment `c37d2837-4563-427e-aabb-3d1e18d0c5e2`) | `f2dea14` (runtime de `c449d9b`) | El hotfix de seguridad, el canonical único y el token de Telegram vigente. |
+| `65c3ee36-a675-43c1-b317-703c912c1d7f` (deployment histórico `c37d2837-4563-427e-aabb-3d1e18d0c5e2`) | `f2dea14` (runtime de `c449d9b`) | El hotfix de seguridad, el canonical único y el token de Telegram vigente. No reabre workers.dev ni las previews: son ajustes del script, no de la versión. |
+
+`65c3ee36` ya **no** es la producción actual. Volver a ella también devuelve el
+asset del panel de Eventos al comportamiento anterior: las imágenes nuevas de
+eventos vuelven a caer en `products/`.
 
 Sirve mientras siga siendo compatible con el cambio que se quiera revertir. Si
 un deploy posterior cambia el esquema de D1, agrega bindings o vuelve a rotar
@@ -63,7 +79,8 @@ env -u CLOUDFLARE_API_TOKEN npx wrangler deployments status
 
 ### Nivel 1: volver a la versión segura (segundos)
 
-Sirve para deshacer un deploy posterior a `65c3ee36`. Cada versión lleva su
+Sirve para deshacer un deploy posterior a `65c3ee36`, como el actual
+(`93bbfce5`). Cada versión lleva su
 propio manifiesto de assets y sus propios secretos, así que el rollback
 restaura también `app.js`, el HTML y los secretos de esa versión, no solo el
 código del Worker.
