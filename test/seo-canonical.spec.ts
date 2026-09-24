@@ -3,7 +3,8 @@
 // https://stratonaudio.com.co, sin importar el host por el que llegue la
 // petición. Se usa el index.html real como shell y una D1 simulada.
 
-import { env, createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
+import { env } from "cloudflare:workers";
+import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { describe, it, expect } from "vitest";
 import worker, { type Env } from "../src";
 import indexHtml from "../public/index.html?raw";

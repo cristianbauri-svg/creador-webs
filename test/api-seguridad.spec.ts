@@ -6,10 +6,11 @@
 // vencimiento sin salir a la red. Las peticiones van a un host real
 // (stratonaudio.com.co): el bypass de localhost de wrangler dev no aplica.
 //
-// D1, KV y R2 son los emulados y efímeros de vitest-pool-workers. Ninguna
-// prueba toca producción ni la base local de `wrangler dev`.
+// D1, KV y R2 son los emulados y efímeros de @cloudflare/vitest-plugin.
+// Ninguna prueba toca producción ni la base local de `wrangler dev`.
 
-import { env, createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
+import { env } from "cloudflare:workers";
+import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import worker, { type Env } from "../src";
 import { mediaKeyFromUrl } from "../src/utils/r2";
