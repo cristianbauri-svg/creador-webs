@@ -1370,7 +1370,7 @@ ${ev.before_media_url && ev.after_media_url ? `
       bgEl +
       '<div class="hero-overlay"></div>' +
       '<div class="hero-content">' + heading + sub +
-      (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '" class="btn-hero ' + btnStyleClass(props.button_style) + '">' + esc(props.button_text) + '</a>' : '') +
+      (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '"' + whatsappTargetAttrs(props.button_link) + ' class="btn-hero ' + btnStyleClass(props.button_style) + '">' + esc(props.button_text) + '</a>' : '') +
       '</div>',
       props.bg_color
     );
@@ -1588,7 +1588,7 @@ ${ev.before_media_url && ev.after_media_url ? `
       '<div class="cta-inner" style="' + bg + '">' +
       '<h2>' + esc(props.title) + '</h2>' +
       '<p>' + esc(props.subtitle) + '</p>' +
-      (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '" class="btn-cta ' + btnStyleClass(props.button_style) + '">' + esc(props.button_text) + '</a>' : '') +
+      (props.button_text ? '<a href="' + escapeAttr(props.button_link || '#') + '"' + whatsappTargetAttrs(props.button_link) + ' class="btn-cta ' + btnStyleClass(props.button_style) + '">' + esc(props.button_text) + '</a>' : '') +
       '</div>',
       props.bg_color
     );
@@ -2122,6 +2122,24 @@ ${ev.before_media_url && ev.after_media_url ? `
     if (cfg.extraAttrs) html += ' ' + cfg.extraAttrs;
     return html + '></picture>';
   }
+  /** Enlaces de WhatsApp: se abren en pestaña nueva.
+   *
+   *  Los CTA de los bloques Hero y CTA llevan al usuario fuera del sitio. Si la
+   *  navegación ocurre en la misma pestaña el documento se destruye, y la
+   *  etiqueta de conversión de Google Ads puede no llegar a salir: está medido
+   *  que hoy sale por uno o dos milisegundos de margen. Con una pestaña nueva la
+   *  página sigue viva y la conversión se envía siempre. Es además lo que ya
+   *  hacía el botón flotante de WhatsApp.
+   *
+   *  Espejo de whatsappTargetAttrs() en src/index.ts. */
+  var WHATSAPP_LINK = /wa\.me|api\.whatsapp\.com|whatsapp\.com\/send/i;
+
+  function whatsappTargetAttrs(link) {
+    return typeof link === 'string' && WHATSAPP_LINK.test(link)
+      ? ' target="_blank" rel="noopener noreferrer"'
+      : '';
+  }
+
   /** Devuelve la clase CSS correspondiente al estilo de botón (1, 2, 3).
    *  Estilo 1 (default): sin clase extra → verde actual.
    *  Estilo 2: WhatsApp translúcido con glow.

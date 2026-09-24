@@ -5,6 +5,8 @@ import {
 } from "cloudflare:test";
 import { describe, it, expect } from "vitest";
 import worker from "../src";
+import indexHtml from "../public/index.html?raw";
+import notFoundHtml from "../public/404.html?raw";
 
 // Shell mínimo que simula el index.html servido como asset estático.
 const SHELL_HTML = `<!doctype html>
@@ -54,7 +56,7 @@ const PAGE = {
   ]),
 };
 
-function mockEnv(page: Record<string, unknown> = PAGE) {
+function mockEnv(page: Record<string, unknown> = PAGE, shell: string = SHELL_HTML) {
   const mockDb = {
     prepare: () => ({
       bind: () => ({ first: async () => page }),
@@ -62,7 +64,7 @@ function mockEnv(page: Record<string, unknown> = PAGE) {
   };
   const mockAssets = {
     fetch: async () =>
-      new Response(SHELL_HTML, { headers: { "Content-Type": "text/html" } }),
+      new Response(shell, { headers: { "Content-Type": "text/html" } }),
   };
   return {
     ...env,
@@ -72,12 +74,15 @@ function mockEnv(page: Record<string, unknown> = PAGE) {
 }
 
 /** Pide /sonido al Worker con la página indicada en D1. */
-async function render(page: Record<string, unknown> = PAGE): Promise<Response> {
+async function render(
+  page: Record<string, unknown> = PAGE,
+  shell: string = SHELL_HTML
+): Promise<Response> {
   const request = new Request("https://stratonaudio.com.co/sonido", {
     headers: { Accept: "text/html" },
   });
   const ctx = createExecutionContext();
-  const response = await worker.fetch(request, mockEnv(page), ctx);
+  const response = await worker.fetch(request, mockEnv(page, shell), ctx);
   await waitOnExecutionContext(ctx);
   return response;
 }
@@ -163,5 +168,120 @@ describe("server-render del hero dinámico (punto 1)", () => {
     expect(html).toContain("<h1>Primer hero</h1>");
     expect(html).toContain('fetchpriority="high"');
     expect(html).not.toContain('loading="lazy"');
+  });
+});
+
+// Identificadores autorizados. Si alguno cambia, la prueba debe fallar: el
+// diferimiento solo es seguro contra este contenedor y este temporizador.
+const CONTENEDOR_GTM = "GTM-5VQGJ3Z8";
+const TEMPORIZADOR_MS = "3000";
+
+/** Devuelve el <script> del cargador de GTM, o cadena vacía si no está. */
+function bloqueGtm(html: string): string {
+  const m = html.match(/<script>\(function\(w,d,s,l,i\)[\s\S]*?<\/script>/);
+  return m ? m[0] : "";
+}
+
+function cuenta(html: string, re: RegExp): number {
+  return (html.match(re) || []).length;
+}
+
+describe("fragmento diferido de GTM", () => {
+  for (const [nombre, html] of [
+    ["public/index.html", indexHtml],
+    ["public/404.html", notFoundHtml],
+  ] as const) {
+    it(`${nombre} carga el contenedor en diferido y una sola vez`, () => {
+      const bloque = bloqueGtm(html);
+      expect(bloque).not.toBe("");
+
+      // dataLayer existe desde el primer byte del script: los eventos que se
+      // disparen antes de gtm.js quedan en cola y se procesan al cargar.
+      expect(bloque).toContain("w[l]=w[l]||[]");
+      expect(bloque.indexOf("w[l]=w[l]||[]")).toBeLessThan(
+        bloque.indexOf("googletagmanager.com/gtm.js")
+      );
+
+      // La petición del contenedor vive dentro del cargador diferido, detrás
+      // de los escuchas de interacción y del temporizador.
+      expect(bloque).toContain("addEventListener");
+      expect(bloque.indexOf("addEventListener")).toBeLessThan(
+        bloque.lastIndexOf("w.setTimeout(g,")
+      );
+
+      // El temporizador es exactamente el autorizado, no 1500 ni otro valor.
+      const ms = bloque.match(/setTimeout\(g,(\d+)\)/);
+      expect(ms?.[1]).toBe(TEMPORIZADOR_MS);
+
+      // Sin doble carga: una sola petición de gtm.js y un solo contenedor.
+      expect(cuenta(html, /googletagmanager\.com\/gtm\.js/g)).toBe(1);
+      expect(cuenta(bloque, new RegExp(CONTENEDOR_GTM, "g"))).toBe(1);
+
+      // El respaldo sin JavaScript sigue en su sitio, intacto.
+      const noscript = `<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=${CONTENEDOR_GTM}"`;
+      expect(html.split(noscript).length - 1).toBe(1);
+    });
+  }
+
+  it("el Worker entrega el fragmento diferido intacto en una página dinámica", async () => {
+    // Se sirve el index.html real como asset: así se comprueba que ninguna
+    // regla de HTMLRewriter (ocultar la home, cambiar la hoja de estilos,
+    // inyectar JSON-LD) toca el bloque de GTM.
+    const response = await render(PAGE, indexHtml);
+    const html = await response.text();
+
+    const bloque = bloqueGtm(html);
+    expect(bloque).toContain(`w.setTimeout(g,${TEMPORIZADOR_MS})`);
+    expect(bloque).toContain(CONTENEDOR_GTM);
+    expect(cuenta(html, /googletagmanager\.com\/gtm\.js/g)).toBe(1);
+
+    // El botón flotante de WhatsApp sobrevive y conserva su pestaña nueva.
+    expect(html).toContain('class="whatsapp-float"');
+  });
+});
+
+describe("CTA de WhatsApp en pestaña nueva", () => {
+  /** Primera etiqueta <a> con la clase indicada. */
+  function enlace(html: string, clase: string): string {
+    const m = html.match(new RegExp(`<a [^>]*class="${clase}[^"]*"[^>]*>`));
+    return m ? m[0] : "";
+  }
+
+  it("el CTA del hero apunta a una pestaña nueva cuando el enlace es de WhatsApp", async () => {
+    const response = await render(PAGE);
+    const html = await response.text();
+
+    const a = enlace(html, "btn-hero");
+    expect(a).toContain("api.whatsapp.com/send");
+    expect(a).toContain('target="_blank"');
+    expect(a).toContain('rel="noopener noreferrer"');
+
+    // El texto y el estilo del botón no cambian.
+    expect(html).toContain("Cotizar mi evento");
+    expect(a).toMatch(/class="btn-hero [^"]+"/);
+  });
+
+  it("un CTA que no es de WhatsApp se sigue abriendo en la misma pestaña", async () => {
+    const page = {
+      ...PAGE,
+      content_json: JSON.stringify([
+        {
+          type: "hero",
+          props: {
+            title: "Hero con enlace interno",
+            button_text: "Ver catálogo",
+            button_link: "/productos",
+          },
+        },
+      ]),
+    };
+
+    const response = await render(page);
+    const html = await response.text();
+
+    const a = enlace(html, "btn-hero");
+    expect(a).toContain('href="/productos"');
+    expect(a).not.toContain("target=");
+    expect(a).not.toContain("rel=");
   });
 });

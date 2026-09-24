@@ -134,6 +134,24 @@ function escapeAttrValue(value: unknown): string {
     .replace(/>/g, "&gt;");
 }
 
+/** Enlaces de WhatsApp: se abren en pestaña nueva.
+ *
+ *  Los CTA de los bloques Hero y CTA llevan al usuario fuera del sitio. Si la
+ *  navegación ocurre en la misma pestaña el documento se destruye, y la
+ *  etiqueta de conversión de Google Ads puede no llegar a salir: está medido
+ *  que hoy sale por uno o dos milisegundos de margen. Con una pestaña nueva la
+ *  página sigue viva y la conversión se envía siempre. Es además lo que ya
+ *  hacía el botón flotante de WhatsApp.
+ *
+ *  Espejo de whatsappTargetAttrs() en public/js/app.js. */
+const WHATSAPP_LINK = /wa\.me|api\.whatsapp\.com|whatsapp\.com\/send/i;
+
+function whatsappTargetAttrs(link: unknown): string {
+  return typeof link === "string" && WHATSAPP_LINK.test(link)
+    ? ' target="_blank" rel="noopener noreferrer"'
+    : "";
+}
+
 /** Espejo de btnStyleClass() en public/js/app.js. */
 function btnStyleClassServer(style: unknown): string {
   if (style === "2") return "btn-style-whatsapp";
@@ -300,7 +318,7 @@ function renderHeroHtml(props: Record<string, unknown>, opts: { priority?: boole
   const heading = props.title ? `<h1>${escapeHtmlText(props.title)}</h1>` : "";
   const sub = props.subtitle ? `<p>${escapeHtmlText(props.subtitle)}</p>` : "";
   const button = props.button_text
-    ? `<a href="${escapeAttrValue(props.button_link || "#")}" class="btn-hero ${btnStyleClassServer(props.button_style)}">${escapeHtmlText(props.button_text)}</a>`
+    ? `<a href="${escapeAttrValue(props.button_link || "#")}"${whatsappTargetAttrs(props.button_link)} class="btn-hero ${btnStyleClassServer(props.button_style)}">${escapeHtmlText(props.button_text)}</a>`
     : "";
 
   // Mismos estilos en línea que aplica el cliente (applyBlockMargins en
