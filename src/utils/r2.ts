@@ -4,22 +4,41 @@
 import type { Env } from "../index";
 import { error } from "./response";
 
+/** Carpetas que sirve /api/media. Espejo de ALLOWED_PREFIXES en
+ *  routes/media.ts y de ALLOWED_FOLDERS en routes/upload.ts. */
+export const MEDIA_FOLDERS: readonly string[] = ["products", "avatars", "events", "hero", "cards"];
+
+/** URL de una imagen tal como la devuelve /api/upload:
+ *  /api/media/<carpeta>/<nombre>.<webp|jpeg|jpg|png>.
+ *  El nombre no admite puntos, barras, "%" ni "\": no hay forma de salir de la
+ *  carpeta (../, %2e%2e, %2f) ni de apuntar a una subcarpeta. */
+const MEDIA_IMAGE_URL = /^\/api\/media\/([a-z]+)\/([A-Za-z0-9_-]+\.(?:webp|jpe?g|png))$/;
+
 /**
- * Extrae la key de R2 de una URL de media relativa.
- * Ej: "/api/media/products/uuid.webp" → "products/uuid.webp"
- * Retorna null si la URL no tiene el formato esperado.
+ * Clave de R2 de una URL de imagen, o null si la URL no es exactamente una
+ * imagen de una de las carpetas permitidas.
+ * Ej: ("/api/media/events/uuid.webp", ["events"]) → "events/uuid.webp"
  */
-export function extractR2Key(url: string): string | null {
-  const match = url.match(/^\/api\/media\/(.+)$/);
-  return match ? match[1] : null;
+export function mediaKeyFromUrl(url: unknown, allowedFolders: readonly string[]): string | null {
+  if (typeof url !== "string") return null;
+  const match = url.match(MEDIA_IMAGE_URL);
+  if (!match || !allowedFolders.includes(match[1])) return null;
+  return `${match[1]}/${match[2]}`;
+}
+
+/** ¿Es una URL de imagen servida por /api/media? */
+export function isMediaImageUrl(url: unknown): boolean {
+  return mediaKeyFromUrl(url, MEDIA_FOLDERS) !== null;
 }
 
 /**
- * Elimina un objeto de R2 de forma asíncrona (fire-and-forget).
- * Los errores se loguean pero no interrumpen el flujo principal.
+ * Elimina de R2 la imagen de `url` de forma asíncrona (fire-and-forget).
+ * Solo actúa si la URL es una imagen válida de `allowedFolders`: cada entidad
+ * declara su carpeta y no puede borrar nada fuera de ella. Cualquier otro
+ * valor se ignora. Los errores se loguean pero no interrumpen el flujo.
  */
-export function deleteR2Object(url: string, env: Env): void {
-  const key = extractR2Key(url);
+export function deleteR2Object(url: unknown, env: Env, allowedFolders: readonly string[]): void {
+  const key = mediaKeyFromUrl(url, allowedFolders);
   if (!key) return;
   // Fire-and-forget: no bloqueamos la respuesta esperando la eliminación
   env.STRATON_BUCKET.delete(key).catch((e: unknown) => {

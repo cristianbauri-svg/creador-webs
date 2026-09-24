@@ -257,11 +257,17 @@
     return res.json();
   }
 
+  /** Escapa texto para insertarlo en HTML, también dentro de un atributo entre
+   *  comillas: & < > " '. No valida URLs: un src o href que venga de datos se
+   *  valida aparte (ver safeMediaUrl() y safeLinkUrl() en el portafolio). */
   function escapeHtml(str) {
     if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function getWhatsAppNumber() {
@@ -871,6 +877,134 @@
   // Cargar Eventos (Portafolio)
   // =========================================================
 
+  // Las tarjetas se arman con el DOM. Todo lo que viene de D1 entra por
+  // propiedades (textContent, alt, src, href, dataset), nunca como HTML: un
+  // título o una URL con comillas o etiquetas se ve como texto y no ejecuta
+  // nada.
+  var EVENT_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80';
+  var EVENT_TYPE_LABELS = { corporativo: 'Corporativo', social: 'Social', concierto: 'Concierto' };
+
+  /** Imagen propia servida por /api/media, lo único que produce /api/upload.
+   *  Espejo de MEDIA_IMAGE_URL en src/utils/r2.ts. */
+  var MEDIA_IMAGE_URL = /^\/api\/media\/(?:products|avatars|events|hero|cards)\/[A-Za-z0-9_-]+\.(?:webp|jpe?g|png)$/;
+
+  function safeMediaUrl(url) {
+    return typeof url === 'string' && MEDIA_IMAGE_URL.test(url) ? url : '';
+  }
+
+  /** Enlace de la card: solo http(s). Lo interpreta el parser del navegador,
+   *  que descarta tabuladores y saltos de línea, así que variantes como
+   *  "java\tscript:" también quedan fuera. */
+  function safeLinkUrl(url) {
+    if (typeof url !== 'string' || !url.trim()) return '';
+    try {
+      var parsed = new URL(url, window.location.href);
+      return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  /** Primera imagen de la galería del evento, o la imagen de reserva. */
+  function eventCoverImage(ev) {
+    var gallery = [];
+    try {
+      gallery = typeof ev.gallery_json === 'string' ? JSON.parse(ev.gallery_json) : (ev.gallery_json || []);
+    } catch (e) {
+      gallery = [];
+    }
+    return (Array.isArray(gallery) && safeMediaUrl(gallery[0])) || EVENT_FALLBACK_IMAGE;
+  }
+
+  /** Marcado estático del comparador Antes/Después: no lleva ningún dato del
+   *  evento. Imágenes y textos se rellenan después, por propiedades. */
+  var EVENT_COMPARATOR_HTML =
+    '<summary style="display:inline-flex;align-items:center;gap:0.35rem;margin-top:0.5rem;background:rgba(29,185,84,0.5);color:rgba(255,255,255,0.8);border:none;padding:0.4rem 1rem;border-radius:100px;font-size:0.8rem;cursor:pointer;list-style:none;">' +
+      'Ver más <span class="summary-arrow" style="font-size:0.7rem;">▼</span>' +
+    '</summary>' +
+    '<style>.event-comparator > summary::-webkit-details-marker { display: none; }</style>' +
+    '<div class="event-card-detail" style="padding:0 1rem 1rem 1rem;">' +
+      '<div class="event-comparison" style="display:flex;gap:0.5rem;margin-top:0.75rem;">' +
+        '<div class="event-before" style="flex:1;">' +
+          '<div style="position:relative;overflow:hidden;border-radius:var(--radius);">' +
+            '<img alt="Antes" loading="lazy" style="width:100%;height:140px;object-fit:cover;display:block;" />' +
+            '<span style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.7);color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;">Antes</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="event-after" style="flex:1;">' +
+          '<div style="position:relative;overflow:hidden;border-radius:var(--radius);">' +
+            '<img alt="Después" loading="lazy" style="width:100%;height:140px;object-fit:cover;display:block;" />' +
+            '<span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.7);color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;">Después</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  /** Texto opcional bajo cada imagen del comparador. */
+  function appendComparatorText(column, text) {
+    if (!text) return;
+    var p = document.createElement('p');
+    p.style.cssText = 'font-size:0.8rem;color:var(--color-text-muted);margin-top:0.35rem;';
+    p.textContent = text;
+    column.appendChild(p);
+  }
+
+  /** Tarjeta de un evento: <article>, envuelto en un <a> si tiene enlace. */
+  function buildEventCard(ev) {
+    var article = document.createElement('article');
+    article.className = 'event-card animate-in';
+    article.dataset.type = ev.event_type || '';
+
+    var img = document.createElement('img');
+    img.className = 'event-card-image';
+    img.alt = ev.title || '';
+    img.setAttribute('loading', 'lazy');
+    img.addEventListener('error', function useFallback() {
+      img.removeEventListener('error', useFallback);
+      img.src = EVENT_FALLBACK_IMAGE;
+    });
+    img.src = eventCoverImage(ev);
+
+    var body = document.createElement('div');
+    body.className = 'event-card-body';
+    var type = document.createElement('span');
+    type.className = 'event-card-type';
+    type.textContent = Object.prototype.hasOwnProperty.call(EVENT_TYPE_LABELS, ev.event_type)
+      ? EVENT_TYPE_LABELS[ev.event_type]
+      : (ev.event_type || 'Evento');
+    var title = document.createElement('h3');
+    title.className = 'event-card-title';
+    title.textContent = ev.title || '';
+    body.appendChild(type);
+    body.appendChild(title);
+
+    article.appendChild(img);
+    article.appendChild(body);
+
+    var before = safeMediaUrl(ev.before_media_url);
+    var after = safeMediaUrl(ev.after_media_url);
+    if (before && after) {
+      var details = document.createElement('details');
+      details.className = 'event-comparator';
+      details.innerHTML = EVENT_COMPARATOR_HTML;
+      details.querySelector('.event-before img').src = before;
+      details.querySelector('.event-after img').src = after;
+      appendComparatorText(details.querySelector('.event-before'), ev.solution);
+      appendComparatorText(details.querySelector('.event-after'), ev.result);
+      article.appendChild(details);
+    }
+
+    var href = safeLinkUrl(ev.link);
+    if (!href) return article;
+
+    var link = document.createElement('a');
+    link.href = href;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.style.cssText = 'text-decoration:none;color:inherit;display:block;';
+    link.appendChild(article);
+    return link;
+  }
 
   async function loadEvents() {
     const container = $('#eventsContainer');
@@ -904,63 +1038,10 @@
           return;
         }
 
-        container.innerHTML = filtered.map(ev => {
-          const typeLabels = { corporativo: 'Corporativo', social: 'Social', concierto: 'Concierto' };
-          let gallery = [];
-          try {
-            gallery = typeof ev.gallery_json === 'string'
-              ? JSON.parse(ev.gallery_json)
-              : (ev.gallery_json || []);
-          } catch { gallery = []; }
-
-          const imgSrc = gallery.length > 0
-            ? gallery[0]
-            : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80';
-
-          var linkOpen = ev.link ? '<a href="' + escapeAttr(ev.link) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;display:block;">' : '';
-          var linkClose = ev.link ? '</a>' : '';
-          return linkOpen + `
-            <article class="event-card animate-in" data-type="${ev.event_type || ''}">
-              <img class="event-card-image"
-                   src="${escapeHtml(gallery.length > 0 ? gallery[0] : 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80')}"
-                   alt="${escapeHtml(ev.title)}"
-                   loading="lazy"
-                   onerror="this.src='https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80'" />
-              <div class="event-card-body">
-                <span class="event-card-type">${typeLabels[ev.event_type] || ev.event_type || 'Evento'}</span>
-                <h3 class="event-card-title">${escapeHtml(ev.title)}</h3>
-              </div>
-${ev.before_media_url && ev.after_media_url ? `
-  <details class="event-comparator">
-    <summary style="display:inline-flex;align-items:center;gap:0.35rem;margin-top:0.5rem;background:rgba(29,185,84,0.5);color:rgba(255,255,255,0.8);border:none;padding:0.4rem 1rem;border-radius:100px;font-size:0.8rem;cursor:pointer;list-style:none;">
-      Ver más <span class="summary-arrow" style="font-size:0.7rem;">▼</span>
-    </summary>
-    <style>
-      .event-comparator > summary::-webkit-details-marker { display: none; }
-    </style>
-    <div class="event-card-detail" style="padding:0 1rem 1rem 1rem;">
-      <div class="event-comparison" style="display:flex;gap:0.5rem;margin-top:0.75rem;">
-        <div class="event-before" style="flex:1;">
-          <div style="position:relative;overflow:hidden;border-radius:var(--radius);">
-            <img src="${escapeHtml(ev.before_media_url)}" alt="Antes" loading="lazy" style="width:100%;height:140px;object-fit:cover;display:block;" />
-            <span style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.7);color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;">Antes</span>
-          </div>
-          ${ev.solution ? `<p style="font-size:0.8rem;color:var(--color-text-muted);margin-top:0.35rem;">${escapeHtml(ev.solution)}</p>` : ''}
-        </div>
-        <div class="event-after" style="flex:1;">
-          <div style="position:relative;overflow:hidden;border-radius:var(--radius);">
-            <img src="${escapeHtml(ev.after_media_url)}" alt="Después" loading="lazy" style="width:100%;height:140px;object-fit:cover;display:block;" />
-            <span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.7);color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;">Después</span>
-          </div>
-          ${ev.result ? `<p style="font-size:0.8rem;color:var(--color-text-muted);margin-top:0.35rem;">${escapeHtml(ev.result)}</p>` : ''}
-        </div>
-      </div>
-    </div>
-  </details>
-` : ''}
-            </article>
-          ` + linkClose;
-        }).join('');
+        const cards = document.createDocumentFragment();
+        filtered.forEach(ev => cards.appendChild(buildEventCard(ev)));
+        container.textContent = '';
+        container.appendChild(cards);
 
         initAnimations();
       }

@@ -4,7 +4,7 @@
 // Cloudflare Access protege /admin* a nivel de ruta en producción
 
 import { error } from "./utils/response";
-import { validateAccess } from "./middleware/auth";
+import { createAccessCheck, requiresAdmin } from "./middleware/access";
 import { handleProducts } from "./routes/products";
 import { handleQuotations } from "./routes/quotations";
 import { handleServices } from "./routes/services";
@@ -588,29 +588,19 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
 }
 
 async function handleApi(request: Request, env: Env, pathname: string, ctx: ExecutionContext): Promise<Response> {
-  const method = request.method;
-  const isMutation = method === "POST" || method === "PUT" || method === "DELETE";
-
-  // Rutas protegidas: requieren autenticación real de Cloudflare Access.
-  // Todo lo demás mantiene su comportamiento actual (público).
-  const isProtected =
-    (isMutation && pathname.startsWith("/api/pages")) ||
-    (isMutation && pathname.startsWith("/api/products")) ||
-    (isMutation && pathname.startsWith("/api/services")) ||
-    (isMutation && pathname.startsWith("/api/packages")) ||
-    (isMutation && pathname.startsWith("/api/testimonials")) ||
-    (isMutation && pathname === "/api/upload") ||
-    (method === "GET" && pathname.startsWith("/api/quotations")) ||
-    (method === "PUT" && pathname === "/api/settings");
-
-  if (isProtected && !(await validateAccess(request, env))) {
+  // Regla central de acceso (middleware/access.ts): toda escritura exige
+  // sesión de Cloudflare Access salvo POST /api/quotations, y también las
+  // lecturas de cotizaciones y cualquier ?status= distinto de "published".
+  // Se evalúa aquí, antes de que ningún handler consulte D1.
+  const access = createAccessCheck(request, env);
+  if (requiresAdmin(request.method, new URL(request.url)) && !(await access.isAdmin())) {
     return error("Unauthorized", 401);
   }
 
   // Dispatcher de rutas
   try {
     if (pathname.startsWith("/api/products")) {
-      return await handleProducts(request, env, pathname);
+      return await handleProducts(request, env, pathname, access);
     }
 
     if (pathname.startsWith("/api/quotations")) {
@@ -618,23 +608,23 @@ async function handleApi(request: Request, env: Env, pathname: string, ctx: Exec
     }
 
     if (pathname.startsWith("/api/services")) {
-      return await handleServices(request, env, pathname);
+      return await handleServices(request, env, pathname, access);
     }
 
     if (pathname.startsWith("/api/packages")) {
-      return await handlePackages(request, env, pathname);
+      return await handlePackages(request, env, pathname, access);
     }
 
     if (pathname.startsWith("/api/events")) {
-      return await handleEvents(request, env, pathname);
+      return await handleEvents(request, env, pathname, access);
     }
 
     if (pathname.startsWith("/api/testimonials")) {
-      return await handleTestimonials(request, env, pathname);
+      return await handleTestimonials(request, env, pathname, access);
     }
 
     if (pathname.startsWith("/api/pages")) {
-      return await handlePages(request, env, pathname);
+      return await handlePages(request, env, pathname, access);
     }
 
     if (pathname.startsWith("/api/settings")) {

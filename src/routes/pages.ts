@@ -1,9 +1,10 @@
 // CRUD de páginas (contenido editable del sitio)
 import { json, error } from "../utils/response";
 import { queryAll, queryOne, execute, handleDbError } from "../utils/d1";
+import { PUBLIC_STATUS, type AccessCheck } from "../middleware/access";
 import type { Env } from "../index";
 
-export async function handlePages(request: Request, env: Env, pathname: string): Promise<Response> {
+export async function handlePages(request: Request, env: Env, pathname: string, access: AccessCheck): Promise<Response> {
   const method = request.method;
 
   // GET /api/pages/slug/:slug — búsqueda por slug público
@@ -17,7 +18,7 @@ export async function handlePages(request: Request, env: Env, pathname: string):
   const idMatch = pathname.match(/^\/api\/pages\/(\d+)$/);
   if (idMatch) {
     const id = parseInt(idMatch[1], 10);
-    if (method === "GET") return getPage(env, id);
+    if (method === "GET") return getPage(env, id, access);
     if (method === "PUT") return updatePage(request, env, id);
     if (method === "DELETE") return deletePage(env, id);
     return error("Method not allowed", 405);
@@ -68,10 +69,13 @@ async function listPages(request: Request, env: Env): Promise<Response> {
   }
 }
 
-async function getPage(env: Env, id: number): Promise<Response> {
+async function getPage(env: Env, id: number, access: AccessCheck): Promise<Response> {
   try {
     const row = await queryOne(env.STRATON_DB, "SELECT * FROM pages WHERE id = ?", [id]);
-    if (!row) return error("Page not found", 404);
+    // Un borrador solo existe para el panel.
+    if (!row || (row.status !== PUBLIC_STATUS && !(await access.isAdmin()))) {
+      return error("Page not found", 404);
+    }
     return json(row);
   } catch (e) {
     return handleDbError(e, env);

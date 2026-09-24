@@ -1,15 +1,16 @@
 // CRUD de paquetes
 import { json, error } from "../utils/response";
 import { queryAll, queryOne, execute, handleDbError } from "../utils/d1";
+import { PUBLIC_STATUS, type AccessCheck } from "../middleware/access";
 import type { Env } from "../index";
 
-export async function handlePackages(request: Request, env: Env, pathname: string): Promise<Response> {
+export async function handlePackages(request: Request, env: Env, pathname: string, access: AccessCheck): Promise<Response> {
   const method = request.method;
 
   const match = pathname.match(/^\/api\/packages\/(\d+)$/);
   if (match) {
     const id = parseInt(match[1], 10);
-    if (method === "GET") return getPackage(env, id);
+    if (method === "GET") return getPackage(env, id, access);
     if (method === "PUT") return updatePackage(request, env, id);
     if (method === "DELETE") return deletePackage(env, id);
     return error("Method not allowed", 405);
@@ -60,10 +61,13 @@ async function listPackages(request: Request, env: Env): Promise<Response> {
   }
 }
 
-async function getPackage(env: Env, id: number): Promise<Response> {
+async function getPackage(env: Env, id: number, access: AccessCheck): Promise<Response> {
   try {
     const row = await queryOne(env.STRATON_DB, "SELECT * FROM packages WHERE id = ?", [id]);
-    if (!row) return error("Package not found", 404);
+    // Un borrador solo existe para el panel.
+    if (!row || (row.status !== PUBLIC_STATUS && !(await access.isAdmin()))) {
+      return error("Package not found", 404);
+    }
     return json(row);
   } catch (e) {
     return handleDbError(e, env);

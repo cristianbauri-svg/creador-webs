@@ -2,15 +2,20 @@
 import { json, error } from "../utils/response";
 import { queryAll, queryOne, execute, handleDbError } from "../utils/d1";
 import { deleteR2Object } from "../utils/r2";
+import { PUBLIC_STATUS, type AccessCheck } from "../middleware/access";
 import type { Env } from "../index";
 
-export async function handleTestimonials(request: Request, env: Env, pathname: string): Promise<Response> {
+/** Carpeta de R2 cuyas imágenes puede borrar un testimonio: products/, que es
+ *  donde /api/upload guarda hoy los avatares (el panel no envía `folder`). */
+const TESTIMONIAL_MEDIA_FOLDERS = ["products"];
+
+export async function handleTestimonials(request: Request, env: Env, pathname: string, access: AccessCheck): Promise<Response> {
   const method = request.method;
 
   const match = pathname.match(/^\/api\/testimonials\/(\d+)$/);
   if (match) {
     const id = parseInt(match[1], 10);
-    if (method === "GET") return getTestimonial(env, id);
+    if (method === "GET") return getTestimonial(env, id, access);
     if (method === "PUT") return updateTestimonial(request, env, id);
     if (method === "DELETE") return deleteTestimonial(env, id);
     return error("Method not allowed", 405);
@@ -66,10 +71,13 @@ async function listTestimonials(request: Request, env: Env): Promise<Response> {
   }
 }
 
-async function getTestimonial(env: Env, id: number): Promise<Response> {
+async function getTestimonial(env: Env, id: number, access: AccessCheck): Promise<Response> {
   try {
     const row = await queryOne(env.STRATON_DB, "SELECT * FROM testimonials WHERE id = ?", [id]);
-    if (!row) return error("Testimonial not found", 404);
+    // Un borrador solo existe para el panel.
+    if (!row || (row.status !== PUBLIC_STATUS && !(await access.isAdmin()))) {
+      return error("Testimonial not found", 404);
+    }
     return json(row);
   } catch (e) {
     return handleDbError(e, env);
@@ -106,7 +114,7 @@ async function updateTestimonial(request: Request, env: Env, id: number): Promis
     const params: unknown[] = [];
     // Limpiar avatar anterior de R2 si se reemplazó
     if (body.avatar_url !== undefined && existing.avatar_url && existing.avatar_url !== body.avatar_url) {
-      deleteR2Object(existing.avatar_url as string, env);
+      deleteR2Object(existing.avatar_url, env, TESTIMONIAL_MEDIA_FOLDERS);
     }
     const fields = ["client_name", "company", "quote", "event_id", "avatar_url", "visible", "status"];
     for (const field of fields) {

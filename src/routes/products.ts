@@ -2,9 +2,13 @@
 import { json, error } from "../utils/response";
 import { queryAll, queryOne, execute, handleDbError } from "../utils/d1";
 import { deleteR2Object } from "../utils/r2";
+import { PUBLIC_STATUS, type AccessCheck } from "../middleware/access";
 import type { Env } from "../index";
 
-export async function handleProducts(request: Request, env: Env, pathname: string): Promise<Response> {
+/** Carpeta de R2 cuyas imágenes puede borrar un producto. */
+const PRODUCT_MEDIA_FOLDERS = ["products"];
+
+export async function handleProducts(request: Request, env: Env, pathname: string, access: AccessCheck): Promise<Response> {
   const url = new URL(request.url);
   const method = request.method;
 
@@ -12,7 +16,7 @@ export async function handleProducts(request: Request, env: Env, pathname: strin
   const match = pathname.match(/^\/api\/products\/(\d+)$/);
   if (match) {
     const id = parseInt(match[1], 10);
-    if (method === "GET") return getProduct(env, id);
+    if (method === "GET") return getProduct(env, id, access);
     if (method === "PUT") return updateProduct(request, env, id);
     if (method === "DELETE") return deleteProduct(env, id);
     return error("Method not allowed", 405);
@@ -70,10 +74,13 @@ async function listProducts(request: Request, env: Env): Promise<Response> {
   }
 }
 
-async function getProduct(env: Env, id: number): Promise<Response> {
+async function getProduct(env: Env, id: number, access: AccessCheck): Promise<Response> {
   try {
     const row = await queryOne(env.STRATON_DB, "SELECT * FROM products WHERE id = ?", [id]);
-    if (!row) return error("Product not found", 404);
+    // Un borrador solo existe para el panel.
+    if (!row || (row.status !== PUBLIC_STATUS && !(await access.isAdmin()))) {
+      return error("Product not found", 404);
+    }
     return json(row);
   } catch (e) {
     return handleDbError(e, env);
@@ -137,7 +144,7 @@ async function updateProduct(request: Request, env: Env, id: number): Promise<Re
 
     // Limpiar imagen anterior de R2 si se reemplazó
     if (body.image_url !== undefined && existing.image_url && existing.image_url !== body.image_url) {
-      deleteR2Object(existing.image_url as string, env);
+      deleteR2Object(existing.image_url, env, PRODUCT_MEDIA_FOLDERS);
     }
 
     params.push(id);

@@ -1,16 +1,32 @@
 // CRUD de eventos
 import { json, error } from "../utils/response";
 import { queryAll, queryOne, execute, handleDbError } from "../utils/d1";
-import { deleteR2Object } from "../utils/r2";
+import { deleteR2Object, isMediaImageUrl } from "../utils/r2";
+import { PUBLIC_STATUS, type AccessCheck } from "../middleware/access";
 import type { Env } from "../index";
 
-export async function handleEvents(request: Request, env: Env, pathname: string): Promise<Response> {
+/** Mismos valores que el CHECK de la columna en D1 (migrations/006_events.sql). */
+const EVENT_TYPES = ["corporativo", "social", "concierto"];
+const EVENT_STATUSES = ["draft", "published"];
+
+/** Carpeta de R2 cuyas imágenes puede borrar un evento. Hoy el panel sube
+ *  todas las imágenes a products/ (no envía `folder`), así que al reemplazar
+ *  una imagen de evento la anterior se conserva: un evento nunca borra una
+ *  imagen que pueda pertenecer a otra entidad. */
+const EVENT_MEDIA_FOLDERS = ["events"];
+
+const MAX_TITLE = 200; // mismo maxlength que el formulario del panel
+const MAX_TEXT = 5000;
+const MAX_LINK = 2048;
+const MAX_GALLERY = 50;
+
+export async function handleEvents(request: Request, env: Env, pathname: string, access: AccessCheck): Promise<Response> {
   const method = request.method;
 
   const match = pathname.match(/^\/api\/events\/(\d+)$/);
   if (match) {
     const id = parseInt(match[1], 10);
-    if (method === "GET") return getEvent(env, id);
+    if (method === "GET") return getEvent(env, id, access);
     if (method === "PUT") return updateEvent(request, env, id);
     if (method === "DELETE") return deleteEvent(env, id);
     return error("Method not allowed", 405);
@@ -19,6 +35,91 @@ export async function handleEvents(request: Request, env: Env, pathname: string)
   if (method === "GET") return listEvents(request, env);
   if (method === "POST") return createEvent(request, env);
   return error("Method not allowed", 405);
+}
+
+/** Enlace de la card: URL absoluta http(s), sin espacios, comillas ni "<>". */
+function isSafeLink(value: string): boolean {
+  if (value.length > MAX_LINK || /[\s"'<>`\\\u0000-\u001f\u007f]/.test(value)) return false;
+  try {
+    const { protocol } = new URL(value);
+    return protocol === "https:" || protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+/** gallery_json: arreglo JSON de URLs de imagen de /api/media. */
+function isValidGallery(value: string): boolean {
+  let gallery: unknown;
+  try {
+    gallery = JSON.parse(value);
+  } catch {
+    return false;
+  }
+  return Array.isArray(gallery) && gallery.length <= MAX_GALLERY && gallery.every(isMediaImageUrl);
+}
+
+/** Campos opcionales: vacío ("" o null) se guarda como null; con valor, se valida. */
+const OPTIONAL_FIELDS: Array<[field: string, isValid: (value: unknown) => boolean, message: string]> = [
+  ["event_type", (v) => typeof v === "string" && EVENT_TYPES.includes(v), `Invalid event_type. Must be one of: ${EVENT_TYPES.join(", ")}`],
+  ["solution", (v) => typeof v === "string" && v.length <= MAX_TEXT, `solution debe ser texto de hasta ${MAX_TEXT} caracteres`],
+  ["result", (v) => typeof v === "string" && v.length <= MAX_TEXT, `result debe ser texto de hasta ${MAX_TEXT} caracteres`],
+  ["before_media_url", isMediaImageUrl, "before_media_url debe ser una imagen de /api/media"],
+  ["after_media_url", isMediaImageUrl, "after_media_url debe ser una imagen de /api/media"],
+  ["gallery_json", (v) => typeof v === "string" && isValidGallery(v), "gallery_json debe ser un arreglo JSON de imágenes de /api/media"],
+  ["link", (v) => typeof v === "string" && isSafeLink(v), "link debe ser una URL http(s) válida"],
+];
+
+type EventInput = { ok: true; fields: Record<string, string | null> } | { ok: false; error: string };
+
+/**
+ * Valida el cuerpo de un evento. Crear y actualizar aplican exactamente las
+ * mismas reglas: al actualizar (`partial`) los campos ausentes no se tocan, y
+ * al crear se completan con los valores por defecto de siempre (status
+ * "draft", opcionales en null). Un UPDATE no acepta nada que un CREATE
+ * rechazaría.
+ */
+function parseEventInput(body: unknown, partial: boolean): EventInput {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return { ok: false, error: "El cuerpo debe ser un objeto JSON" };
+  }
+  const b = body as Record<string, unknown>;
+  const fields: Record<string, string | null> = {};
+
+  if (!partial || b.title !== undefined) {
+    if (typeof b.title !== "string" || !b.title.trim()) return { ok: false, error: "title is required" };
+    if (b.title.length > MAX_TITLE) return { ok: false, error: `title admite como máximo ${MAX_TITLE} caracteres` };
+    fields.title = b.title;
+  }
+
+  if (!partial || b.status !== undefined) {
+    if (!partial && (b.status === undefined || b.status === null || b.status === "")) {
+      fields.status = "draft";
+    } else if (typeof b.status === "string" && EVENT_STATUSES.includes(b.status)) {
+      fields.status = b.status;
+    } else {
+      return { ok: false, error: `Invalid status. Must be one of: ${EVENT_STATUSES.join(", ")}` };
+    }
+  }
+
+  for (const [field, isValid, message] of OPTIONAL_FIELDS) {
+    const value = b[field];
+    if (partial && value === undefined) continue;
+    if (value === undefined || value === null || value === "") fields[field] = null;
+    else if (isValid(value)) fields[field] = value as string;
+    else return { ok: false, error: message };
+  }
+
+  return { ok: true, fields };
+}
+
+/** Cuerpo JSON de la petición, o undefined si no es JSON válido. */
+async function readJson(request: Request): Promise<unknown> {
+  try {
+    return await request.json();
+  } catch {
+    return undefined;
+  }
 }
 
 async function listEvents(request: Request, env: Env): Promise<Response> {
@@ -66,10 +167,14 @@ async function listEvents(request: Request, env: Env): Promise<Response> {
   }
 }
 
-async function getEvent(env: Env, id: number): Promise<Response> {
+async function getEvent(env: Env, id: number, access: AccessCheck): Promise<Response> {
   try {
     const row = await queryOne(env.STRATON_DB, "SELECT * FROM events WHERE id = ?", [id]);
-    if (!row) return error("Event not found", 404);
+    // Un borrador solo existe para el panel: al público se le responde igual
+    // que si no existiera.
+    if (!row || (row.status !== PUBLIC_STATUS && !(await access.isAdmin()))) {
+      return error("Event not found", 404);
+    }
     return json(row);
   } catch (e) {
     return handleDbError(e, env);
@@ -78,22 +183,15 @@ async function getEvent(env: Env, id: number): Promise<Response> {
 
 async function createEvent(request: Request, env: Env): Promise<Response> {
   try {
-    const body = await request.json() as Record<string, unknown>;
-    if (!body.title || typeof body.title !== "string") return error("title is required");
-    // Validar tipos de campos opcionales
-    if (body.gallery_json !== undefined && body.gallery_json !== null && typeof body.gallery_json !== "string") return error("gallery_json debe ser string JSON", 400);
-    if (body.link !== undefined && body.link !== null && typeof body.link !== "string") return error("link debe ser texto", 400);
-
-    const validTypes = ["corporativo", "social", "concierto"];
-    if (body.event_type && !validTypes.includes(body.event_type as string)) {
-      return error(`Invalid event_type. Must be one of: ${validTypes.join(", ")}`, 400);
-    }
+    const input = parseEventInput(await readJson(request), false);
+    if (!input.ok) return error(input.error, 400);
+    const f = input.fields;
 
     const result = await execute(
       env.STRATON_DB,
       `INSERT INTO events (title, event_type, solution, result, before_media_url, after_media_url, gallery_json, status, link)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [body.title, body.event_type || null, body.solution || null, body.result || null, body.before_media_url || null, body.after_media_url || null, body.gallery_json || null, body.status || "draft", body.link || null]
+      [f.title, f.event_type, f.solution, f.result, f.before_media_url, f.after_media_url, f.gallery_json, f.status, f.link]
     );
 
     const inserted = await queryOne(env.STRATON_DB, "SELECT * FROM events WHERE id = ?", [result.meta.last_row_id]);
@@ -108,26 +206,27 @@ async function updateEvent(request: Request, env: Env, id: number): Promise<Resp
     const existing = await queryOne(env.STRATON_DB, "SELECT * FROM events WHERE id = ?", [id]);
     if (!existing) return error("Event not found", 404);
 
-    const body = await request.json() as Record<string, unknown>;
-    const sets: string[] = [];
-    const params: unknown[] = [];
-    // Limpiar imágenes anteriores de R2 si se reemplazaron
-    if (body.before_media_url !== undefined && existing.before_media_url && existing.before_media_url !== body.before_media_url) {
-      deleteR2Object(existing.before_media_url as string, env);
-    }
-    if (body.after_media_url !== undefined && existing.after_media_url && existing.after_media_url !== body.after_media_url) {
-      deleteR2Object(existing.after_media_url as string, env);
-    }
-    const fields = ["title", "event_type", "solution", "result", "before_media_url", "after_media_url", "gallery_json", "status", "link"];
-    for (const field of fields) {
-      if (body[field] !== undefined) {
-        sets.push(`${field} = ?`);
-        params.push(body[field]);
+    const input = parseEventInput(await readJson(request), true);
+    if (!input.ok) return error(input.error, 400);
+    // Los nombres de columna salen de la validación, nunca del cuerpo.
+    const entries = Object.entries(input.fields);
+    if (entries.length === 0) return error("No fields to update", 400);
+
+    await execute(
+      env.STRATON_DB,
+      `UPDATE events SET ${entries.map(([field]) => `${field} = ?`).join(", ")} WHERE id = ?`,
+      [...entries.map(([, value]) => value), id]
+    );
+
+    // Imágenes reemplazadas: se borran de R2 después de guardar, y solo si
+    // viven en la carpeta de eventos. El valor anterior sale del registro en
+    // D1, no de la petición.
+    for (const field of ["before_media_url", "after_media_url"]) {
+      if (field in input.fields && existing[field] && existing[field] !== input.fields[field]) {
+        deleteR2Object(existing[field], env, EVENT_MEDIA_FOLDERS);
       }
     }
-    if (sets.length === 0) return error("No fields to update", 400);
-    params.push(id);
-    await execute(env.STRATON_DB, `UPDATE events SET ${sets.join(", ")} WHERE id = ?`, params);
+
     const updated = await queryOne(env.STRATON_DB, "SELECT * FROM events WHERE id = ?", [id]);
     return json(updated);
   } catch (e) {
