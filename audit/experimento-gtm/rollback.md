@@ -4,20 +4,45 @@
 
 | Dato | Valor |
 |---|---|
-| Commit | `c449d9b635531f199928aa111565b5719e1cce0e` (rama `straton-audio-web`) |
-| Versión del Worker | `cb79a035-f471-49cd-a8e8-8bff7a0ed45f` (tag `c449d9b`) |
-| Deployment | `54a822d4-111c-47d3-b215-7f9579f4008d` (2026-09-24T17:26:43Z, 100 % del tráfico) |
+| Commit | `f2dea140e2b7dc40165c6e9c94260cc4771ae28a` (rama `straton-audio-web`). El runtime es el de `c449d9b`: `f2dea14` solo cambió `audit/` y `.dev.vars.example`. |
+| Versión del Worker | `65c3ee36-a675-43c1-b317-703c912c1d7f` (tag `telegram-token-20260924`) |
+| Deployment | `c37d2837-4563-427e-aabb-3d1e18d0c5e2` (2026-09-24T18:39:30Z, 100 % del tráfico) |
+| Motivo de la versión | Rotación de `TELEGRAM_BOT_TOKEN`. Sin cambios de código. |
 | Contenido | GTM diferido a 3 s y CTA de WhatsApp en pestaña nueva (`93a4d5a`), hotfix de seguridad (`703e2c0`), workers.dev y URLs de versión cerrados en la config (`398dfe3`) y canonical único (`948f868`, `c449d9b`). |
 
-Verificado ese día: el `index.js` desplegado es byte a byte el build de `c449d9b`.
+Verificado el 2026-09-24: el `index.js` de `cb79a035` (versión anterior,
+deployment `54a822d4`) es byte a byte el build de `c449d9b`, y `65c3ee36` tiene
+el mismo script (etag `fde2021d…`) y los mismos bindings que `cb79a035`. Solo
+cambia el valor del token.
 
 ## Rollback seguro
 
-La única versión anterior a la que se puede volver es:
+Punto de rollback operativo recomendado para futuros deploys:
 
-| Versión | Commit | Qué se pierde |
+| Versión | Commit | Qué conserva |
 |---|---|---|
-| `d6b9b626-27fd-431c-96ce-956fcb8fbd96` (deployment `4c45a512-f7db-4ffc-856b-68b7d3cce046`, 2026-09-24T15:46:14Z) | `703e2c0` | Solo el canonical único: canonical, `og:url`, JSON-LD de página y sitemap vuelven a armarse con el host de la petición, y la home queda sin canonical. Conserva el hotfix de seguridad. Con el estado externo actual (solo se sirve `https://stratonaudio.com.co`) el efecto práctico es pequeño. |
+| `65c3ee36-a675-43c1-b317-703c912c1d7f` (deployment `c37d2837-4563-427e-aabb-3d1e18d0c5e2`) | `f2dea14` (runtime de `c449d9b`) | El hotfix de seguridad, el canonical único y el token de Telegram vigente. |
+
+Sirve mientras siga siendo compatible con el cambio que se quiera revertir. Si
+un deploy posterior cambia el esquema de D1, agrega bindings o vuelve a rotar
+un secreto, hay que revisar la compatibilidad antes de volver a esta versión.
+
+### `cb79a035` y `d6b9b626` no sirven como rollback completo
+
+`cb79a035-f471-49cd-a8e8-8bff7a0ed45f` y `d6b9b626-27fd-431c-96ce-956fcb8fbd96`
+contienen el `TELEGRAM_BOT_TOKEN` anterior, y ese token se revocó en BotFather.
+Volver directamente a ellas **no** vuelve válido el token viejo: provocaría
+fallos en las notificaciones de Telegram. El fallo no se ve en el sitio, porque
+el formulario sigue respondiendo 201 y el error solo queda en los logs del
+Worker (`Telegram notification failed`). **No deben usarse como rollback
+completo de producción.**
+
+Wrangler advierte que los secretos cambiaron desde esa versión, pero sin
+terminal interactiva (un agente, un script o CI) la confirmación se acepta
+automáticamente.
+Si hace falta el código de una de esas versiones (por ejemplo, quitar el
+canonical único, que es lo único que separa `d6b9b626` de `cb79a035`), se usa
+el Nivel 2.
 
 > **NO usar como rollback `5809d51e`, `65b825a5`, `9bcc9b75` ni ninguna versión
 > anterior al hotfix `703e2c0`.** Tienen vulnerabilidades ya cerradas: escritura
@@ -38,26 +63,32 @@ env -u CLOUDFLARE_API_TOKEN npx wrangler deployments status
 
 ### Nivel 1: volver a la versión segura (segundos)
 
-Cada versión lleva su propio manifiesto de assets, así que el rollback restaura
-también `app.js` y el HTML, no solo el código del Worker.
+Sirve para deshacer un deploy posterior a `65c3ee36`. Cada versión lleva su
+propio manifiesto de assets y sus propios secretos, así que el rollback
+restaura también `app.js`, el HTML y los secretos de esa versión, no solo el
+código del Worker.
 
 ```bash
-env -u CLOUDFLARE_API_TOKEN npx wrangler rollback d6b9b626-27fd-431c-96ce-956fcb8fbd96 --message "rollback a d6b9b626" -y
+env -u CLOUDFLARE_API_TOKEN npx wrangler rollback 65c3ee36-a675-43c1-b317-703c912c1d7f --message "rollback a 65c3ee36" -y
 ```
 
 ### Nivel 2: revertir en git (minutos)
 
-Deja el repositorio y producción alineados. Conserva el hotfix y la config que
-cierra workers.dev.
+Deja el repositorio y producción alineados. Conserva el hotfix, la config que
+cierra workers.dev y los secretos vigentes: `wrangler deploy` no toca los
+secretos (los deploys de `d6b9b626` y `cb79a035` los conservaron).
 
 ```bash
-git revert c449d9b635531f199928aa111565b5719e1cce0e 948f868a6a92f7acbe25074e029d563a45f18e9c
-env -u CLOUDFLARE_API_TOKEN npx wrangler deploy --tag <sha> --message "revert: canonical único"
+git revert <sha del cambio a deshacer>
+env -u CLOUDFLARE_API_TOKEN npx wrangler deploy --tag <sha> --message "revert: <qué se deshace>"
 ```
+
+Por ejemplo, para quitar el canonical único:
+`git revert c449d9b635531f199928aa111565b5719e1cce0e 948f868a6a92f7acbe25074e029d563a45f18e9c`.
 
 ## Después de CUALQUIER rollback o deploy
 
-1. **workers.dev y las URLs de versión siguen cerradas.** Las URLs de versión
+1. **workers.dev = false y previews_enabled = false.** Las URLs de versión
    sirven versiones viejas con los bindings de producción (D1, KV y R2), así que
    esto se comprueba siempre:
    - Dashboard: Workers → `straton-audio` → Settings → Domains & Routes:
@@ -69,13 +100,26 @@ env -u CLOUDFLARE_API_TOKEN npx wrangler deploy --tag <sha> --message "revert: c
 
    Si alguno volvió a `true`, apagarlo de inmediato: dashboard, o `POST` a la
    misma ruta con `{"enabled": false, "previews_enabled": false}`.
-2. **Seguridad**, sin sesión y sin escribir nada:
+2. **Los endpoints protegidos siguen protegidos**, sin sesión y sin escribir nada:
    ```bash
    curl -s -o /dev/null -w "%{http_code}\n" -X PUT https://stratonaudio.com.co/api/events/999999999   # 401
    curl -s -o /dev/null -w "%{http_code}\n" "https://stratonaudio.com.co/api/events?status=all"        # 401
    curl -s -o /dev/null -w "%{http_code}\n" https://stratonaudio.com.co/api/quotations/999999999 -X PUT # 401
    ```
-3. `/`, `/sonido` y `/pantallas-led` responden 200.
+3. **Página web funcional:** `/`, `/sonido` y `/pantallas-led` responden 200.
+4. **Formulario y Telegram funcionales.** Se prueban juntos: el aviso de
+   Telegram solo sale al crear una cotización, y el formulario responde bien
+   aunque Telegram falle.
+   - Enviar una cotización de prueba con un nombre inconfundible (por ejemplo
+     `PRUEBA ROLLBACK AAAA-MM-DD`). El formulario debe mostrar la confirmación y
+     el aviso debe llegar al bot. Si no llega, buscar
+     `Telegram notification failed` en los logs del Worker.
+   - Enviada desde el navegador, GTM puede contarla como conversión del
+     formulario en Google Ads.
+   - Después, borrarla con autorización, como la cotización #26 del 2026-09-24:
+     leer la fila, borrar con
+     `DELETE FROM quotations WHERE id = <id> AND customer_name = '<nombre exacto>'`
+     y confirmar que el total bajó exactamente en 1.
 
 ## Deshacer el diferimiento de GTM (sin volver a versiones viejas)
 
@@ -97,7 +141,7 @@ env -u CLOUDFLARE_API_TOKEN npx wrangler deploy --tag <sha> --message "revert: c
 | URLs de versión (preview) | `previews_enabled: false` | Worker → Domains & Routes; además `"preview_urls": false` en `wrangler.jsonc` |
 | Dominio custom | `stratonaudio.com.co` → Worker `straton-audio` | Worker → Domains & Routes (Workers Custom Domain; no está en `wrangler.jsonc`) |
 | Cloudflare Access | Protege `stratonaudio.com.co/admin` (team `divine-band-3e2f`) | Zero Trust → Access → Applications |
-| Secretos de producción | `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` como secrets del Worker | `wrangler secret put` (no están en git ni en `.dev.vars`; ver `.dev.vars.example`) |
+| Secretos de producción | `TELEGRAM_BOT_TOKEN` (rotado el 2026-09-24; el anterior está revocado en BotFather) y `TELEGRAM_CHAT_ID` como secrets del Worker. Cada versión guarda sus propios valores. | `wrangler secret put` (no están en git ni en `.dev.vars`; ver `.dev.vars.example`) |
 | Dominio canónico | `https://stratonaudio.com.co` (apex, HTTPS) | `SITE_URL` en `src/seo/jsonld.ts` |
 
 ## Señales que justifican revertir
