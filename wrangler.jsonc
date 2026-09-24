@@ -6,6 +6,12 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  // Solo se sirve por el dominio custom stratonaudio.com.co (configurado en el
+  // dashboard). workers.dev y las URLs de versión quedan cerradas: exponían
+  // versiones antiguas con los bindings de producción. Sin workers_dev: false,
+  // cada wrangler deploy vuelve a abrir workers.dev (no hay routes declaradas).
+  "workers_dev": false,
+  "preview_urls": false,
   "vars": {
     "ENVIRONMENT": "production",
     "CF_ACCESS_TEAM_DOMAIN": "divine-band-3e2f",
