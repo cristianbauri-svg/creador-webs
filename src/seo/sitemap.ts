@@ -2,6 +2,7 @@
 // quede siempre sincronizado con lo que el panel admin publique o borre
 // (el sitio no tiene una lista fija de páginas: se crean/eliminan desde /admin).
 import { queryAll } from "../utils/d1";
+import { SITE_URL } from "./jsonld";
 import type { Env } from "../index";
 
 function escapeXml(value: string): string {
@@ -19,8 +20,10 @@ function urlEntry(loc: string, lastmod?: unknown): string {
   return `<url><loc>${escapeXml(loc)}</loc>${lastmodTag}</url>`;
 }
 
-export async function handleSitemap(env: Env, origin: string): Promise<Response> {
-  const entries = [urlEntry(`${origin}/`)];
+// Todas las URLs salen de SITE_URL: el sitemap es el mismo sin importar el host
+// (http, www, local) por el que se pida.
+export async function handleSitemap(env: Env): Promise<Response> {
+  const entries = [urlEntry(`${SITE_URL}/`)];
 
   try {
     const pages = await queryAll(
@@ -30,7 +33,7 @@ export async function handleSitemap(env: Env, origin: string): Promise<Response>
     for (const page of pages) {
       const slug = String(page.slug || "").trim();
       if (!slug) continue;
-      entries.push(urlEntry(`${origin}/${slug}`, page.updated_at));
+      entries.push(urlEntry(`${SITE_URL}/${slug}`, page.updated_at));
     }
   } catch (e) {
     console.error("Error generando sitemap:", e);

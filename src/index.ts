@@ -15,7 +15,7 @@ import { handlePages } from "./routes/pages";
 import { handleSettings } from "./routes/settings";
 import { handleUpload } from "./routes/upload";
 import { handleMedia } from "./routes/media";
-import { injectJsonLd, pageJsonLdScriptTag, siteUrlScript, type PageContext } from "./seo/jsonld";
+import { injectJsonLd, pageJsonLdScriptTag, siteUrlScript, SITE_URL, type PageContext } from "./seo/jsonld";
 import { handleSitemap } from "./seo/sitemap";
 
 export interface Env {
@@ -43,7 +43,7 @@ export default {
     // Sitemap XML dinámico — se resuelve con D1 en cada request, no es un
     // archivo estático, así que se intercepta antes del flujo de assets.
     if (pathname === "/sitemap.xml") {
-      return handleSitemap(env, url.origin);
+      return handleSitemap(env);
     }
 
     // Páginas dinámicas: buscar slug en D1 antes de servir assets.
@@ -77,13 +77,13 @@ export default {
 
     if (contentType.includes("text/html")) {
       if (page) {
-        return injectDynamicPage(assetResponse, page, url.origin);
+        return injectDynamicPage(assetResponse, page);
       }
       if (pathname === "/admin/" || pathname === "/admin/index.html") {
         const adminEmail = request.headers.get("Cf-Access-Authenticated-User-Email");
-        return injectAdminEmail(injectJsonLd(assetResponse, url.origin), adminEmail);
+        return injectAdminEmail(injectJsonLd(assetResponse), adminEmail);
       }
-      return injectJsonLd(assetResponse, url.origin);
+      return injectJsonLd(assetResponse);
     }
 
     return assetResponse;
@@ -422,9 +422,10 @@ const HOME_ONLY_SELECTORS = [
 /**
  * Inyecta window.__PAGE__ con los datos de la página dinámica, el JSON-LD
  * SEO y window.__SITE_URL__ en el <head> del HTML. Usa HTMLRewriter para
- * no consumir el stream innecesariamente.
+ * no consumir el stream innecesariamente. Todas las URLs de SEO salen de
+ * SITE_URL, nunca del host de la petición.
  */
-function injectDynamicPage(response: Response, page: Record<string, unknown>, origin: string): Response {
+function injectDynamicPage(response: Response, page: Record<string, unknown>): Response {
   let contentJson: Record<string, unknown> = {};
   if (page.content_json && typeof page.content_json === "string") {
     try {
@@ -463,15 +464,16 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
     meta_title: typeof page.meta_title === "string" ? page.meta_title : null,
     meta_description: typeof page.meta_description === "string" ? page.meta_description : null,
   };
-  const ldJson = pageJsonLdScriptTag(pageContext, origin);
-  const siteScript = siteUrlScript(origin);
+  const ldJson = pageJsonLdScriptTag(pageContext);
+  const siteScript = siteUrlScript();
 
   // SEO on-page server-side: title, meta description, canonical y Open Graph
   // específicos de la página. Así el HTML crudo (sin ejecutar JS) ya trae los
-  // valores correctos para crawlers, redes sociales y agentes.
+  // valores correctos para crawlers, redes sociales y agentes. El slug sale de
+  // D1, así que la query de la petición (?utm_source, ?gclid…) nunca entra.
   const seoTitle = pageContext.meta_title || pageContext.title || null;
   const seoDescription = pageContext.meta_description || null;
-  const canonicalUrl = slug ? `${origin}/${slug}` : origin;
+  const canonicalUrl = slug ? `${SITE_URL}/${slug}` : `${SITE_URL}/`;
 
   class HeadHandler {
     element(element: Element) {
@@ -479,7 +481,15 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
       element.append(pageScript, { html: true });
       element.append(siteScript, { html: true });
       element.append(HIDE_LANDING_STYLE, { html: true });
-      element.append(`<link rel="canonical" href="${canonicalUrl}" />`, { html: true });
+      element.append(`<link rel="canonical" href="${escapeAttrValue(canonicalUrl)}" />`, { html: true });
+    }
+  }
+
+  // El shell (index.html) trae el canonical de la home: se quita para que la
+  // página dinámica tenga exactamente uno, el suyo.
+  class ShellCanonicalHandler {
+    element(element: Element) {
+      element.remove();
     }
   }
 
@@ -570,6 +580,7 @@ function injectDynamicPage(response: Response, page: Record<string, unknown>, or
 
   let rewriter = new HTMLRewriter()
     .on("head", new HeadHandler())
+    .on('link[rel="canonical"]', new ShellCanonicalHandler())
     .on("title", new TitleHandler())
     .on('meta[name="description"]', new MetaDescriptionHandler())
     .on('meta[property="og:title"]', new OgTitleHandler())

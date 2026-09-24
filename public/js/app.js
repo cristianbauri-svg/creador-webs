@@ -2316,31 +2316,11 @@
   // Inicialización
   // =========================================================
 
-  /**
-   * Corrige los enlaces internos hardcodeados a producción para que
-   * funcionen con el origen actual (local o producción). Usa
-   * window.__SITE_URL__ inyectado por el Worker como fuente de verdad.
-   */
-  function fixInternalLinks() {
-    var siteUrl = window.__SITE_URL__ || window.location.origin;
-    var PROD = 'https://stratonaudio.com.co';
-
-    // Si ya estamos en el dominio de producción, no hay nada que corregir
-    if (siteUrl === PROD) return;
-
-    var links = document.querySelectorAll('a');
-    for (var i = 0; i < links.length; i++) {
-      var rawHref = links[i].getAttribute('href');
-      if (rawHref && rawHref.indexOf(PROD) === 0) {
-        links[i].setAttribute('href', rawHref.replace(PROD, siteUrl));
-      }
-    }
-  }
+  // Los enlaces internos de index.html apuntan al dominio canónico
+  // https://stratonaudio.com.co y no se reescriben según el host desde el que
+  // se sirve la página (antes se pasaban a http, www, workers.dev o local).
 
   async function init() {
-    // Corregir enlaces internos antes de cualquier otra operación
-    fixInternalLinks();
-
     // Rastrear clicks de WhatsApp para conversión (Google Ads / GTM)
     initWhatsAppTracking();
 

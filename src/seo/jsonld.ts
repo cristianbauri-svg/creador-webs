@@ -36,7 +36,10 @@
  * =============================================================================
  */
 
-const SITE_URL = "https://stratonaudio.com.co";
+/** URL canónica del sitio: única fuente para canonical, og:url, JSON-LD y
+ *  sitemap. Nunca se deriva del host de la petición (http, www, workers.dev
+ *  o local servirían de otro modo metadatos con un dominio incorrecto). */
+export const SITE_URL = "https://stratonaudio.com.co";
 const ORG_ID = `${SITE_URL}/#organization`;
 
 // -----------------------------------------------------------------------------
@@ -330,16 +333,16 @@ export interface PageContext {
   meta_description?: string | null;
 }
 
-export function buildPageJsonLdGraph(page: PageContext, origin: string): Record<string, unknown> {
+export function buildPageJsonLdGraph(page: PageContext): Record<string, unknown> {
   const base = buildJsonLdGraph();
-  const url = `${origin}/${page.slug}`;
+  const url = `${SITE_URL}/${page.slug}`;
   const pageName = page.meta_title || page.title || "Straton Audio";
   const description = page.meta_description || "";
 
   const website = {
     "@type": "WebSite",
-    "@id": `${origin}/#website`,
-    url: origin,
+    "@id": `${SITE_URL}/#website`,
+    url: SITE_URL,
     name: "Straton Audio",
     publisher: { "@id": ORG_ID },
   };
@@ -350,7 +353,7 @@ export function buildPageJsonLdGraph(page: PageContext, origin: string): Record<
     url,
     name: pageName,
     inLanguage: "es",
-    isPartOf: { "@id": `${origin}/#website` },
+    isPartOf: { "@id": `${SITE_URL}/#website` },
     about: { "@id": `${url}#service` },
   };
   if (description) webpage.description = description;
@@ -374,7 +377,7 @@ export function buildPageJsonLdGraph(page: PageContext, origin: string): Record<
     "@type": "BreadcrumbList",
     "@id": `${url}#breadcrumb`,
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Inicio", item: origin },
+      { "@type": "ListItem", position: 1, name: "Inicio", item: SITE_URL },
       { "@type": "ListItem", position: 2, name: serviceName, item: url },
     ],
   };
@@ -385,24 +388,17 @@ export function buildPageJsonLdGraph(page: PageContext, origin: string): Record<
   };
 }
 
-export function pageJsonLdScriptTag(page: PageContext, origin: string): string {
-  return `<script type="application/ld+json">${JSON.stringify(buildPageJsonLdGraph(page, origin))}</script>`;
+export function pageJsonLdScriptTag(page: PageContext): string {
+  return `<script type="application/ld+json">${JSON.stringify(buildPageJsonLdGraph(page))}</script>`;
 }
 
 /**
- * Genera un <script> que expone el origen actual de la solicitud para que
- * el frontend pueda reescribir enlaces internos hardcodeados a producción.
+ * Expone la URL canónica del sitio como window.__SITE_URL__. Es la constante
+ * SITE_URL, nunca el origen de la petición: ya ningún script reescribe
+ * enlaces según el host desde el que se sirve la página.
  */
-export function siteUrlScript(origin: string): string {
-  // Escapar caracteres peligrosos para prevenir XSS vía Host header:
-  // - Comillas dobles romperían el string literal JS
-  // - "</script>" cerraría prematuramente el tag <script>
-  // - Backslash podría usarse para evadir los escapes anteriores
-  const safe = origin
-    .replace(/\\/g, "\\\\")
-    .replace(/"/g, '\\"')
-    .replace(/</g, "\\x3c");
-  return `<script>window.__SITE_URL__ = "${safe}";</script>`;
+export function siteUrlScript(): string {
+  return `<script>window.__SITE_URL__ = ${JSON.stringify(SITE_URL)};</script>`;
 }
 
 /**
@@ -410,11 +406,11 @@ export function siteUrlScript(origin: string): string {
  * justo antes de que cierre el <head>, sin tocar ningún otro nodo del
  * documento ni la lógica de renderizado existente.
  */
-export function injectJsonLd(response: Response, origin: string): Response {
+export function injectJsonLd(response: Response): Response {
   class HeadHandler {
     element(element: Element) {
       element.append(jsonLdScriptTag(), { html: true });
-      element.append(siteUrlScript(origin), { html: true });
+      element.append(siteUrlScript(), { html: true });
     }
   }
   return new HTMLRewriter().on("head", new HeadHandler()).transform(response);
