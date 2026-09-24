@@ -109,7 +109,8 @@ describe("canonical único: home", () => {
     it(`${host}/ → un solo canonical, https://stratonaudio.com.co/`, async () => {
       const html = await get(`${host}/`);
       expect(canonicals(html)).toEqual([`${APEX}/`]);
-      expect(ogUrl(html)).toBe(APEX);
+      // og:url idéntico al canonical, con la barra final.
+      expect(ogUrl(html)).toBe(`${APEX}/`);
       expect(siteUrl(html)).toBe(APEX);
     });
 
