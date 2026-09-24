@@ -17,6 +17,12 @@
     "CF_ACCESS_TEAM_DOMAIN": "divine-band-3e2f",
     "CF_ACCESS_AUD": "1ea2c0985c3902126727928ac8bf39356f04b64a07958836b2592075decbfbf1"
   },
+  "secrets": {
+    "required": [
+      "TELEGRAM_BOT_TOKEN",
+      "TELEGRAM_CHAT_ID"
+    ]
+  },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
