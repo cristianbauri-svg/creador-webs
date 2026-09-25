@@ -506,3 +506,94 @@ describe("Fase 5 — los borradores solo los ve el panel", () => {
     }
   });
 });
+
+// -----------------------------------------------------------------------------
+// Fase 6 — productos: la imagen vieja se borra de R2 solo tras un UPDATE exitoso
+// -----------------------------------------------------------------------------
+
+describe("Fase 6 — updateProduct borra la imagen vieja solo si D1 aceptó el cambio", () => {
+  const OLD_KEY = "products/0c4a1f2e-6b7d-4e8f-9a0b-1c2d3e4f5a61.webp";
+  const NEW_KEY = "products/7e8f9a0b-1c2d-4e3f-8a5b-6c7d8e9f0a12.webp";
+  const OLD_URL = `/api/media/${OLD_KEY}`;
+  const NEW_URL = `/api/media/${NEW_KEY}`;
+
+  /** El R2 emulado real, con un registro de las claves que se piden borrar. */
+  function spyBucket() {
+    const deleted: string[] = [];
+    const real = env.STRATON_BUCKET;
+    const bucket = {
+      delete: (key: string) => {
+        deleted.push(key);
+        return real.delete(key);
+      },
+    } as unknown as R2Bucket;
+    return { bucket, deleted };
+  }
+
+  const productRow = (id: number) => env.STRATON_DB.prepare("SELECT * FROM products WHERE id = ?").bind(id).first();
+  const putObject = (key: string) => env.STRATON_BUCKET.put(key, new Uint8Array([82, 73, 70, 70]), { httpMetadata: { contentType: "image/webp" } });
+
+  /** deleteR2Object no se espera (fire-and-forget): sondeo acotado, 20 × 10 ms. */
+  async function goneFromR2(key: string): Promise<boolean> {
+    for (let i = 0; i < 20; i++) {
+      if ((await env.STRATON_BUCKET.head(key)) === null) return true;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    return false;
+  }
+
+  beforeEach(async () => {
+    await putObject(OLD_KEY);
+    await putObject(NEW_KEY);
+    await insertRow("products", { id: 1, title: "Prod", category: "Audio", service_type: "Venta", status: "published", image_url: OLD_URL });
+  });
+
+  it("si D1 rechaza el UPDATE, la imagen vieja sigue en R2 y en la fila", async () => {
+    const { bucket, deleted } = spyBucket();
+    // El CHECK de service_type lo conserva la migración 010, a diferencia del de category.
+    const res = await call("PUT", "/api/products/1", {
+      token: await accessJwt(),
+      env: testEnv({ STRATON_BUCKET: bucket }),
+      body: { image_url: NEW_URL, service_type: "Trueque" },
+    });
+    expect(res.status).toBe(500);
+    expect(await productRow(1)).toMatchObject({ image_url: OLD_URL, service_type: "Venta" });
+    expect(deleted).toEqual([]);
+    expect(await env.STRATON_BUCKET.head(OLD_KEY)).not.toBeNull();
+  });
+
+  it("si el UPDATE se guarda, la fila apunta a la nueva y la vieja se borra de R2", async () => {
+    const { bucket, deleted } = spyBucket();
+    const res = await call("PUT", "/api/products/1", {
+      token: await accessJwt(),
+      env: testEnv({ STRATON_BUCKET: bucket }),
+      body: { image_url: NEW_URL },
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ id: 1, image_url: NEW_URL });
+    expect(await productRow(1)).toMatchObject({ image_url: NEW_URL });
+    expect(deleted).toEqual([OLD_KEY]);
+    expect(await goneFromR2(OLD_KEY)).toBe(true);
+    expect(await env.STRATON_BUCKET.head(NEW_KEY)).not.toBeNull();
+  });
+
+  const NO_DELETE: Array<[name: string, stored: string | null, body: Record<string, unknown>]> = [
+    ["el body no trae image_url", OLD_URL, { title: "Prod editado" }],
+    ["la image_url nueva es igual a la actual", OLD_URL, { image_url: OLD_URL, title: "Prod editado" }],
+    ["la fila no tenía imagen", null, { image_url: NEW_URL }],
+    ["la imagen vieja es de otra carpeta", "/api/media/events/1edf0c65-2704-4992-b574-689ae5ea8024.webp", { image_url: NEW_URL }],
+    ["la imagen vieja es una URL absoluta", `https://stratonaudio.com.co${OLD_URL}`, { image_url: NEW_URL }],
+    ["la imagen vieja intenta salir de products/", "/api/media/products/../hero/portada.webp", { image_url: NEW_URL }],
+  ];
+
+  for (const [name, stored, body] of NO_DELETE) {
+    it(`no pide borrar nada en R2 cuando ${name}`, async () => {
+      await env.STRATON_DB.prepare("UPDATE products SET image_url = ? WHERE id = 1").bind(stored).run();
+      const { bucket, deleted } = spyBucket();
+      const res = await call("PUT", "/api/products/1", { token: await accessJwt(), env: testEnv({ STRATON_BUCKET: bucket }), body });
+      expect(res.status).toBe(200);
+      expect(deleted).toEqual([]);
+      expect(await env.STRATON_BUCKET.head(OLD_KEY)).not.toBeNull();
+    });
+  }
+});

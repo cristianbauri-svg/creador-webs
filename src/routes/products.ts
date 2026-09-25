@@ -142,13 +142,14 @@ async function updateProduct(request: Request, env: Env, id: number): Promise<Re
 
     if (sets.length === 0) return error("No fields to update", 400);
 
-    // Limpiar imagen anterior de R2 si se reemplazó
+    params.push(id);
+    await execute(env.STRATON_DB, `UPDATE products SET ${sets.join(", ")} WHERE id = ?`, params);
+
+    // Limpiar la imagen anterior de R2 solo después de que D1 aceptó el cambio:
+    // si el UPDATE falla, la fila sigue apuntando a ella.
     if (body.image_url !== undefined && existing.image_url && existing.image_url !== body.image_url) {
       deleteR2Object(existing.image_url, env, PRODUCT_MEDIA_FOLDERS);
     }
-
-    params.push(id);
-    await execute(env.STRATON_DB, `UPDATE products SET ${sets.join(", ")} WHERE id = ?`, params);
 
     const updated = await queryOne(env.STRATON_DB, "SELECT * FROM products WHERE id = ?", [id]);
     return json(updated);
