@@ -1,9 +1,18 @@
 # Estado y reconciliación de migraciones D1 — 2026-09-25
 
-> **Estado vigente:** la reconciliación se completó el 2026-09-25 (fase D1-M2). El
-> resultado está en la sección siguiente. Todo lo que aparece bajo «Diagnóstico previo a la
-> reconciliación» es historial: describe el estado anterior y ya no es una instrucción
-> vigente.
+> **Estado vigente (2026-09-25):**
+>
+> - D1-M2 reconcilió las migraciones: las 001–013 están registradas y 010 está aplicada.
+> - D1-M3 sincronizó con ese estado el fixture de pruebas, las pruebas y la documentación.
+> - D1-M4B eliminó el producto de prueba `products.id = 10`, el último producto sintético
+>   conocido.
+>
+> No quedan tareas pendientes conocidas sobre las migraciones 010–013 ni sobre ese
+> registro. Esto no afirma que la base esté libre de cualquier dato de prueba histórico:
+> solo cierra este registro concreto.
+>
+> Todo lo que aparece bajo «Diagnóstico previo a la reconciliación» es historial: describe
+> el estado anterior y ya no es una instrucción vigente.
 
 ## Resultado D1-M2 — reconciliación completada
 
@@ -69,12 +78,16 @@ reordena: Wrangler identifica cada migración por su nombre.
   - conserva `PRIMARY KEY AUTOINCREMENT`;
   - no existe `products_new`;
   - el DDL quedó guardado como `CREATE TABLE "products"`, un cambio solo cosmético.
-- Datos de `products`: 6 filas, con ids entre 1 y 10. El fingerprint SHA-256 del conjunto
-  (`2cf0be5d88ca3c6faf487ff5c7ed2cbe8beee7971de79e340617a190802f0600`) es idéntico antes y
-  después.
-- El producto 10 (`auth-test-post-deploy`, `draft`) sigue presente. Su limpieza será una
-  operación separada.
-- `sqlite_sequence(products)` = 10.
+- Datos de `products` al cerrar D1-M2: 6 filas, con ids entre 1 y 10. El fingerprint
+  SHA-256 del conjunto (`2cf0be5d88ca3c6faf487ff5c7ed2cbe8beee7971de79e340617a190802f0600`)
+  es idéntico antes y después de 010.
+- Estado vigente tras la limpieza D1-M4B:
+  - 5 filas en `products`, con `MAX(id)` = 5;
+  - `products.id = 10` ya no existe;
+  - `sqlite_sequence(products)` sigue en 10. No se modificó a mano, así que el próximo
+    INSERT con AUTOINCREMENT continuará por encima de 10.
+
+  Ver «Limpieza posterior — D1-M4B».
 - Integridad en remoto:
   - `PRAGMA quick_check` = ok;
   - `PRAGMA foreign_key_check` = 0 violaciones;
@@ -90,6 +103,51 @@ reordena: Wrangler identifica cada migración por su nombre.
 Después (fase D1-M3), `test/fixtures/d1-schema.ts` pasó a reflejar el esquema de
 `products` sin el CHECK de `category`, y se agregó una prueba de API que crea un producto
 con una categoría libre.
+
+## Limpieza posterior — D1-M4B
+
+Registro eliminado: `products.id = 10`, `title = auth-test-post-deploy`, `status = draft`.
+
+**Motivo:** era un registro de prueba inequívoco, sin referencias externas y sin media
+asociada. La auditoría previa (D1-M4A, solo lectura) confirmó:
+
+- 0 foreign keys hacia `products`;
+- 0 referencias en `quotations.products_json`;
+- 0 referencias en `pages`;
+- 0 referencias en el resto de D1;
+- ninguna dependencia en el código de ejecución;
+- `image_url` = null y `gallery_json` = null.
+
+**Bookmark previo al borrado:**
+
+| Dato | Valor |
+|---|---|
+| `PRE_PRODUCT10_DELETE_BOOKMARK` | `00000aea-00000000-000050f1-31391724b521823504409ed69bcbd6d7` |
+| Tomado | 2026-09-25 02:36:54Z |
+
+Es posterior a D1-M2 e inmediatamente anterior al DELETE. Corresponde solo a esta
+limpieza y no reemplaza los bookmarks de D1-M2. No se ejecutó ningún restore.
+
+**DELETE:** se ejecutó exactamente un DELETE, con guardas sobre todos los campos
+revalidados de la fila, y devolvió `changes = 1`.
+
+| Dato | Antes | Después |
+|---|---|---|
+| `COUNT(products)` | 6 | 5 |
+| `MAX(id)` | 10 | 5 |
+| `sqlite_sequence(products)` | 10 | 10 |
+
+**Integridad después del borrado:**
+
+- `PRAGMA quick_check` = ok;
+- `PRAGMA foreign_key_check` = 0;
+- `d1_migrations` sigue con 13 nombres únicos; no hubo migraciones.
+- R2 no cambió, porque el producto no tenía media: `straton-bucket` sigue con 121 objetos
+  y 12.832.906 bytes.
+
+**Backup:** el backup pre-reconciliación
+`d1/straton-db-pre-d1-reconcile-2026-09-25T021152Z.sql` todavía contiene la fila
+eliminada. No se modificó ni se reemplazó, y no se creó un backup nuevo.
 
 ## Diagnóstico previo a la reconciliación (historial)
 
@@ -199,6 +257,8 @@ que 010 conserva, para que siga siendo válida después de la reconciliación.
 y en esas condiciones la reconstrucción de 010 conserva la secuencia. Si el producto
 10 se borrara antes, la reconstrucción podría bajar `sqlite_sequence` a 5 y permitir
 que se reutilicen los ids 6–10. Su limpieza queda para después de 010.
+
+Este registro fue eliminado después, en D1-M4B: ver «Limpieza posterior — D1-M4B».
 
 ### Opciones de reconciliación
 
