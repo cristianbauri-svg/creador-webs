@@ -597,3 +597,22 @@ describe("Fase 6 — updateProduct borra la imagen vieja solo si D1 aceptó el c
     });
   }
 });
+
+// -----------------------------------------------------------------------------
+// Fase 7 — products.category acepta texto libre (migración 010)
+// -----------------------------------------------------------------------------
+
+describe("Fase 7 — una categoría nueva de producto se guarda tal cual", () => {
+  it("POST /api/products con una categoría fuera de la lista histórica → 201", async () => {
+    const CATEGORY = "Audio Profesional Especial";
+    const res = await call("POST", "/api/products", {
+      token: await accessJwt(),
+      body: { title: "Producto categoría libre", category: CATEGORY, service_type: "Venta", status: "draft" },
+    });
+    expect(res.status).toBe(201);
+    const created = (await res.json()) as { id: number; category: string };
+    expect(created.category).toBe(CATEGORY);
+    const row = await env.STRATON_DB.prepare("SELECT category, service_type, status FROM products WHERE id = ?").bind(created.id).first();
+    expect(row).toEqual({ category: CATEGORY, service_type: "Venta", status: "draft" });
+  });
+});

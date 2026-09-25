@@ -45,11 +45,19 @@ Las tres conservan el hotfix de seguridad, el canonical único y el token de
 Telegram vigente. Ninguna reabre workers.dev ni las previews: son ajustes del
 script, no de la versión.
 
-Un rollback sirve solo mientras la versión de destino sea compatible con el
-estado vigente. Si un deploy posterior cambia el esquema de D1 (por ejemplo, la
-reconciliación de migraciones de `audit/d1-migrations-reconciliation-20260925.md`),
-agrega bindings o vuelve a rotar un secreto, hay que revisar la compatibilidad
-antes de volver a cualquiera de estas versiones.
+### Estado de D1 y compatibilidad
+
+- La D1 se reconcilió el 2026-09-25 (D1-M2): las migraciones 001–013 están
+  registradas, 010 está aplicada (`products.category` ya no tiene CHECK) y no
+  quedan migraciones pendientes conocidas. Detalle, backup y bookmarks:
+  `audit/d1-migrations-reconciliation-20260925.md`.
+- **Un rollback del Worker no revierte D1.** 010 solo eliminó el CHECK
+  restrictivo de `category` y no quitó columnas, así que las tres versiones de
+  la tabla siguen siendo compatibles con el esquema actual.
+- Esa compatibilidad no es automática hacia adelante. Si una migración 014+
+  cambia el esquema, o un deploy agrega bindings o vuelve a rotar un secreto,
+  hay que revisar la compatibilidad antes de volver a cualquiera de estas
+  versiones.
 
 ### `cb79a035` y `d6b9b626` no sirven como rollback completo
 

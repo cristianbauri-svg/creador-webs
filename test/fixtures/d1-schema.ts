@@ -1,5 +1,6 @@
 // Esquema de D1 para las pruebas: copia literal de sqlite_master en
-// producción (consultado el 2026-09-24), con IF NOT EXISTS. Solo se aplica a
+// producción (consultado el 2026-09-24; products, tras aplicar la migración 010
+// el 2026-09-25, ya no tiene el CHECK de category), con IF NOT EXISTS. Solo se aplica a
 // la base efímera que crea vitest-pool-workers para las pruebas; nunca a la
 // base de producción ni a la local de `wrangler dev`.
 
@@ -39,7 +40,7 @@ const TABLES: Array<[name: string, ddl: string]> = [
   ["products", `CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
-    category TEXT NOT NULL CHECK(category IN ('Audio', 'Pantallas LED', 'Proyectores', 'Iluminación', 'Otros')),
+    category TEXT NOT NULL,
     service_type TEXT NOT NULL CHECK(service_type IN ('Venta', 'Alquiler')),
     description TEXT,
     features TEXT,

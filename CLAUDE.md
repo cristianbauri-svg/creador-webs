@@ -31,20 +31,22 @@ producción, los rollbacks y el historial viven en `audit/`, sobre todo en
 - El dominio es un Workers Custom Domain configurado en el dashboard, no en
   `wrangler.jsonc`. El resto del estado externo (HTTPS, www, Access) está en
   `audit/experimento-gtm/rollback.md`.
-- Esquema de D1 en `migrations/`, que contiene de la 001 a la 013. La tabla `d1_migrations`
-  de producción registra únicamente 001–009. Estado real de las otras cuatro:
-  - `010_products_free_category.sql`: **no aplicada**; es una migración realmente
-    pendiente (`products` conserva el CHECK de `category`).
-  - `011_fix_localhost_image_urls.sql`: no registrada. Hoy sería un no-op, porque ninguna
-    fila coincide con sus `WHERE`, pero no hay prueba histórica suficiente de que se haya
-    ejecutado.
-  - `012_events_link.sql`: efecto presente (`events.link` existe), no registrada.
-  - `013_pages_bg_color.sql`: efecto presente (`pages.bg_color` existe), no registrada, con
-    evidencia histórica explícita de que se aplicó en producción.
-- **No ejecutar `wrangler d1 migrations apply --remote` hasta reconciliar primero el
-  registro**: aplicaría 010 y 011 y fallaría en 012 por columna duplicada, y cada intento
-  posterior volvería a fallar ahí. Diagnóstico y opciones:
-  `audit/d1-migrations-reconciliation-20260925.md`.
+- Esquema de D1 en `migrations/`, que contiene de la 001 a la 013. Desde la reconciliación
+  del 2026-09-25, `d1_migrations` de producción tiene registrados los 13 nombres:
+  - `010_products_free_category.sql` se aplicó el 2026-09-25: `products.category` acepta
+    texto libre. `service_type` y `status` conservan sus CHECK.
+  - `011_fix_localhost_image_urls.sql` se ejecutó como no-op (0 filas) y quedó registrada.
+  - `012_events_link.sql` y `013_pages_bg_color.sql` se registraron sin volver a ejecutar
+    sus `ALTER`, porque sus efectos ya existían.
+  - Después de la reconciliación, Wrangler reportó 0 migraciones pendientes. Detalle, backup
+    y bookmarks: `audit/d1-migrations-reconciliation-20260925.md`.
+- Antes de cualquier migración remota futura: revisar la lista de pendientes y el SQL de
+  cada una, tomar un export de D1 a `straton-backups` o un bookmark de Time Travel según el
+  riesgo, y verificar el esquema y el registro después. No editar `d1_migrations` a mano
+  salvo en una reconciliación explícitamente autorizada.
+- `wrangler d1 migrations list --remote`, igual que `apply`, ejecuta antes
+  `CREATE TABLE IF NOT EXISTS d1_migrations`: no tratarlo como un `SELECT` puro cuando una
+  fase prohíbe DDL remoto.
 - Sin dependencias de runtime: `package.json` solo tiene herramientas de desarrollo.
 
 ## Invariantes de seguridad

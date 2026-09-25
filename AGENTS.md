@@ -25,7 +25,9 @@ mandan esos dos: avisar al usuario antes de seguir.
 - Panel de administración en `public/admin/`.
 - Bindings: `STRATON_DB` → D1 `straton-db`, `STRATON_KV` → KV, `STRATON_BUCKET` → R2
   `straton-bucket` y `ASSETS` → `public/`.
-- `straton-backups` es un bucket R2 privado de backups y **no** es binding del Worker.
+- Otros dos buckets R2 privados, ninguno enlazado al Worker: `straton-backups`
+  (recuperación temporal, lifecycle de 90 días) y `straton-archive` (archivo histórico
+  durable, sin expiración).
 
 ## Reglas no negociables
 
@@ -82,13 +84,12 @@ principal del Worker.
 
 ## Migraciones
 
-- `migrations/` contiene de la 001 a la 013; `d1_migrations` de producción registra solo
-  001–009.
-- 010 está realmente pendiente: `products` conserva el CHECK de `category`.
-- 011 no tiene efecto pendiente sobre los datos actuales, pero no está registrada.
-- 012 y 013 tienen su efecto en el esquema, pero no están registradas.
-- **No ejecutar `wrangler d1 migrations apply --remote` hasta reconciliar el registro.**
-- Detalle y opciones: `audit/d1-migrations-reconciliation-20260925.md`.
+- `migrations/` contiene de la 001 a la 013, y las 13 están registradas en producción.
+- El esquema actual incluye la 010: `products.category` acepta texto libre.
+- No hay migraciones pendientes conocidas.
+- Una migración futura sigue el flujo normal: precheck (pendientes y SQL), backup o
+  bookmark de Time Travel, `apply` y verificación del esquema y del registro.
+- Historial de la reconciliación: `audit/d1-migrations-reconciliation-20260925.md`.
 
 ## Backups
 
