@@ -18,9 +18,16 @@ producción, los rollbacks y el historial viven en `audit/`, sobre todo en
   - `STRATON_KV` → KV
   - `STRATON_BUCKET` → R2 `straton-bucket` (imágenes del sitio)
   - `ASSETS` → `public/`
-- `straton-backups` es un bucket R2 **privado** para backups de D1. No es binding del Worker,
-  no debe agregarse como binding sin una decisión de arquitectura explícita y no se usa
-  para assets.
+- Buckets R2. Solo el primero está enlazado al Worker; los otros dos no deben agregarse
+  como binding ni a `wrangler.jsonc` sin una decisión de arquitectura explícita:
+  - `straton-bucket`: bucket **activo** de media del sitio. Es el único bucket R2 enlazado
+    al Worker, mediante `STRATON_BUCKET`.
+  - `straton-backups`: **privado**, no es binding del Worker y no se usa para assets
+    activos. Sirve para **recuperación temporal**: guarda exports de D1 y backups
+    temporales de R2, con un lifecycle global de 90 días.
+  - `straton-archive`: **privado**, no es binding del Worker y no se usa para assets
+    activos. Es el **archivo histórico durable**, sin regla de expiración de objetos. Hoy
+    conserva media histórica de `/sonido`.
 - El dominio es un Workers Custom Domain configurado en el dashboard, no en
   `wrangler.jsonc`. El resto del estado externo (HTTPS, www, Access) está en
   `audit/experimento-gtm/rollback.md`.
@@ -81,11 +88,19 @@ producción, los rollbacks y el historial viven en `audit/`, sobre todo en
 
 ## Backups y datos
 
-- Los backups operativos de D1 van al bucket privado `straton-backups`, con retención
-  automática de 90 días.
+- Hay dos destinos, con fines distintos:
+  1. `straton-backups`: **recuperación temporal**. Los exports operativos de D1 y los
+     backups temporales de R2 expiran a los 90 días por lifecycle.
+  2. `straton-archive`: **archivo histórico durable**, sin expiración automática. Es para
+     lo que deba conservarse más allá de esos 90 días.
 - Los exports de D1 contienen PII y son sensibles. No guardar volcados de D1 en el repo ni en
   `.wrangler/state`.
 - Antes de borrar datos o backups, confirmar que existe una copia restaurable válida.
+- Antes de restaurar un snapshot histórico de D1 que contenga URLs de media antiguas,
+  verificar primero que sus keys existan en `straton-bucket` y restaurar las que falten.
+  Time Travel de D1 no restaura R2.
+- Estado de los buckets, resultado de la limpieza de R2 y reglas de restauración:
+  `audit/r2-storage-state-20260925.md`.
 
 ## Analítica
 
