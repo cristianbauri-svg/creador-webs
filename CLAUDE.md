@@ -31,10 +31,20 @@ producción, los rollbacks y el historial viven en `audit/`, sobre todo en
 - El dominio es un Workers Custom Domain configurado en el dashboard, no en
   `wrangler.jsonc`. El resto del estado externo (HTTPS, www, Access) está en
   `audit/experimento-gtm/rollback.md`.
-- Esquema de D1 en `migrations/`. Las migraciones 010–013 ya se aplicaron fuera del
-  mecanismo de `d1_migrations` y no figuran como registradas. **No ejecutar
-  `wrangler d1 migrations apply --remote` hasta reconciliar primero ese estado**, porque
-  Wrangler podría tratarlas como pendientes.
+- Esquema de D1 en `migrations/`, que contiene de la 001 a la 013. La tabla `d1_migrations`
+  de producción registra únicamente 001–009. Estado real de las otras cuatro:
+  - `010_products_free_category.sql`: **no aplicada**; es una migración realmente
+    pendiente (`products` conserva el CHECK de `category`).
+  - `011_fix_localhost_image_urls.sql`: no registrada. Hoy sería un no-op, porque ninguna
+    fila coincide con sus `WHERE`, pero no hay prueba histórica suficiente de que se haya
+    ejecutado.
+  - `012_events_link.sql`: efecto presente (`events.link` existe), no registrada.
+  - `013_pages_bg_color.sql`: efecto presente (`pages.bg_color` existe), no registrada, con
+    evidencia histórica explícita de que se aplicó en producción.
+- **No ejecutar `wrangler d1 migrations apply --remote` hasta reconciliar primero el
+  registro**: aplicaría 010 y 011 y fallaría en 012 por columna duplicada, y cada intento
+  posterior volvería a fallar ahí. Diagnóstico y opciones:
+  `audit/d1-migrations-reconciliation-20260925.md`.
 - Sin dependencias de runtime: `package.json` solo tiene herramientas de desarrollo.
 
 ## Invariantes de seguridad
@@ -66,7 +76,8 @@ producción, los rollbacks y el historial viven en `audit/`, sobre todo en
   los rollbacks. Consultarlo antes de cualquier rollback.
 - Una versión del Worker incluye sus secretos y su configuración, no solo el código.
   **No volver a una versión antigua basándose solo en su código.** El punto de rollback
-  operativo actual es `65c3ee36`, mientras sea compatible con lo que se quiera revertir.
+  vigente cambia con los deploys: consultar `audit/experimento-gtm/rollback.md` antes de
+  cualquier rollback.
 - **Prohibido volver a versiones anteriores al hotfix de seguridad `703e2c0`.** Para deshacer
   algo más antiguo, hacer un commit nuevo sobre el código actual.
 

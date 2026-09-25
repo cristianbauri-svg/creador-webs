@@ -1,47 +1,55 @@
 # Rollback y estado de producción — Straton Audio
 
-## Producción actual (registrada el 2026-09-24)
+## Producción actual (registrada el 2026-09-25)
 
 | Dato | Valor |
 |---|---|
-| Commit | `46aed524824bd625b2be0cd411346691753e6403` (rama `straton-audio-web`) |
-| Versión del Worker | `93bbfce5-4610-4882-affa-b5ecf33716b2` (tag `event-media-folder-20260924`) |
-| Deployment | `ef80096a-ac93-490e-92c1-acbfd0bd792d` (2026-09-24T22:45:37Z, 100 % del tráfico) |
-| Motivo de la versión | Corrección del panel de Eventos: las imágenes nuevas (antes, después y galería) se suben a `events/` en vez de a la carpeta por defecto, `products/`. |
-| Contenido | GTM diferido a 3 s y CTA de WhatsApp en pestaña nueva (`93a4d5a`), hotfix de seguridad (`703e2c0`), workers.dev y URLs de versión cerrados en la config (`398dfe3`), canonical único (`948f868`, `c449d9b`) y media nueva de eventos en `events/` (`46aed52`). |
+| Commit | `d9001f337f78ceaeac6faf85f48cf77a05c92e51` (rama `straton-audio-web`) |
+| Versión del Worker | `04a5d4ef-36c0-4dcf-8266-08a298d85dcb` (tag `product-r2-order-20260925`) |
+| Deployment | `332e5b76-8aa7-4111-aeae-fbf32133f9b8` (2026-09-25T01:47:45Z, 100 % del tráfico) |
+| `script_etag` | `bb4610ef9c9bdfac4895543a33eb36f1f9a6ee04824359b974f41c813d7bbbd8` |
+| Motivo de la versión | `updateProduct` ahora espera a que D1 complete correctamente el UPDATE antes de pedir el borrado de la imagen anterior en R2. |
+| Contenido | GTM diferido a 3 s y CTA de WhatsApp en pestaña nueva (`93a4d5a`), hotfix de seguridad (`703e2c0`), workers.dev y URLs de versión cerrados en la config (`398dfe3`), canonical único (`948f868`, `c449d9b`), media nueva de eventos en `events/` (`46aed52`) y hardening de productos (`d9001f3`). |
 
-Qué cambió realmente en `93bbfce5`, verificado el 2026-09-24:
+Qué conserva `04a5d4ef`:
 
-- El script del Worker es el mismo de `65c3ee36`: comparten `script_etag`
-  (`fde2021d089d202713d9ac835ebb8b206a9afdadcef9f0537041d7dcefb9b5d3`), así que
-  el código compilado no cambió.
-- El cambio efectivo está en los Static Assets: `public/admin/modules/events.html`
-  ahora envía `folder = events` a `/api/upload`.
-- No se migraron ni se borraron las imágenes históricas que ya están en
-  `products/`.
+- El hotfix de seguridad, el canonical único y workers.dev y las previews
+  cerrados.
+- El token de Telegram vigente: hereda los secretos `TELEGRAM_BOT_TOKEN` y
+  `TELEGRAM_CHAT_ID` de la versión anterior.
+- El panel de Eventos sigue subiendo las imágenes nuevas a `events/`.
+- La arquitectura R2 actual: `STRATON_BUCKET` → `straton-bucket` es el único
+  bucket enlazado; `straton-backups` y `straton-archive` no son bindings (ver
+  `audit/r2-storage-state-20260925.md`).
 - Compatibilidad: `2026-06-16` con `nodejs_compat`.
-- Bindings: `ASSETS`, `STRATON_DB`, `STRATON_KV`, `STRATON_BUCKET` y los
-  secretos `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`.
+- Bindings sin cambios respecto de `93bbfce5`: `ASSETS`, `STRATON_DB`,
+  `STRATON_KV`, `STRATON_BUCKET`, las variables de Access y `ENVIRONMENT`, y
+  los dos secretos de Telegram.
 
 Historial del script: el `index.js` de `cb79a035` (deployment `54a822d4`) es byte
 a byte el build de `c449d9b`, y tanto `65c3ee36` como `93bbfce5` tienen ese mismo
-script.
+script (`script_etag` `fde2021d089d202713d9ac835ebb8b206a9afdadcef9f0537041d7dcefb9b5d3`).
+`93bbfce5` solo cambió un Static Asset: `public/admin/modules/events.html` pasó a
+enviar `folder = events` a `/api/upload`. `04a5d4ef` es la primera versión con un
+script distinto desde entonces, por el cambio en `src/routes/products.ts`.
 
-## Rollback seguro
+## Rollback
 
-Punto de rollback operativo recomendado para futuros deploys:
+| Versión | Commit | Uso | Qué reintroduce |
+|---|---|---|---|
+| `04a5d4ef-36c0-4dcf-8266-08a298d85dcb` (deployment `332e5b76-8aa7-4111-aeae-fbf32133f9b8`) | `d9001f3` | **Baseline estable actual.** Si un deploy posterior falla, se vuelve aquí. | Nada: es la producción actual. |
+| `93bbfce5-4610-4882-affa-b5ecf33716b2` (deployment `ef80096a-ac93-490e-92c1-acbfd0bd792d`) | `46aed52` | Producción inmediatamente anterior. Sirve para revertir específicamente el hardening `d9001f3` si ese cambio causara una incidencia. | El bug de productos: un UPDATE puede pedir borrar la imagen antigua de R2 antes de saber si D1 aceptó el cambio. |
+| `65c3ee36-a675-43c1-b317-703c912c1d7f` (deployment histórico `c37d2837-4563-427e-aabb-3d1e18d0c5e2`) | `f2dea14` (runtime de `c449d9b`) | Fallback histórico más antiguo. | El bug de productos y, además, el panel de Eventos antiguo: las imágenes nuevas de eventos vuelven a caer en `products/`. |
 
-| Versión | Commit | Qué conserva |
-|---|---|---|
-| `65c3ee36-a675-43c1-b317-703c912c1d7f` (deployment histórico `c37d2837-4563-427e-aabb-3d1e18d0c5e2`) | `f2dea14` (runtime de `c449d9b`) | El hotfix de seguridad, el canonical único y el token de Telegram vigente. No reabre workers.dev ni las previews: son ajustes del script, no de la versión. |
+Las tres conservan el hotfix de seguridad, el canonical único y el token de
+Telegram vigente. Ninguna reabre workers.dev ni las previews: son ajustes del
+script, no de la versión.
 
-`65c3ee36` ya **no** es la producción actual. Volver a ella también devuelve el
-asset del panel de Eventos al comportamiento anterior: las imágenes nuevas de
-eventos vuelven a caer en `products/`.
-
-Sirve mientras siga siendo compatible con el cambio que se quiera revertir. Si
-un deploy posterior cambia el esquema de D1, agrega bindings o vuelve a rotar
-un secreto, hay que revisar la compatibilidad antes de volver a esta versión.
+Un rollback sirve solo mientras la versión de destino sea compatible con el
+estado vigente. Si un deploy posterior cambia el esquema de D1 (por ejemplo, la
+reconciliación de migraciones de `audit/d1-migrations-reconciliation-20260925.md`),
+agrega bindings o vuelve a rotar un secreto, hay que revisar la compatibilidad
+antes de volver a cualquiera de estas versiones.
 
 ### `cb79a035` y `d6b9b626` no sirven como rollback completo
 
@@ -77,17 +85,21 @@ OAuth. Hay que quitarlo de la invocación:
 env -u CLOUDFLARE_API_TOKEN npx wrangler deployments status
 ```
 
-### Nivel 1: volver a la versión segura (segundos)
+### Nivel 1: volver a una versión anterior (segundos)
 
-Sirve para deshacer un deploy posterior a `65c3ee36`, como el actual
-(`93bbfce5`). Cada versión lleva su
+Elegir la versión de destino en la tabla anterior. Para deshacer un deploy
+posterior a la baseline actual, el destino es `04a5d4ef`. Las versiones más
+antiguas solo se usan conociendo lo que reintroducen. Cada versión lleva su
 propio manifiesto de assets y sus propios secretos, así que el rollback
 restaura también `app.js`, el HTML y los secretos de esa versión, no solo el
 código del Worker.
 
 ```bash
-env -u CLOUDFLARE_API_TOKEN npx wrangler rollback 65c3ee36-a675-43c1-b317-703c912c1d7f --message "rollback a 65c3ee36" -y
+env -u CLOUDFLARE_API_TOKEN npx wrangler rollback <version_id> --message "rollback a <version_id>" -y
 ```
+
+Por ejemplo, para volver a la baseline actual después de un deploy fallido:
+`env -u CLOUDFLARE_API_TOKEN npx wrangler rollback 04a5d4ef-36c0-4dcf-8266-08a298d85dcb --message "rollback a 04a5d4ef" -y`.
 
 ### Nivel 2: revertir en git (minutos)
 

@@ -82,9 +82,13 @@ principal del Worker.
 
 ## Migraciones
 
-- `migrations/` contiene de la 001 a la 013.
-- Las 010–013 ya se aplicaron fuera de `d1_migrations` y no figuran como registradas.
-- No ejecutar `wrangler d1 migrations apply --remote` hasta reconciliar ese estado.
+- `migrations/` contiene de la 001 a la 013; `d1_migrations` de producción registra solo
+  001–009.
+- 010 está realmente pendiente: `products` conserva el CHECK de `category`.
+- 011 no tiene efecto pendiente sobre los datos actuales, pero no está registrada.
+- 012 y 013 tienen su efecto en el esquema, pero no están registradas.
+- **No ejecutar `wrangler d1 migrations apply --remote` hasta reconciliar el registro.**
+- Detalle y opciones: `audit/d1-migrations-reconciliation-20260925.md`.
 
 ## Backups
 
