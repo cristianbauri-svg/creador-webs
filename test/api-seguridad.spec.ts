@@ -616,3 +616,146 @@ describe("Fase 7 — una categoría nueva de producto se guarda tal cual", () =>
     expect(row).toEqual({ category: CATEGORY, service_type: "Venta", status: "draft" });
   });
 });
+
+// -----------------------------------------------------------------------------
+// Fase 8 — POST /api/quotations: el servidor valida el lead
+// -----------------------------------------------------------------------------
+// Es la validación autoritativa: aplica aunque el cliente quite los required,
+// desactive JavaScript o llame al endpoint directamente.
+
+describe("Fase 8 — el formulario público solo guarda leads válidos", () => {
+  const RATE_KEY = "ratelimit:quotation:unknown";
+  const quotationCount = () => env.STRATON_DB.prepare("SELECT COUNT(*) AS n FROM quotations").first<number>("n");
+
+  beforeEach(async () => {
+    await env.STRATON_KV.delete(RATE_KEY);
+  });
+
+  // Un lead válido de cada formulario, con la forma en que lo envía public/js/app.js.
+  const VALID: Record<string, Record<string, unknown>> = {
+    quote_form: {
+      form_id: "quote_form", customer_name: "Ana Pérez", email: "ana@example.com", phone: "+57 300 123 4567",
+      company: null, city: "Bogotá", event_date: "2026-12-05", notes: null, products_json: null,
+    },
+    contact_form: {
+      form_id: "contact_form", customer_name: "Ana Pérez", email: "ana@example.com", phone: null,
+      notes: "Evento para 200 personas",
+    },
+    cart_whatsapp_form: {
+      form_id: "cart_whatsapp_form", customer_name: "Ana Pérez", email: "", phone: "(300) 123-4567",
+      notes: "Cotización enviada desde WhatsApp", products_json: '[{"name":"Line array","quantity":2}]',
+    },
+  };
+
+  const REQUIRED: Array<[form: string, field: string]> = [
+    ["quote_form", "customer_name"], ["quote_form", "email"], ["quote_form", "phone"],
+    ["contact_form", "customer_name"], ["contact_form", "email"], ["contact_form", "notes"],
+    ["cart_whatsapp_form", "customer_name"], ["cart_whatsapp_form", "phone"],
+  ];
+
+  it.each(REQUIRED)("%s sin %s → 400 y no guarda nada", async (form, field) => {
+    // undefined desaparece del JSON: el campo ni siquiera llega.
+    for (const missing of [undefined, null, "", "   "]) {
+      const res = await call("POST", "/api/quotations", { body: { ...VALID[form], [field]: missing } });
+      expect(res.status).toBe(400);
+      expect(await res.json()).toMatchObject({ field });
+    }
+    expect(await quotationCount()).toBe(0);
+  });
+
+  it("un lead con solo el teléfono se rechaza con cualquier form_id", async () => {
+    for (const form_id of [undefined, "quote_form", "contact_form", "cart_whatsapp_form"]) {
+      const res = await call("POST", "/api/quotations", { body: { form_id, phone: "3001234567" } });
+      expect(res.status).toBe(400);
+    }
+    expect(await quotationCount()).toBe(0);
+  });
+
+  const INVALID: Array<[name: string, patch: Record<string, unknown>, field: string]> = [
+    ["email sin dominio", { email: "ana@example" }, "email"],
+    ["email con espacios", { email: "ana perez@example.com" }, "email"],
+    ["teléfono de 6 dígitos", { phone: "300 123" }, "phone"],
+    ["teléfono de 16 dígitos", { phone: "1234567890123456" }, "phone"],
+    ["teléfono con letras", { phone: "300-ABC-4567" }, "phone"],
+    ["nombre que no es texto", { customer_name: 12345 }, "customer_name"],
+    ["mensaje de más de 5000 caracteres", { notes: "x".repeat(5001) }, "notes"],
+    ["fecha con otro formato", { event_date: "05/12/2026" }, "event_date"],
+    ["products_json que no es texto", { products_json: [{ name: "x" }] }, "products_json"],
+    ["form_id desconocido", { form_id: "otro_form" }, "form_id"],
+    ["form_id heredado de Object", { form_id: "toString" }, "form_id"],
+  ];
+
+  it.each(INVALID)("quote_form con %s → 400 y no guarda nada", async (_name, patch, field) => {
+    const res = await call("POST", "/api/quotations", { body: { ...VALID.quote_form, ...patch } });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ field });
+    expect(await quotationCount()).toBe(0);
+  });
+
+  it("un cuerpo que no es un objeto JSON (p. ej., el envío sin JavaScript) → 400, no 500", async () => {
+    for (const body of ["customer_name=Ana&email=ana%40example.com&phone=3001234567", "null", "[]", '"texto"']) {
+      const res = await call("POST", "/api/quotations", { body });
+      expect(res.status).toBe(400);
+    }
+    expect(await quotationCount()).toBe(0);
+  });
+
+  it("los rechazos no consumen el límite de 5 cotizaciones por hora", async () => {
+    for (let i = 0; i < 6; i++) await call("POST", "/api/quotations", { body: { phone: "3001234567" } });
+    expect(await env.STRATON_KV.get(RATE_KEY)).toBeNull();
+    const res = await call("POST", "/api/quotations", { body: VALID.quote_form });
+    expect(res.status).toBe(201);
+  });
+
+  it.each(Object.keys(VALID))("%s válido → 201 con el id de la cotización guardada", async (form) => {
+    const res = await call("POST", "/api/quotations", { body: VALID[form] });
+    expect(res.status).toBe(201);
+    const saved = (await res.json()) as { id: number };
+    expect(saved.id).toBeGreaterThan(0);
+    const row = await env.STRATON_DB.prepare("SELECT * FROM quotations WHERE id = ?").bind(saved.id).first();
+    expect(row).toMatchObject({ customer_name: "Ana Pérez", status: "pending" });
+    expect(await quotationCount()).toBe(1);
+  });
+
+  it("guarda los valores recortados y los opcionales vacíos como NULL", async () => {
+    const res = await call("POST", "/api/quotations", {
+      body: { ...VALID.cart_whatsapp_form, customer_name: "  Ana Pérez  ", email: "   " },
+    });
+    expect(res.status).toBe(201);
+    expect(await res.json()).toMatchObject({ customer_name: "Ana Pérez", email: null, phone: "(300) 123-4567", company: null });
+  });
+
+  it("el nombre solo tiene que no estar vacío: sin longitud mínima", async () => {
+    const res = await call("POST", "/api/quotations", { body: { ...VALID.quote_form, customer_name: " A " } });
+    expect(res.status).toBe(201);
+    expect(await res.json()).toMatchObject({ customer_name: "A" });
+  });
+
+  it("la sexta cotización válida en una hora → 429 sin guardar ni id", async () => {
+    for (let i = 0; i < 5; i++) {
+      expect((await call("POST", "/api/quotations", { body: VALID.quote_form })).status).toBe(201);
+    }
+    const res = await call("POST", "/api/quotations", { body: VALID.quote_form });
+    expect(res.status).toBe(429);
+    expect(await res.json()).not.toHaveProperty("id");
+    expect(await quotationCount()).toBe(5);
+  });
+
+  it("sin form_id se aplican las reglas del formulario principal", async () => {
+    const { form_id: _quote, ...quote } = VALID.quote_form;
+    expect((await call("POST", "/api/quotations", { body: quote })).status).toBe(201);
+
+    // El modal del carrito no exige email; sin form_id, sí.
+    const { form_id: _cart, ...cart } = VALID.cart_whatsapp_form;
+    const res = await call("POST", "/api/quotations", { body: cart });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ field: "email" });
+  });
+
+  it("si D1 falla responde 500 sin id: el frontend no puede tomarlo como éxito", async () => {
+    const failingDb = { prepare() { throw new Error("D1 no disponible"); } } as unknown as D1Database;
+    const res = await call("POST", "/api/quotations", { body: VALID.quote_form, env: testEnv({ STRATON_DB: failingDb }) });
+    expect(res.status).toBe(500);
+    expect(await res.json()).not.toHaveProperty("id");
+  });
+});

@@ -1,9 +1,101 @@
 // CRUD de cotizaciones
-// POST /api/quotations es público (sin auth)
+// POST /api/quotations es público (sin auth) y valida el lead (validateLead)
 // PUT /api/quotations/:id solo actualiza status
 import { json, error } from "../utils/response";
 import { queryAll, queryOne, execute, handleDbError } from "../utils/d1";
 import type { Env } from "../index";
+
+// -----------------------------------------------------------------------------
+// Validación del formulario público
+// -----------------------------------------------------------------------------
+// Es la validación autoritativa. StratonLead.validate() en public/js/app.js
+// replica estas reglas solo para avisar antes de enviar: si cambias una, cambia
+// la otra.
+
+const LEAD_FIELDS = ["customer_name", "email", "phone", "company", "city", "event_date", "notes"] as const;
+type LeadField = (typeof LEAD_FIELDS)[number];
+
+/** Campos obligatorios de cada formulario del sitio: los que cada uno ya marca
+ *  como obligatorios. Cada formulario envía su form_id. */
+const LEAD_FORMS: Record<string, readonly LeadField[]> = {
+  quote_form: ["customer_name", "email", "phone"], // #quotationForm, sección #contacto de la home
+  contact_form: ["customer_name", "email", "notes"], // bloque contact-form de las páginas dinámicas
+  cart_whatsapp_form: ["customer_name", "phone"], // modal del carrito que abre WhatsApp
+};
+
+/** Sin form_id (p. ej., una pestaña abierta con el app.js anterior) se aplican
+ *  las reglas del formulario principal. */
+const DEFAULT_LEAD_FORM = "quote_form";
+
+const LEAD_LABELS: Record<LeadField, string> = {
+  customer_name: "el nombre",
+  email: "el correo electrónico",
+  phone: "el teléfono",
+  company: "la empresa",
+  city: "la ciudad",
+  event_date: "la fecha del evento",
+  notes: "el mensaje",
+};
+
+const LEAD_MAX_LENGTH: Record<LeadField, number> = {
+  customer_name: 120,
+  email: 254,
+  phone: 30,
+  company: 150,
+  city: 100,
+  event_date: 10,
+  notes: 5000,
+};
+
+/** Formato de los campos que lo tienen: [prueba, mensaje si falla]. */
+const LEAD_FORMAT: Partial<Record<LeadField, [test: (value: string) => boolean, message: string]>> = {
+  email: [(v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "El correo electrónico no es válido."],
+  // Sin separadores visuales (espacios, guiones, paréntesis, puntos): + opcional
+  // y de 7 a 15 dígitos, el máximo de E.164.
+  phone: [(v) => /^\+?\d{7,15}$/.test(v.replace(/[\s().-]/g, "")), "El teléfono no es válido: usa entre 7 y 15 dígitos."],
+  event_date: [(v) => /^\d{4}-\d{2}-\d{2}$/.test(v), "La fecha del evento no es válida. Usa el formato AAAA-MM-DD."],
+};
+
+type Lead = Record<LeadField, string | null> & { products_json: string | null };
+type LeadValidation = { ok: true; lead: Lead } | { ok: false; field: string; message: string };
+
+/** Valida el cuerpo de POST /api/quotations según su form_id. Devuelve el
+ *  primer problema o los valores, ya recortados, que se guardan. */
+function validateLead(body: Record<string, unknown>): LeadValidation {
+  const formId = body.form_id ?? DEFAULT_LEAD_FORM;
+  if (typeof formId !== "string" || !Object.hasOwn(LEAD_FORMS, formId)) {
+    return { ok: false, field: "form_id", message: "Formulario desconocido." };
+  }
+  const required = LEAD_FORMS[formId];
+
+  const lead = { products_json: null } as Lead;
+  for (const field of LEAD_FIELDS) {
+    const raw = body[field];
+    if (raw !== undefined && raw !== null && typeof raw !== "string") {
+      return { ok: false, field, message: `El campo ${field} debe ser texto.` };
+    }
+    const value = typeof raw === "string" ? raw.trim() : "";
+    if (!value) {
+      if (required.includes(field)) return { ok: false, field, message: `Completa ${LEAD_LABELS[field]}.` };
+      lead[field] = null;
+      continue;
+    }
+    if (value.length > LEAD_MAX_LENGTH[field]) {
+      return { ok: false, field, message: `Máximo ${LEAD_MAX_LENGTH[field]} caracteres en ${LEAD_LABELS[field]}.` };
+    }
+    const format = LEAD_FORMAT[field];
+    if (format && !format[0](value)) return { ok: false, field, message: format[1] };
+    lead[field] = value;
+  }
+
+  const products = body.products_json;
+  if (products !== undefined && products !== null && typeof products !== "string") {
+    return { ok: false, field: "products_json", message: "products_json debe ser string JSON" };
+  }
+  lead.products_json = typeof products === "string" && products !== "" ? products : null;
+
+  return { ok: true, lead };
+}
 
 export async function handleQuotations(request: Request, env: Env, pathname: string, ctx: ExecutionContext): Promise<Response> {
   const method = request.method;
@@ -59,47 +151,26 @@ async function getQuotation(env: Env, id: number): Promise<Response> {
 }
 
 async function createQuotation(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  // Un cuerpo que no es JSON (p. ej., el envío nativo del formulario sin
+  // JavaScript) es un error del cliente, no de la base de datos.
+  let body: unknown;
   try {
-    const body = await request.json() as Record<string, unknown>;
+    body = await request.json();
+  } catch {
+    return error("Solicitud inválida: se esperaba JSON.", 400);
+  }
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    return error("Solicitud inválida: se esperaba un objeto JSON.", 400);
+  }
 
-    // Validar formato de email
-    if (body.email !== undefined && body.email !== null && typeof body.email !== "string") {
-      return error("email debe ser texto", 400);
-    }
-    if (body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
-      return error("Formato de email inválido", 400);
-    }
+  // Nada se guarda ni se notifica si falta un campo obligatorio o uno es inválido.
+  const validation = validateLead(body as Record<string, unknown>);
+  if (!validation.ok) {
+    return json({ error: validation.message, field: validation.field }, 400);
+  }
+  const { lead } = validation;
 
-    // Validar formato de teléfono (mínimo 7 dígitos, permite +, espacios, guiones)
-    if (body.phone !== undefined && body.phone !== null && typeof body.phone !== "string") {
-      return error("phone debe ser texto", 400);
-    }
-    if (body.phone && body.phone.replace(/[^0-9]/g, '').length < 7) {
-      return error("El teléfono debe tener al menos 7 dígitos", 400);
-    }
-
-    // Validar formato de fecha ISO 8601 (YYYY-MM-DD)
-    if (body.event_date !== undefined && body.event_date !== null && typeof body.event_date !== "string") {
-      return error("event_date debe ser texto", 400);
-    }
-    if (body.event_date && !/^\d{4}-\d{2}-\d{2}$/.test(body.event_date)) {
-      return error("Formato de fecha inválido. Use YYYY-MM-DD.", 400);
-    }
-
-    // Validar tipos de campos opcionales (previene inyección de datos malformados)
-    if (body.notes !== undefined && body.notes !== null && typeof body.notes !== "string") {
-      return error("notes debe ser texto", 400);
-    }
-    if (body.products_json !== undefined && body.products_json !== null && typeof body.products_json !== "string") {
-      return error("products_json debe ser string JSON", 400);
-    }
-    if (body.company !== undefined && body.company !== null && typeof body.company !== "string") {
-      return error("company debe ser texto", 400);
-    }
-    if (body.city !== undefined && body.city !== null && typeof body.city !== "string") {
-      return error("city debe ser texto", 400);
-    }
-
+  try {
     // Rate limiting: máximo 5 cotizaciones por hora por IP.
     // La validación del body ocurre ANTES de incrementar el contador,
     // así un body inválido no consume cuota.
@@ -124,14 +195,14 @@ async function createQuotation(request: Request, env: Env, ctx: ExecutionContext
       `INSERT INTO quotations (customer_name, email, phone, company, city, event_date, notes, products_json, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [
-        body.customer_name || null,
-        body.email || null,
-        body.phone || null,
-        body.company || null,
-        body.city || null,
-        body.event_date || null,
-        body.notes || null,
-        body.products_json || null,
+        lead.customer_name,
+        lead.email,
+        lead.phone,
+        lead.company,
+        lead.city,
+        lead.event_date,
+        lead.notes,
+        lead.products_json,
       ]
     );
 

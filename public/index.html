@@ -867,7 +867,10 @@
           </div>
         </div>
 
-        <form class="contact-form" id="quotationForm" novalidate onsubmit="return window.handleContactSubmit(event)">
+        <!-- Lo envía app.js (handleContactSubmit). Si app.js aún no cargó, el
+             envío no sale; sin JavaScript va por POST a la API, que lo rechaza
+             (espera JSON) sin dejar datos personales en la URL. -->
+        <form class="contact-form" id="quotationForm" method="post" action="/api/quotations" novalidate onsubmit="return window.handleContactSubmit ? window.handleContactSubmit(event) : false">
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="customer_name">Nombre completo *</label>
@@ -909,7 +912,7 @@
           <button type="submit" class="form-submit" id="formSubmit">
             Enviar solicitud de cotización
           </button>
-          <div id="formMessages" class="section-header" style="margin-top: var(--space-4); margin-bottom: 0;"></div>
+          <div id="formMessages" class="section-header" aria-live="polite" style="margin-top: var(--space-4); margin-bottom: 0;"></div>
         </form>
       </div>
     </div>
@@ -1010,7 +1013,7 @@
   <!-- Overlay del panel -->
   <div id="cartOverlay" class="cart-overlay"></div>
 
-  <script defer src="/js/app.js?v=20260911"></script>
+  <script defer src="/js/app.js?v=20260928"></script>
 
   <!-- Sticky Cotización Bar -->
   <div id="cart-bar" class="cart-bar hidden">
@@ -1047,6 +1050,7 @@
         <label class="form-label-admin" for="modalEmail">Correo (Opcional)</label>
         <input class="form-input-admin" id="modalEmail" type="email" placeholder="correo@ejemplo.com" />
       </div>
+      <p id="modalStatus" class="contact-form-status" role="alert" hidden></p>
       <div class="form-actions" style="margin-top:1rem;">
         <button type="button" class="btn-admin btn-ghost-admin" id="modalCancel">Volver atrás</button>
         <span style="color:var(--color-text-muted);margin:0 8px;">···</span>

@@ -116,24 +116,77 @@
       }
     });
 
-    // Manejar el envío del formulario del modal
+    // Manejar el envío del formulario del modal: primero se registra la
+    // cotización y solo cuando el servidor la confirma se emite
+    // lead_form_success y se abre WhatsApp. Datos inválidos (400) detienen el
+    // envío; un fallo sin confirmación (429, 5xx, timeout, red) no emite el
+    // evento pero deja seguir por WhatsApp.
     var modalForm = document.getElementById('clientModalForm');
+    var modalStatus = document.getElementById('modalStatus');
+    var modalSubmit = modalForm ? modalForm.querySelector('button[type="submit"]') : null;
+    var modalFields = {
+      customer_name: document.getElementById('modalName'),
+      phone: document.getElementById('modalPhone'),
+      email: document.getElementById('modalEmail')
+    };
+    var modalSending = false;
+    // Sin respuesta en este tiempo, el registro se da por fallido y el cliente
+    // sigue por WhatsApp (ver abajo).
+    var MODAL_SEND_TIMEOUT_MS = 10000;
+    // WhatsApp que el botón abre con un clic, sin volver a registrar: la
+    // cotización se registró pero el navegador bloqueó la ventana, o no se
+    // pudo registrar (429, 5xx, timeout, red).
+    var pendingWhatsAppUrl = null;
+
+    function setModalStatus(text, kind) {
+      if (!modalStatus) return;
+      modalStatus.className = 'contact-form-status' + (kind ? ' ' + kind : '');
+      modalStatus.textContent = text;
+      modalStatus.hidden = !text;
+    }
+
+    /** Deja el modal listo para otra cotización. */
+    function resetClientModal() {
+      pendingWhatsAppUrl = null;
+      modalForm.reset();
+      modalSubmit.textContent = 'Enviar cotización';
+      setModalStatus('', null);
+      StratonLead.markField(modalFields, null);
+    }
+
+    function hideClientModal() {
+      document.getElementById('clientModal').style.display = 'none';
+      // Con un WhatsApp pendiente, la próxima vez es una cotización nueva.
+      if (pendingWhatsAppUrl) resetClientModal();
+    }
+
     if (modalForm) {
       modalForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        var name = document.getElementById('modalName').value.trim();
-        var email = document.getElementById('modalEmail').value.trim();
-        var phone = document.getElementById('modalPhone').value.trim();
 
-        if (!name || !phone) {
-          alert('Por favor, completa Nombre y Teléfono.');
+        // WhatsApp pendiente: este clic es un gesto nuevo del usuario y solo
+        // abre WhatsApp, sin registrar otra vez.
+        if (pendingWhatsAppUrl) {
+          window.open(pendingWhatsAppUrl, '_blank');
+          hideClientModal();
           return;
         }
+        if (modalSending) return;
 
-        // Cerrar modal
-        document.getElementById('clientModal').style.display = 'none';
+        var name = modalFields.customer_name.value.trim();
+        var email = modalFields.email.value.trim();
+        var phone = modalFields.phone.value.trim();
 
-        // Construir y abrir enlace de WhatsApp con los datos del cliente
+        var problem = StratonLead.validate('cart_whatsapp_form', { customer_name: name, phone: phone, email: email });
+        if (problem) {
+          setModalStatus(problem.message, 'error');
+          StratonLead.markField(modalFields, problem.field);
+          return;
+        }
+        setModalStatus('', null);
+        StratonLead.markField(modalFields, null);
+
+        // Construir el enlace de WhatsApp con los datos del cliente
         var msg = '🎉 *Hola Straton Audio, quiero esta cotización:*\n\n';
         msg += '📋 *Detalle del pedido*\n──────────────────\n';
         cartItems.forEach(function(item) {
@@ -152,7 +205,7 @@
         msg += '📱 *Teléfono:* ' + phone + '\n';
         msg += '\n¿Me confirman disponibilidad y los detalles? 🙌';
 
-        window.open('https://api.whatsapp.com/send?phone=' + getWhatsAppNumber() + '&text=' + encodeURIComponent(msg), '_blank');
+        var whatsappUrl = 'https://api.whatsapp.com/send?phone=' + getWhatsAppNumber() + '&text=' + encodeURIComponent(msg);
 
         // Enviar cotización al backend con los datos reales
         var payload = {
@@ -160,28 +213,51 @@
           email: email,
           phone: phone,
           notes: 'Cotización enviada desde WhatsApp',
-          products_json: cartItems.length > 0 ? JSON.stringify(cartItems) : null
+          products_json: cartItems.length > 0 ? JSON.stringify(cartItems) : null,
+          form_id: 'cart_whatsapp_form'
         };
 
-        fetch('/api/quotations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        })
-        .then(function(r) { return r.json(); })
-        .catch(function(err) { console.error('Error al registrar cotización:', err); });
+        modalSending = true;
+        modalSubmit.disabled = true;
+        modalSubmit.textContent = 'Enviando...';
 
-        // Limpiar formulario modal
-        modalForm.reset();
+        StratonLead.send(payload, MODAL_SEND_TIMEOUT_MS).then(function(saved) {
+          StratonLead.pushSuccess('cart_whatsapp_form', saved.id);
+          // window.open ya no ocurre dentro del clic: si el navegador lo
+          // bloquea (Safari, respuesta lenta), el botón pasa a abrir WhatsApp
+          // con un gesto nuevo del usuario.
+          if (window.open(whatsappUrl, '_blank')) {
+            hideClientModal();
+            resetClientModal();
+          } else {
+            pendingWhatsAppUrl = whatsappUrl;
+            modalSubmit.textContent = 'Abrir WhatsApp';
+            setModalStatus('Tu cotización quedó registrada. Toca «Abrir WhatsApp» para enviarla.', 'success');
+          }
+        }, function(err) {
+          // Datos rechazados por el servidor: se corrigen, no se sigue.
+          if (err.kind === 'validation') {
+            modalSubmit.textContent = 'Enviar cotización';
+            setModalStatus(err.message, 'error');
+            StratonLead.markField(modalFields, err.field);
+            return;
+          }
+          // Sin confirmación del servidor no hay lead que señalar, pero el
+          // cliente puede seguir por WhatsApp con el mismo mensaje.
+          pendingWhatsAppUrl = whatsappUrl;
+          modalSubmit.textContent = 'Abrir WhatsApp';
+          setModalStatus('No pudimos registrar tu cotización automáticamente. Puedes enviarla igual: toca «Abrir WhatsApp».', 'error');
+        }).finally(function() {
+          modalSending = false;
+          modalSubmit.disabled = false;
+        });
       });
     }
 
     // Cancelar modal
     var modalCancel = document.getElementById('modalCancel');
     if (modalCancel) {
-      modalCancel.addEventListener('click', function() {
-        document.getElementById('clientModal').style.display = 'none';
-      });
+      modalCancel.addEventListener('click', hideClientModal);
     }
 
     // Cerrar modal al hacer clic fuera
@@ -189,7 +265,7 @@
     if (clientModalEl) {
       clientModalEl.addEventListener('click', function(e) {
         if (e.target === this) {
-          this.style.display = 'none';
+          hideClientModal();
         }
       });
     }
@@ -1619,47 +1695,57 @@
     if (!form) return;
     var statusEl = form.querySelector('.contact-form-status');
     var submitBtn = form.querySelector('button[type="submit"]');
+    var fields = {
+      customer_name: form.querySelector('[name="customer_name"]'),
+      email: form.querySelector('[name="email"]'),
+      phone: form.querySelector('[name="phone"]'),
+      notes: form.querySelector('[name="notes"]')
+    };
+    var sending = false;
 
     form.addEventListener('submit', function(e) {
       e.preventDefault();
+      if (sending) return;
 
-      var customerName = form.querySelector('[name="customer_name"]').value.trim();
-      var email = form.querySelector('[name="email"]').value.trim();
-      var phone = form.querySelector('[name="phone"]').value.trim();
-      var notes = form.querySelector('[name="notes"]').value.trim();
+      var data = {};
+      Object.keys(fields).forEach(function(name) { data[name] = fields[name].value.trim(); });
 
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Enviando...';
       statusEl.className = 'contact-form-status';
       statusEl.textContent = '';
 
-      fetch('/api/quotations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customer_name: customerName,
-          email: email,
-          phone: phone,
-          notes: notes
-        })
-      })
-        .then(function(r) {
-          if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || 'Error del servidor'); });
-          return r.json();
-        })
-        .then(function() {
-          statusEl.className = 'contact-form-status success';
-          statusEl.textContent = 'Mensaje enviado. ¡Gracias!';
-          form.reset();
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Enviar';
-        })
-        .catch(function(err) {
-          statusEl.className = 'contact-form-status error';
-          statusEl.textContent = err.message || 'Error al enviar. Intenta de nuevo.';
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Enviar';
-        });
+      var problem = StratonLead.validate('contact_form', data);
+      if (problem) {
+        statusEl.className = 'contact-form-status error';
+        statusEl.textContent = problem.message;
+        StratonLead.markField(fields, problem.field);
+        return;
+      }
+      StratonLead.markField(fields, null);
+
+      sending = true;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Enviando...';
+
+      StratonLead.send({
+        customer_name: data.customer_name,
+        email: data.email,
+        phone: data.phone || null,
+        notes: data.notes,
+        form_id: 'contact_form'
+      }).then(function(saved) {
+        statusEl.className = 'contact-form-status success';
+        statusEl.textContent = 'Mensaje enviado. ¡Gracias!';
+        form.reset();
+        StratonLead.pushSuccess('contact_form', saved.id);
+      }, function(err) {
+        statusEl.className = 'contact-form-status error';
+        statusEl.textContent = err.message;
+        StratonLead.markField(fields, err.field);
+      }).finally(function() {
+        sending = false;
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Enviar';
+      });
     });
   }
 
@@ -2528,52 +2614,188 @@ function initStatsBanner() {
 
 })();
 
+// =========================================================
+// Leads: validación y señal de conversión (lead_form_success)
+// =========================================================
+/**
+ * Lo usan los tres formularios que envían a POST /api/quotations:
+ * #quotationForm (quote_form), el bloque contact-form de las páginas
+ * dinámicas (contact_form) y el modal del carrito (cart_whatsapp_form).
+ *
+ * validate() replica validateLead() de src/routes/quotations.ts solo para
+ * avisar antes de enviar; la validación que decide es la del servidor.
+ *
+ * lead_form_success es la señal que GTM usa para la conversión de formulario:
+ * se emite solo cuando send() confirma que el servidor guardó la cotización,
+ * una vez por cotización y sin datos personales (solo form_id).
+ */
+var StratonLead = (function () {
+  'use strict';
+
+  var REQUIRED = {
+    quote_form: ['customer_name', 'email', 'phone'],
+    contact_form: ['customer_name', 'email', 'notes'],
+    cart_whatsapp_form: ['customer_name', 'phone']
+  };
+  var LABELS = {
+    customer_name: 'el nombre',
+    email: 'el correo electrónico',
+    phone: 'el teléfono',
+    company: 'la empresa',
+    city: 'la ciudad',
+    event_date: 'la fecha del evento',
+    notes: 'el mensaje'
+  };
+  var MAX_LENGTH = { customer_name: 120, email: 254, phone: 30, company: 150, city: 100, event_date: 10, notes: 5000 };
+  var FORMAT = {
+    email: [function (v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }, 'El correo electrónico no es válido.'],
+    phone: [function (v) { return /^\+?\d{7,15}$/.test(v.replace(/[\s().-]/g, '')); }, 'El teléfono no es válido: usa entre 7 y 15 dígitos.'],
+    event_date: [function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(v); }, 'La fecha del evento no es válida. Usa el formato AAAA-MM-DD.']
+  };
+  var SEND_ERROR = 'No pudimos enviar tu solicitud. Intenta de nuevo o contáctanos por WhatsApp.';
+
+  // Ids de cotizaciones ya señaladas: una respuesta procesada dos veces no
+  // duplica lead_form_success.
+  var signaled = {};
+
+  /** Primer problema ({ field, message }) de los campos de `data`, en el orden
+   *  en que vienen (el del formulario), o null si se puede enviar. */
+  function validate(formId, data) {
+    var required = REQUIRED[formId];
+    for (var field in data) {
+      if (!LABELS[field]) continue;
+      var value = (data[field] || '').trim();
+      if (!value) {
+        if (required.indexOf(field) !== -1) return { field: field, message: 'Completa ' + LABELS[field] + '.' };
+        continue;
+      }
+      if (value.length > MAX_LENGTH[field]) {
+        return { field: field, message: 'Máximo ' + MAX_LENGTH[field] + ' caracteres en ' + LABELS[field] + '.' };
+      }
+      var format = FORMAT[field];
+      if (format && !format[0](value)) return { field: field, message: format[1] };
+    }
+    return null;
+  }
+
+  /** Envía la cotización. Resuelve con la cotización guardada solo si el
+   *  servidor responde 201 con su id. Si no, rechaza con un Error mostrable
+   *  que lleva:
+   *   - kind 'validation': el servidor rechazó los datos (400); field indica
+   *     qué campo corregir.
+   *   - kind 'infra': no hubo confirmación (429, 5xx, respuesta sin id, fallo
+   *     de red o más de timeoutMs sin respuesta, si se indica). */
+  function send(payload, timeoutMs) {
+    var controller = timeoutMs && typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = controller ? setTimeout(function () { controller.abort(); }, timeoutMs) : null;
+    return fetch('/api/quotations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller ? controller.signal : undefined
+    }).then(function (res) {
+      return res.json().catch(function () { return null; }).then(function (body) {
+        if (res.status === 201 && body && typeof body.id === 'number' && body.id > 0) return body;
+        var clientError = res.status >= 400 && res.status < 500 && body && typeof body.error === 'string';
+        var err = new Error(clientError ? body.error : SEND_ERROR);
+        err.kind = clientError && res.status === 400 ? 'validation' : 'infra';
+        err.field = err.kind === 'validation' && typeof body.field === 'string' ? body.field : null;
+        throw err;
+      });
+    }, function () {
+      var err = new Error(SEND_ERROR);
+      err.kind = 'infra';
+      throw err;
+    }).finally(function () {
+      clearTimeout(timer);
+    });
+  }
+
+  /** Emite lead_form_success para la cotización `id`, ya confirmada por send(). */
+  function pushSuccess(formId, id) {
+    if (signaled[id]) return;
+    signaled[id] = true;
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ event: 'lead_form_success', form_id: formId });
+  }
+
+  /** Marca con aria-invalid el campo `field` de `fields` ({ nombre: input }) y
+   *  le da el foco; se lo quita a los demás. Sin field, solo limpia. */
+  function markField(fields, field) {
+    Object.keys(fields).forEach(function (name) {
+      if (fields[name]) fields[name].removeAttribute('aria-invalid');
+    });
+    var input = field && fields[field];
+    if (input) {
+      input.setAttribute('aria-invalid', 'true');
+      input.focus();
+    }
+  }
+
+  return { validate: validate, send: send, pushSuccess: pushSuccess, markField: markField };
+})();
+
+var quoteFormSending = false;
+
 window.handleContactSubmit = async function(event) {
   event.preventDefault();
 
   var form = document.getElementById('quotationForm');
-  if (!form) return;
+  if (!form || quoteFormSending) return;
 
-  var customer_name = form.querySelector('[name="customer_name"]').value.trim();
-  var email = form.querySelector('[name="email"]').value.trim();
-  var phone = form.querySelector('[name="phone"]').value.trim();
+  var messages = document.getElementById('formMessages');
+  var fields = {};
+  ['customer_name', 'company', 'email', 'phone', 'city', 'event_date', 'notes'].forEach(function(name) {
+    fields[name] = form.querySelector('[name="' + name + '"]');
+  });
+  var data = {};
+  Object.keys(fields).forEach(function(name) { data[name] = fields[name].value.trim(); });
 
-  if (!customer_name || !email || !phone) {
-    alert('Por favor, completa los campos obligatorios (Nombre, Email, Teléfono).');
+  function showError(problem) {
+    messages.textContent = '';
+    var p = document.createElement('p');
+    p.className = 'form-error';
+    p.textContent = problem.message;
+    messages.appendChild(p);
+    StratonLead.markField(fields, problem.field);
+  }
+
+  messages.textContent = '';
+  var problem = StratonLead.validate('quote_form', data);
+  if (problem) {
+    showError(problem);
+    return;
+  }
+  StratonLead.markField(fields, null);
+
+  var submitBtn = document.getElementById('formSubmit');
+  quoteFormSending = true;
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Enviando...';
+
+  var saved;
+  try {
+    saved = await StratonLead.send({
+      customer_name: data.customer_name,
+      email: data.email,
+      phone: data.phone,
+      company: data.company || null,
+      city: data.city || null,
+      event_date: data.event_date || null,
+      notes: data.notes || null,
+      products_json: (window.cartItems && window.cartItems.length > 0) ? JSON.stringify(window.cartItems) : null,
+      form_id: 'quote_form'
+    });
+  } catch (err) {
+    quoteFormSending = false;
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Enviar solicitud de cotización';
+    showError({ message: err.message, field: err.field });
     return;
   }
 
-  var submitBtn = document.getElementById('formSubmit');
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Enviando...';
-  }
-
-  try {
-    var response = await fetch('/api/quotations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        customer_name: customer_name,
-        email: email,
-        phone: phone,
-        company: form.querySelector('[name="company"]').value.trim() || null,
-        city: form.querySelector('[name="city"]').value.trim() || null,
-        event_date: form.querySelector('[name="event_date"]').value || null,
-        notes: form.querySelector('[name="notes"]').value.trim() || null,
-        products_json: (window.cartItems && window.cartItems.length > 0) ? JSON.stringify(window.cartItems) : null
-      })
-    });
-
-    if (!response.ok) throw new Error('Error del servidor');
-
-    form.innerHTML = '<div class="form-success"><div class="form-success-icon">✓</div><h3>¡Solicitud enviada!</h3><p>Recibirás una respuesta personalizada en las próximas 24 horas hábiles.</p></div>';
-  } catch (err) {
-    console.error('Error al enviar cotización:', err);
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Enviar solicitud de cotización';
-    }
-    alert('Error al enviar. Intenta de nuevo o contáctanos por WhatsApp.');
-  }
+  // El servidor confirmó la cotización: el formulario se reemplaza por el
+  // mensaje de éxito (no se puede reenviar) y se emite la señal una vez.
+  form.innerHTML = '<div class="form-success"><div class="form-success-icon">✓</div><h3>¡Solicitud enviada!</h3><p>Recibirás una respuesta personalizada en las próximas 24 horas hábiles.</p></div>';
+  StratonLead.pushSuccess('quote_form', saved.id);
 };
